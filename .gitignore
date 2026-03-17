@@ -12,3 +12,6 @@ dist/
 # Editor / OS
 .DS_Store
 *.local
+
+# Claude local settings
+.claude/settings.local.json
