@@ -1,0 +1,201 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Dusk theme (Palette 4) — warm cream base, terracotta + gold accents */
+  --bg-primary: #FAF7F4;
+  --bg-card: rgba(255, 255, 255, 0.75);
+  --bg-card-hover: rgba(255, 255, 255, 0.85);
+  --bg-surface: #F5F0EB;
+  --bg-input: rgba(0, 0, 0, 0.03);
+  --text-primary: #2D2420;
+  --text-secondary: #7A6F65;
+  --text-muted: #B5ADA5;
+  --border-color: rgba(63, 20, 17, 0.08);
+  --border-subtle: rgba(63, 20, 17, 0.08);
+  --accent-primary: #B86A54;
+  --accent-secondary: #DAC58C;
+  --color-positive: #4A6644;
+  --color-negative: #B86A54;
+  --color-neutral: #DAC58C;
+  --dim-I1: #374762;
+  --dim-C1: #DAC58C;
+  --dim-O: #B86A54;
+  --dim-N: #ACBDA7;
+  --dim-I2: #6B241E;
+  --dim-C2: #3F1411;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0 2px 12px rgba(45, 36, 32, 0.06);
+  --shadow-glow: 0 0 8px;
+
+  --font-size: 16px;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  
+  --blur-glass: 16px;
+  --blur-strong: 30px;
+}
+
+/* Linen theme (Palette 1) — clean cream base, salmon + sky blue accents */
+[data-theme="linen"] {
+  --bg-primary: #FDFBF9;
+  --bg-card: rgba(255, 255, 255, 0.80);
+  --bg-card-hover: rgba(255, 255, 255, 0.90);
+  --bg-surface: #F7F3EF;
+  --bg-input: rgba(0, 0, 0, 0.03);
+  --text-primary: #463027;
+  --text-secondary: #8A7D76;
+  --text-muted: #C4BBB5;
+  --border-color: rgba(70, 48, 39, 0.06);
+  --border-subtle: rgba(70, 48, 39, 0.06);
+  --accent-primary: #DD9F86;
+  --accent-secondary: #A6C2DB;
+  --color-positive: #4A6644;
+  --color-negative: #C66F80;
+  --color-neutral: #DDBFB3;
+  --dim-I1: #A6C2DB;
+  --dim-C1: #DD9F86;
+  --dim-O: #463027;
+  --dim-N: #CEDEE2;
+  --dim-I2: #DDBFB3;
+  --dim-C2: #E6CDC4;
+
+  --shadow-card: 0 2px 12px rgba(70, 48, 39, 0.06);
+}
+
+/* Blush theme (Palette 5) — dark sleek mode, cool gradients + glassmorphic cards */
+[data-theme="blush"] {
+  --bg-primary: #13151A;
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --bg-card-hover: rgba(255, 255, 255, 0.10);
+  --bg-surface: rgba(255, 255, 255, 0.04);
+  --bg-input: rgba(255, 255, 255, 0.08);
+  --text-primary: #F0ECE8;
+  --text-secondary: #9B95A0;
+  --text-muted: #5E586A;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --accent-primary: #E07A4A;
+  --accent-secondary: #8B9EE8;
+  --color-positive: #6ECB8B;
+  --color-negative: #E07A4A;
+  --color-neutral: #D0A86E;
+  --dim-I1: #8B9EE8;
+  --dim-C1: #E07A4A;
+  --dim-O: #E8A09A;
+  --dim-N: #7EC9A0;
+  --dim-I2: #D0A86E;
+  --dim-C2: #B8C26E;
+
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Dusk gradient mesh — very subtle warm cream shifts */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 20% 20%, #F5F0EB, transparent 50%),
+    radial-gradient(circle at 80% 80%, #F7F2EE, transparent 50%),
+    radial-gradient(circle at 50% 50%, #FBF8F5, transparent 60%),
+    #FAF7F4;
+}
+  
+/* Linen gradient mesh — warm cream, NO pink */
+[data-theme="linen"] body::before {
+  background: 
+    radial-gradient(circle at 30% 30%, #FBF7F3, transparent 50%),
+    radial-gradient(circle at 70% 70%, #F9F5F2, transparent 50%),
+    radial-gradient(circle at 50% 50%, #FEFCFA, transparent 60%),
+    #FDFBF9;
+}
+  
+/* Blush gradient mesh — dark cool gradient with subtle color shifts */
+[data-theme="blush"] body::before {
+  background: 
+    radial-gradient(ellipse at 15% 10%, rgba(99, 80, 160, 0.25), transparent 50%),
+    radial-gradient(ellipse at 85% 20%, rgba(59, 100, 140, 0.2), transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(224, 122, 74, 0.1), transparent 50%),
+    radial-gradient(ellipse at 30% 60%, rgba(139, 158, 232, 0.08), transparent 45%),
+    linear-gradient(160deg, #111318 0%, #181B24 35%, #1A1D28 65%, #141720 100%);
+}
+
+/* ── Blush theme: override hardcoded Dusk-era inline colours ── */
+
+/* Card / dropdown backgrounds */
+[data-theme="blush"] [style*="background-color: #FFFFFF"],
+[data-theme="blush"] [style*="background-color: rgb(255, 255, 255)"] {
+  background-color: var(--bg-card) !important;
+  backdrop-filter: blur(var(--blur-glass)) !important;
+  -webkit-backdrop-filter: blur(var(--blur-glass)) !important;
+}
+
+/* Surface / badge backgrounds */
+[data-theme="blush"] [style*="background-color: #F5F0EB"],
+[data-theme="blush"] [style*="background-color: rgb(245, 240, 235)"] {
+  background-color: var(--bg-surface) !important;
+}
+
+/* Inactive bar / track backgrounds */
+[data-theme="blush"] [style*="background-color: #E8E2DC"],
+[data-theme="blush"] [style*="background-color: rgb(232, 226, 220)"] {
+  background-color: var(--bg-surface) !important;
+}
+
+/* Divider / separator backgrounds */
+[data-theme="blush"] [style*="background-color: #F0EBE6"],
+[data-theme="blush"] [style*="background-color: rgb(240, 235, 230)"] {
+  background-color: var(--border-color) !important;
+}
+
+/* Text secondary colour */
+[data-theme="blush"] [style*="color: #7A6F65"],
+[data-theme="blush"] [style*="color: rgb(122, 111, 101)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* Text muted colour */
+[data-theme="blush"] [style*="color: #B5ADA5"],
+[data-theme="blush"] [style*="color: rgb(181, 173, 165)"] {
+  color: var(--text-muted) !important;
+}
+
+/* Text primary colour */
+[data-theme="blush"] [style*="color: #2D2420"],
+[data-theme="blush"] [style*="color: rgb(45, 36, 32)"] {
+  color: var(--text-primary) !important;
+}
+
+/* Positive colour */
+[data-theme="blush"] [style*="color: #4A6644"],
+[data-theme="blush"] [style*="color: rgb(74, 102, 68)"],
+[data-theme="blush"] [style*="background-color: #4A6644"] {
+  color: var(--color-positive) !important;
+}
+
+/* Border overrides for table borders etc. */
+[data-theme="blush"] [style*="border-bottom: 1px solid #F0EBE6"],
+[data-theme="blush"] [style*="border-bottom: 1px solid rgb(240, 235, 230)"] {
+  border-bottom-color: var(--border-color) !important;
+}
+
+/* SVG stroke/fill overrides */
+[data-theme="blush"] [stroke="#F0EBE6"] { stroke: var(--border-color) !important; }
+[data-theme="blush"] [stroke="#B5ADA5"] { stroke: var(--text-muted) !important; }
+[data-theme="blush"] [fill="#B5ADA5"] { fill: var(--text-muted) !important; }
+[data-theme="blush"] [fill="#7A6F65"] { fill: var(--text-secondary) !important; }
+[data-theme="blush"] [stroke="#7A6F65"] { stroke: var(--text-secondary) !important; }

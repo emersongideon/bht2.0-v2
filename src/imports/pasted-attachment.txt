@@ -1,0 +1,56 @@
+Add a new section at the bottom of the Dashboard page, below the trend chart and alerts panel. This section requires the page to scroll slightly — it sits just below the fold.
+
+## NEW SECTION: LIVE FEED
+
+Full width (same width as the trend chart + alerts panel row above). Two cards side by side, 12px gap.
+
+### LEFT CARD: "The Latest" (~55% width)
+
+Glass card (same glassmorphism style as other cards). Header row: "The Latest" in Instrument Serif 20px, text-primary. Small subtitle below: "Recent news and mentions" in DM Sans 12px, text-muted.
+
+Below the header, show 4 news items stacked vertically with 1px border-bottom separators between them.
+
+Each news item is a horizontal row, 12px gap, padding 12px 0:
+- Left: small colored category tag pill (e.g. "Press" in accent-primary at 10% bg, "Industry" in sage at 10% bg, "Social" in gold at 10% bg). DM Sans 10px.
+- Center (fills remaining width):
+  - Headline: DM Sans 14px semibold, text-primary. Single line, truncate with ellipsis if too long.
+  - Source + time: DM Sans 11px, text-muted. e.g. "Vogue Business · 3 hours ago"
+- Right: small arrow icon (→) in text-muted, 14px.
+
+Dummy news items:
+1. Tag "Press" (accent). "Rhode Skin named in TIME's Most Influential Brands of 2026". Source: "TIME · 2 hours ago"
+2. Tag "Industry" (sage). "Clean beauty market projected to reach $22B by 2027". Source: "Business of Fashion · 5 hours ago"
+3. Tag "Social" (gold). "Hailey Bieber shares new Rhode peptide lip tint on Instagram". Source: "Instagram · 8 hours ago"
+4. Tag "Press" (accent). "Rhode expands into Southeast Asian markets with Sephora partnership". Source: "WWD · 1 day ago"
+
+### RIGHT CARD: "The Greatest" (~45% width)
+
+Glass card. Header row: "The Greatest" in Instrument Serif 20px, text-primary. Small subtitle: "Top performing social posts this period" in DM Sans 12px, text-muted.
+
+Below the header, show 5 social media post items in a vertical list. Each item is a compact card-within-card (bg slightly darker than the parent — use bg-surface at 40% opacity), rounded-md, padding 12px, 8px gap between items.
+
+Each post item is a horizontal row with 3 sections:
+
+1. POST VISUAL (left, fixed 56px × 56px):
+   - Rounded-md (10px) placeholder thumbnail.
+   - Small platform icon overlay in the bottom-right corner of the thumbnail: Instagram icon or TikTok icon (12px, white, with a tiny dark shadow behind it for visibility).
+   - Use alternating warm-toned placeholder rectangles (slightly different shades of bg-surface) to suggest different images.
+
+2. CAPTION (center, fills remaining width):
+   - Caption text: DM Sans 12px, text-primary. Max 2 lines, truncate with ellipsis.
+   - Below caption: platform label + handle. DM Sans 10px, text-muted. e.g. "Instagram · @rhode"
+
+3. ENGAGEMENT (right, fixed ~70px width, right-aligned):
+   - Engagement rate: JetBrains Mono 16px bold, text-primary. e.g. "8.4%"
+   - Label below: DM Sans 9px, text-muted. "Eng. Rate"
+
+Dummy post items:
+1. Instagram thumbnail. "The peptide lip treatment that broke the internet — now in 3 new shades 💋". "Instagram · @rhode". Eng: 8.4%
+2. TikTok thumbnail. "POV: your morning skincare routine with Rhode glazing milk ✨". "TikTok · @rhode". Eng: 12.1%
+3. Instagram thumbnail. "Behind the scenes at our NYC pop-up — thank you to everyone who came 🤍". "Instagram · @rhode". Eng: 6.7%
+4. TikTok thumbnail. "Ranking every Rhode product from good to OBSESSED". "TikTok · @skincarebyhyram". Eng: 9.3%
+5. Instagram thumbnail. "Rhode x Krispy Kreme strawberry glaze drop — link in bio". "Instagram · @rhode". Eng: 11.2%
+
+## LAYOUT POSITION
+
+The live feed section sits in a new Row 5 below the current Row 4 (trend chart + alerts).

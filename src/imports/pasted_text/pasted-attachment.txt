@@ -1,0 +1,153 @@
+# ICONIC Dashboard — Ingrained in Culture Deep Dive (Figma Make Prompt)
+
+Paste this into Figma Make to rebuild the Ingrained in Culture deep dive page.
+
+---
+
+```
+Rebuild the "Deep Dive — I: Ingrained in Culture" page. Same sidebar (layers icon active), top bar, dimension tabs (I2 active). Page scrolls. Warm cream glassmorphism style: page bg #FAF7F4, cards rgba(255,255,255,0.75) backdrop-blur 16px.
+
+Brand colors: Rhode #B86A54, Summer Fridays #374762, Glossier #DAC58C, Clinique #ACBDA7, Laneige #6B241E.
+Dimension color for I2: #6B241E (deep red).
+
+## SECTION 1: Dimension Header
+
+Full-width glass card, padding 20px.
+Left:
+- Deep red dot (10px, #6B241E) + "I — Ingrained in Culture" (Instrument Serif 26px bold)
+- Below: "The values, aesthetics, and symbolic meaning the brand owns in culture." (DM Sans 13px italic, #7A6F65)
+Right:
+- "Score:" DM Sans 13px #7A6F65 + "78" JetBrains Mono 32px bold + delta "▲ 2.3" green pill
+
+## SECTION 2: Scoring Metric (single full-width card)
+
+Full-width glass card, padding 20px. Same height as the sub-metric cards on other pages.
+- Top-left: "Social Performance" (DM Sans 16px semibold)
+- Top-right: source badge "Social" (pill, muted bg, caption text)
+- Score: "81" (JetBrains Mono 48px bold) + delta "▲ 3.0" green pill
+- Below: "How strongly the brand owns specific cultural attributes relative to competitors" (DM Sans 12px, #7A6F65)
+- Sparkline: smooth line in #6B241E, ~40px tall, monthly x-axis labels (Sep, Oct, Nov, Dec, Jan, Feb, Mar)
+
+## SECTION 3: Brand Comparison
+
+Full-width glass card, padding 20px.
+Header: "Brand Comparison" (DM Sans 16px semibold) + "Social Performance across brands" (11px, #B5ADA5)
+
+Single group of horizontal bars, brands ranked by score (highest first):
+- Glossier: 84
+- Rhode: 81 (bold name, bar in #B86A54)
+- Summer Fridays: 78
+- Clinique: 74
+- Laneige: 70
+
+Each row: brand dot (6px, brand color) + brand name (DM Sans 11px, bold for Rhode) + horizontal bar (14px tall, brand color fill, #F0EBE6 track) + score (JetBrains Mono 11px) right of bar.
+
+## SECTION 4: Value Associations
+
+Full-width glass card, padding 20px.
+Header: "Value Associations" (DM Sans 16px semibold) + "The cultural values, aesthetics, and symbolic meanings consumers attach to each brand" (11px, #B5ADA5)
+
+One row per brand, stacked vertically. 12px gap between rows. 1px separator line (#F0EBE6) between rows.
+
+Each brand row:
+- Left: brand dot (6px) + brand name (DM Sans 12px, bold for Rhode) — fixed 120px width
+- Right: horizontal row of value tag pills, ordered by association strength (strongest first).
+  - Rhode pills: #6B241E at 10% bg, #6B241E text
+  - Competitor pills: #F5F0EB bg, #7A6F65 text
+  - Each pill: rounded-full, padding 4px 12px, DM Sans 11px
+
+Data:
+Rhode: "Clean Beauty" · "Minimalist" · "Luxury Accessible" · "Gen Z" · "Skincare-First"
+Summer Fridays: "Self-Care" · "Clean Beauty" · "Instagram-Native" · "Gentle" · "Vegan"
+Glossier: "Millennial" · "Community-Driven" · "Minimalist" · "Everyday Beauty" · "DTC"
+Clinique: "Dermatologist-Tested" · "Sensitive Skin" · "Science-Backed" · "Classic" · "Department Store"
+Laneige: "K-Beauty" · "Hydration" · "Lip Care" · "Overnight" · "Affordable Luxury"
+
+Small note below: "Values extracted from earned consumer content across social media, reviews, and forums" (DM Sans 10px, #B5ADA5, italic)
+
+## SECTION 5: Attribute Comparison (Heatmap Matrix)
+
+Full-width glass card, padding 20px.
+Header: "Attribute Comparison" (DM Sans 16px semibold) + "How each brand performs on key cultural attributes — revealing owned, contested, and available territories" (11px, #B5ADA5)
+
+Heatmap matrix. Rows = cultural attributes. Columns = brands.
+
+Column headers (left to right): ATTRIBUTE label column (left-aligned), then 5 brand columns — each with brand dot (6px) + brand name (DM Sans 10px uppercase, centered). Rhode column header in bold.
+
+8 attribute rows with 1px separator lines between:
+Each cell contains a score (JetBrains Mono 11px, centered) on a color-intensity background. Higher scores = deeper color fill. Lower scores = nearly white.
+
+Color logic per cell:
+- Rhode column: #6B241E at opacity scaled to score (score 90 → 25% opacity, score 40 → 5% opacity)
+- Competitor columns: #D5CEC7 at opacity scaled to score
+- Highest score in each row: bold text + slightly stronger fill
+- Lowest score in each row: muted text (#B5ADA5)
+
+Data (rows sorted by Rhode's score, highest first):
+
+| Attribute          | Rhode | Summer Fri. | Glossier | Clinique | Laneige |
+|--------------------|-------|-------------|----------|----------|---------|
+| Clean / Ingredients| 88    | 82          | 76       | 71       | 68      |
+| Minimalist         | 85    | 64          | 83       | 48       | 52      |
+| Accessible Luxury  | 82    | 71          | 69       | 58       | 74      |
+| Gen Z / Youth      | 79    | 72          | 81       | 35       | 66      |
+| Skincare-First     | 76    | 78          | 62       | 84       | 72      |
+| Hydration          | 58    | 61          | 54       | 52       | 89      |
+| Self-Care Ritual   | 55    | 86          | 71       | 44       | 63      |
+| Science-Backed     | 42    | 38          | 34       | 91       | 45      |
+
+Right side of the matrix: a narrow "Territory" column (60px) showing a status tag for Rhode's position:
+- Score ≥ 80 AND highest in row → green pill "Owned" (#4A6644 text, green-tinted bg)
+- Score ≥ 65 AND within 10pts of leader → amber pill "Contested" (gold-tinted bg, #7A6F65 text)
+- Score < 65 AND another brand leads by 15+ pts → red pill "Gap" (#B86A54 text, red-tinted bg)
+- Score < 50 AND no close competitor → gray pill "Open" (#B5ADA5 text, neutral bg)
+
+Applied:
+- Clean / Ingredients: Owned (Rhode 88, leads)
+- Minimalist: Owned (Rhode 85, leads)
+- Accessible Luxury: Owned (Rhode 82, leads)
+- Gen Z / Youth: Contested (Rhode 79, Glossier 81 leads)
+- Skincare-First: Contested (Rhode 76, Clinique 84 leads)
+- Hydration: Gap (Rhode 58, Laneige 89 leads)
+- Self-Care Ritual: Gap (Rhode 55, Summer Fridays 86 leads)
+- Science-Backed: Open (Rhode 42, Clinique 91 dominates)
+
+Below the matrix: a small legend row.
+Green square "Owned" + Amber square "Contested" + Red square "Gap" + Gray square "Open" (all 9px, inline)
+
+## SECTION 6: Insight Card
+
+Full-width glass card, left border 3px #B86A54, padding 20px.
+
+"💡 Cultural Territory Summary" (DM Sans 15px semibold)
+
+Body text (DM Sans 13px, #7A6F65, line-height 1.6):
+"Rhode has clear cultural ownership of 'Clean Beauty', 'Minimalist', and 'Accessible Luxury' — three territories it leads in and should protect. 'Gen Z' and 'Skincare-First' are contested with Glossier and Clinique respectively. The biggest gaps are 'Hydration' (dominated by Laneige) and 'Self-Care Ritual' (owned by Summer Fridays). 'Science-Backed' is an open territory where Clinique leads by default but doesn't actively defend."
+
+Three mini cards in a row (equal width, 12px gap):
+
+Card 1 — "OWNED TERRITORIES" (9px uppercase #4A6644, green-tinted bg rgba(74,102,68,0.06)):
+Green pills: "Clean Beauty", "Minimalist", "Accessible Luxury"
+
+Card 2 — "OPPORTUNITIES" (9px uppercase #7A6F65, amber-tinted bg rgba(218,197,140,0.08)):
+Amber pills: "Sustainability (unclaimed)", "Science-Lite (repositionable)", "Wellness"
+
+Card 3 — "WATCH" (9px uppercase #B86A54, red-tinted bg rgba(184,106,84,0.06)):
+Red pills: "Hydration (Laneige dominant)", "Gen Z fatigue risk", "Dupe association"
+
+Footer: purple dot (5px, #7B68A6) + "Cultural Pulse" (10px #7B68A6) + "Social Imagery (p=0.037) and Attribute Performance (p=0.031) predict at 6-month lead" (10px #B5ADA5)
+
+## PAGE FLOW
+
+Above the fold:
+1. Dimension Header
+2. Social Performance score card (full-width)
+3. Brand Comparison bars
+
+Scrollable:
+4. Value Associations (tag pills per brand)
+5. Attribute Comparison (heatmap matrix)
+6. Insight Card
+
+Deliver as a single frame replacing the current Ingrained in Culture deep dive.
+```

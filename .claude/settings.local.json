@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e:*)",
+      "Bash(npx tsc:*)",
+      "Bash(\"/Users/emerson/Desktop/Emerson Coding Experiments/bht2.0/node_modules/.bin/tsc\" --noEmit --project \"/Users/emerson/Desktop/Emerson Coding Experiments/bht2.0/tsconfig.json\")",
+      "Bash(\"/Users/emerson/Desktop/Emerson Coding Experiments/bht2.0/node_modules/.bin/vite\" build --config \"/Users/emerson/Desktop/Emerson Coding Experiments/bht2.0/vite.config.ts\")",
+      "Bash(done)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
