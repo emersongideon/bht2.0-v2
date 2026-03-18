@@ -6,15 +6,9 @@ import { useDateMode } from "../../contexts/date-mode-context";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
 import { useBrand } from "../../contexts/brand-context";
+import { useAppData } from "../../data/app-data-context";
+import { getBrandSubScore } from "../../utils/brand-utils";
 import { useDimension, useSubmetrics } from "../../data/use-dimensions";
-
-const brands = [
-  { name: "Rhode", color: "#B86A54" },
-  { name: "Summer Fridays", color: "#374762" },
-  { name: "Glossier", color: "#DAC58C" },
-  { name: "Clinique", color: "#ACBDA7" },
-  { name: "Laneige", color: "#6B241E" },
-];
 
 export function DeepDiveC1Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
@@ -342,31 +336,22 @@ function ScoreCard({
 }
 
 function BrandComparison() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const allSearchData = [
-    { brand: "Rhode", score: 78, color: "#B86A54" },
-    { brand: "Glossier", score: 76, color: "#DAC58C" },
-    { brand: "Clinique", score: 74, color: "#ACBDA7" },
-    { brand: "Summer Fridays", score: 71, color: "#374762" },
-    { brand: "Laneige", score: 68, color: "#6B241E" },
-  ];
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
 
-  const allSocialData = [
-    { brand: "Glossier", score: 80, color: "#DAC58C" },
-    { brand: "Summer Fridays", score: 78, color: "#374762" },
-    { brand: "Rhode", score: 76, color: "#B86A54" },
-    { brand: "Laneige", score: 73, color: "#6B241E" },
-    { brand: "Clinique", score: 69, color: "#ACBDA7" },
-  ];
+  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
 
-  const allLlmData = [
-    { brand: "Rhode", score: 83, color: "#B86A54" },
-    { brand: "Clinique", score: 81, color: "#ACBDA7" },
-    { brand: "Glossier", score: 80, color: "#DAC58C" },
-    { brand: "Laneige", score: 77, color: "#6B241E" },
-    { brand: "Summer Fridays", score: 72, color: "#374762" },
-  ];
+  const allSearchData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c1_search"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
+
+  const allSocialData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c1_social"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
+
+  const allLlmData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c1_llm"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
 
   // Filter to only show selected brands
   const searchData = allSearchData.filter(item => selectedBrands.includes(item.brand));

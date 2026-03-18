@@ -4,17 +4,11 @@ import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { useBrand } from "../../contexts/brand-context";
+import { useAppData } from "../../data/app-data-context";
+import { getBrandSubScore } from "../../utils/brand-utils";
 import { useDimension, useSubmetrics } from "../../data/use-dimensions";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
-
-const brands = [
-  { name: "Rhode", color: "#B86A54" },
-  { name: "Summer Fridays", color: "#374762" },
-  { name: "Glossier", color: "#DAC58C" },
-  { name: "Clinique", color: "#ACBDA7" },
-  { name: "Laneige", color: "#6B241E" },
-];
 
 export function DeepDiveC2Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
@@ -335,23 +329,18 @@ function ScoreCard({
 }
 
 function BrandComparison() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const allPricePerceptionData = [
-    { brand: "Clinique", score: 71, color: "#ACBDA7" },
-    { brand: "Glossier", score: 68, color: "#DAC58C" },
-    { brand: "Laneige", score: 65, color: "#6B241E" },
-    { brand: "Rhode", score: 62, color: "#B86A54" },
-    { brand: "Summer Fridays", score: 58, color: "#374762" },
-  ];
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
 
-  const allQualityPerceptionData = [
-    { brand: "Clinique", score: 82, color: "#ACBDA7" },
-    { brand: "Rhode", score: 74, color: "#B86A54" },
-    { brand: "Glossier", score: 72, color: "#DAC58C" },
-    { brand: "Laneige", score: 70, color: "#6B241E" },
-    { brand: "Summer Fridays", score: 69, color: "#374762" },
-  ];
+  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
+
+  const allPricePerceptionData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c2_price"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
+
+  const allQualityPerceptionData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c2_quality"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
 
   // Filter to only show selected brands
   const pricePerceptionData = allPricePerceptionData.filter(item => selectedBrands.includes(item.brand));

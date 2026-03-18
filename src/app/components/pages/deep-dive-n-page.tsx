@@ -6,15 +6,9 @@ import { useDateMode } from "../../contexts/date-mode-context";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
 import { useBrand } from "../../contexts/brand-context";
+import { useAppData } from "../../data/app-data-context";
+import { getBrandSubScore } from "../../utils/brand-utils";
 import { useDimension } from "../../data/use-dimensions";
-
-const brands = [
-  { name: "Rhode", color: "#B86A54" },
-  { name: "Summer Fridays", color: "#374762" },
-  { name: "Glossier", color: "#DAC58C" },
-  { name: "Clinique", color: "#ACBDA7" },
-  { name: "Laneige", color: "#6B241E" },
-];
 
 export function DeepDiveNPage() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
@@ -249,31 +243,22 @@ function DimensionHeader() {
 }
 
 function BrandComparison() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const allConsistencyData = [
-    { brand: "Clinique", score: 85, color: "#ACBDA7" },
-    { brand: "Rhode", score: 82, color: "#B86A54" },
-    { brand: "Glossier", score: 78, color: "#DAC58C" },
-    { brand: "Summer Fridays", score: 74, color: "#374762" },
-    { brand: "Laneige", score: 70, color: "#6B241E" },
-  ];
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
 
-  const allCoherenceData = [
-    { brand: "Glossier", score: 80, color: "#DAC58C" },
-    { brand: "Rhode", score: 76, color: "#B86A54" },
-    { brand: "Clinique", score: 72, color: "#ACBDA7" },
-    { brand: "Laneige", score: 69, color: "#6B241E" },
-    { brand: "Summer Fridays", score: 65, color: "#374762" },
-  ];
+  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
 
-  const allAlignmentData = [
-    { brand: "Clinique", score: 79, color: "#ACBDA7" },
-    { brand: "Rhode", score: 74, color: "#B86A54" },
-    { brand: "Laneige", score: 71, color: "#6B241E" },
-    { brand: "Glossier", score: 68, color: "#DAC58C" },
-    { brand: "Summer Fridays", score: 62, color: "#374762" },
-  ];
+  const allConsistencyData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "n_consistency"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
+
+  const allCoherenceData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "n_coherence"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
+
+  const allAlignmentData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "n_alignment"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
 
   // Filter to only show selected brands
   const consistencyData = allConsistencyData.filter(item => selectedBrands.includes(item.brand));
@@ -680,7 +665,7 @@ function SenderReceiverAlignment() {
             display: "inline-flex",
           }}>
             {selectedBrands.map((brandName) => {
-              const brand = brands.find(b => b.name === brandName);
+              const brand = (brandsByCategory[selectedCategory] ?? []).find(b => b.name === brandName);
               if (!brand) return null;
               
               return (

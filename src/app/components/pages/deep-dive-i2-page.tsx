@@ -4,17 +4,11 @@ import { DimensionTabs } from "../dimension-tabs";
 import { useState } from "react";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { useBrand } from "../../contexts/brand-context";
+import { useAppData } from "../../data/app-data-context";
+import { getBrandSubScore } from "../../utils/brand-utils";
 import { useDimension } from "../../data/use-dimensions";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
-
-const brands = [
-  { name: "Rhode", color: "#B86A54" },
-  { name: "Summer Fridays", color: "#374762" },
-  { name: "Glossier", color: "#DAC58C" },
-  { name: "Clinique", color: "#ACBDA7" },
-  { name: "Laneige", color: "#6B241E" },
-];
 
 export function DeepDiveI2Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
@@ -319,15 +313,14 @@ function SocialPerformanceCard() {
 }
 
 function BrandComparison() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const allData = [
-    { brand: "Glossier", score: 84, color: "#DAC58C" },
-    { brand: "Rhode", score: 81, color: "#B86A54" },
-    { brand: "Summer Fridays", score: 78, color: "#374762" },
-    { brand: "Clinique", score: 74, color: "#ACBDA7" },
-    { brand: "Laneige", score: 70, color: "#6B241E" },
-  ];
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
+
+  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
+
+  const allData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "i2_social"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
 
   // Filter to only show selected brands
   const data = allData.filter(item => selectedBrands.includes(item.brand));

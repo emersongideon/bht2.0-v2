@@ -6,15 +6,9 @@ import { useDateMode } from "../../contexts/date-mode-context";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
 import { useBrand } from "../../contexts/brand-context";
+import { useAppData } from "../../data/app-data-context";
+import { getBrandSubScore } from "../../utils/brand-utils";
 import { useDimension, useSubmetrics } from "../../data/use-dimensions";
-
-const brands = [
-  { name: "Rhode", color: "#B86A54" },
-  { name: "Summer Fridays", color: "#374762" },
-  { name: "Glossier", color: "#DAC58C" },
-  { name: "Clinique", color: "#ACBDA7" },
-  { name: "Laneige", color: "#6B241E" },
-];
 
 export function DeepDiveI1Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
@@ -349,23 +343,18 @@ function ScoreCard({
 }
 
 function BrandComparison() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const allConsistencyData = [
-    { brand: "Rhode", score: 85, color: "#B86A54" },
-    { brand: "Glossier", score: 82, color: "#DAC58C" },
-    { brand: "Clinique", score: 78, color: "#ACBDA7" },
-    { brand: "Summer Fridays", score: 71, color: "#374762" },
-    { brand: "Laneige", score: 68, color: "#6B241E" },
-  ];
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
 
-  const allDistinctivenessData = [
-    { brand: "Glossier", score: 72, color: "#DAC58C" },
-    { brand: "Summer Fridays", score: 68, color: "#374762" },
-    { brand: "Rhode", score: 64, color: "#B86A54" },
-    { brand: "Clinique", score: 59, color: "#ACBDA7" },
-    { brand: "Laneige", score: 55, color: "#6B241E" },
-  ];
+  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
+
+  const allConsistencyData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "i1_consistency"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
+
+  const allDistinctivenessData = [...allCategoryBrands]
+    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "i1_distinctiveness"), color: b.color }))
+    .sort((a, b) => b.score - a.score);
 
   // Filter to only show selected brands
   const consistencyData = allConsistencyData.filter(item => selectedBrands.includes(item.brand));
@@ -782,7 +771,9 @@ function DomainSources() {
   ];
 
   const selectedBrandData = allBrandDomainData[selectedBrand as keyof typeof allBrandDomainData];
-  const selectedBrandColor = brands.find(b => b.name === selectedBrand)?.color || "#B86A54";
+  const { selectedCategory: _cat } = useBrand();
+    const { brandsByCategory: _bbc } = useAppData();
+    const selectedBrandColor = _bbc[_cat]?.find(b => b.name === selectedBrand)?.color ?? "#B86A54";
   const maxPercentage = Math.max(...selectedBrandData.map((d) => d.percentage));
 
   return (
@@ -820,7 +811,7 @@ function DomainSources() {
               padding: "3px",
               minWidth: "max-content",
             }}>
-              {brands.filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
+              {(_bbc[_cat] ?? []).filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
                 <button
                   key={brand.name}
                   onClick={() => setSelectedBrand(brand.name)}
@@ -1019,7 +1010,9 @@ function AudiencePerception() {
   ];
 
   const selectedBrandAgeData = allBrandAgeData[selectedBrand as keyof typeof allBrandAgeData];
-  const selectedBrandColor = brands.find(b => b.name === selectedBrand)?.color || "#B86A54";
+  const { selectedCategory: _cat } = useBrand();
+    const { brandsByCategory: _bbc } = useAppData();
+    const selectedBrandColor = _bbc[_cat]?.find(b => b.name === selectedBrand)?.color ?? "#B86A54";
   const maxPercentage = Math.max(...selectedBrandAgeData.map((d) => d.percentage));
 
   return (
@@ -1057,7 +1050,7 @@ function AudiencePerception() {
               padding: "3px",
               minWidth: "max-content",
             }}>
-              {brands.filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
+              {(_bbc[_cat] ?? []).filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
                 <button
                   key={brand.name}
                   onClick={() => setSelectedBrand(brand.name)}
