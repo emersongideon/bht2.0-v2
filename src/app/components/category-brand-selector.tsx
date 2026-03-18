@@ -1,24 +1,17 @@
-import { ChevronDown, Folder, X, Plus } from "lucide-react";
+import { ChevronDown, Folder } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useBrand } from "../contexts/brand-context";
-
-const categories = ["Beauty", "Fashion", "Personal Care"];
-
-const brands = [
-  { name: "Rhode", score: 76, isPrimary: true },
-  { name: "Summer Fridays", score: 68, isPrimary: false, dot: "#374762" },
-  { name: "Glossier", score: 72, isPrimary: false, dot: "#DAC58C" },
-  { name: "Clinique", score: 65, isPrimary: false, dot: "#ACBDA7" },
-  { name: "Laneige", score: 70, isPrimary: false, dot: "#6B241E" },
-];
+import { useAppData } from "../data/app-data-context";
 
 export function CategoryBrandSelector() {
-  const [selectedCategory, setSelectedCategory] = useState("Beauty");
-  const { selectedBrands, mainBrand, setMainBrand, toggleBrand } = useBrand();
+  const { categories, brandsByCategory } = useAppData();
+  const { selectedCategory, setSelectedCategory, selectedBrands, mainBrand, setMainBrand, toggleBrand } = useBrand();
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showBrandDropdown, setShowBrandDropdown] = useState(false);
   const categoryRef = useRef<HTMLDivElement>(null);
   const brandRef = useRef<HTMLDivElement>(null);
+
+  const categoryBrands = brandsByCategory[selectedCategory] ?? [];
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -33,8 +26,6 @@ export function CategoryBrandSelector() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const mainBrandData = brands.find(b => b.name === mainBrand) || brands[0];
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -130,16 +121,15 @@ export function CategoryBrandSelector() {
           }}
           onClick={() => setShowBrandDropdown(!showBrandDropdown)}
         >
-          <span>{mainBrandData.name}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 400 }}>{mainBrandData.score}</span>
+          <span>{mainBrand}</span>
           {selectedBrands.length > 1 && (
-            <span 
-              style={{ 
-                backgroundColor: "rgba(255, 255, 255, 0.2)", 
-                borderRadius: "var(--radius-pill)", 
+            <span
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+                borderRadius: "var(--radius-pill)",
                 padding: "2px 6px",
                 fontSize: 12,
-                fontFamily: "var(--font-mono)"
+                fontFamily: "var(--font-mono)",
               }}
             >
               +{selectedBrands.length - 1}
@@ -170,15 +160,15 @@ export function CategoryBrandSelector() {
                 Select brands to analyze
               </div>
             </div>
-            {brands.map((brand, index) => {
+            {categoryBrands.map((brand, index) => {
               const isSelected = selectedBrands.includes(brand.name);
               const isMain = mainBrand === brand.name;
-              
+
               return (
                 <div
                   key={brand.name}
                   style={{
-                    borderBottom: index < brands.length - 1 ? "1px solid var(--border-subtle)" : "none",
+                    borderBottom: index < categoryBrands.length - 1 ? "1px solid var(--border-subtle)" : "none",
                   }}
                 >
                   <label
@@ -214,28 +204,23 @@ export function CategoryBrandSelector() {
                         accentColor: "var(--accent-primary)",
                       }}
                     />
-                    
+
                     {/* Brand info */}
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-                      {brand.dot && (
-                        <span
-                          style={{
-                            width: 6,
-                            height: 6,
-                            borderRadius: "50%",
-                            backgroundColor: brand.dot,
-                            flexShrink: 0,
-                          }}
-                        />
-                      )}
-                      <span style={{ fontWeight: brand.isPrimary ? 700 : 400, fontFamily: "var(--font-body)", fontSize: 14, color: "var(--text-primary)", flex: 1 }}>
+                      <span
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          backgroundColor: brand.color,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span style={{ fontWeight: isMain ? 700 : 400, fontFamily: "var(--font-body)", fontSize: 14, color: "var(--text-primary)", flex: 1 }}>
                         {brand.name}
                       </span>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--text-muted)" }}>
-                        {brand.score}
-                      </span>
                     </div>
-                    
+
                     {/* Radio for main brand */}
                     <input
                       type="radio"
