@@ -1,6 +1,11 @@
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
+import { useState } from "react";
+import { useDateMode } from "../../contexts/date-mode-context";
+import { MobileHeader } from "../mobile-header";
+import { useOutletContext } from "react-router";
+import { useBrand } from "../../contexts/brand-context";
 import { useDimension, useSubmetrics } from "../../data/use-dimensions";
 
 const brands = [
@@ -12,62 +17,67 @@ const brands = [
 ];
 
 export function DeepDiveI1Page() {
+  const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
   const { submetrics } = useSubmetrics("I1");
+
   return (
-    <div
-      className="flex flex-col"
-      style={{
-        padding: 24,
-        minHeight: "100%",
-        width: "100%",
-        gap: 12,
-      }}
-    >
-      {/* Row 1 — Top bar */}
-      <div className="flex items-center justify-between" style={{ flexShrink: 0 }}>
-        <CategoryBrandSelector />
-        <DateModeSelector />
+    <>
+      <MobileHeader title="Deep Dive • I1" dimensionKey="I1" onMenuClick={openMobileMenu} />
+      <div
+        className="flex flex-col"
+        style={{
+          padding: "16px",
+          minHeight: "100%",
+          width: "100%",
+          gap: 12,
+        }}
+      >
+        {/* Row 1 — Top bar (Desktop only) */}
+        <div className="hidden md:flex items-center justify-between" style={{ flexShrink: 0 }}>
+          <CategoryBrandSelector />
+          <DateModeSelector />
+        </div>
+
+        {/* Row 2 — Dimension Tabs (Desktop only) */}
+        <div className="hidden md:block" style={{ flexShrink: 0 }}>
+          <DimensionTabs activeKey="I1" />
+        </div>
+
+        {/* Row 3 — Dimension Header */}
+        <DimensionHeader />
+
+        {/* Row 4 — Sub-metric cards (stacks on mobile) */}
+        <div className="flex flex-col md:flex-row" style={{ gap: 32 }}>
+          <ScoreCard
+            title={submetrics[0]?.submetric_name ?? "LLM Consistency"}
+            badge="LLM"
+            score="85"
+            delta="▲ 3.1"
+          />
+          <ScoreCard
+            title={submetrics[1]?.submetric_name ?? "LLM Distinctiveness"}
+            badge="LLM"
+            score="64"
+            delta="▼ 1.2"
+          />
+        </div>
+
+        {/* Row 5 — Brand Comparison */}
+        <BrandComparison />
+
+        {/* Row 6 — Value Associations */}
+        <ValueAssociations />
+
+        {/* Row 7 — Domain Sources */}
+        <DomainSources />
+
+        {/* Row 8 — Audience Perception */}
+        <AudiencePerception />
+
+        {/* Row 9 — Insight Card */}
+        <InsightCardI1 />
       </div>
-
-      {/* Row 2 — Dimension Tabs */}
-      <div style={{ flexShrink: 0 }}>
-        <DimensionTabs activeKey="I1" />
-      </div>
-
-      {/* Row 3 — Dimension Header */}
-      <DimensionHeader />
-
-      {/* Row 4 — Sub-metric cards */}
-      <div className="flex" style={{ gap: 12, flexShrink: 0 }}>
-        <ScoreCard
-          title={submetrics[0]?.submetric_name ?? "LLM Consistency"}
-          badge="LLM"
-          score="85"
-          delta="▲ 3.1"
-        />
-        <ScoreCard
-          title={submetrics[1]?.submetric_name ?? "LLM Distinctiveness"}
-          badge="LLM"
-          score="64"
-          delta="▼ 1.2"
-        />
-      </div>
-
-      {/* Row 5 — Brand Comparison */}
-      <BrandComparison />
-
-      {/* Row 6 — Value Associations */}
-      <ValueAssociations />
-
-      {/* Row 7 — Domain Sources */}
-      <DomainSources />
-
-      {/* Row 8 — Audience Perception */}
-      <AudiencePerception />
-
-      {/* Row 9 — Insight Card */}
-      <InsightCardI1 />
-    </div>
+    </>
   );
 }
 
@@ -84,7 +94,9 @@ function DimensionHeader() {
         padding: 20,
       }}
     >
-      <div className="flex items-baseline justify-between">
+      {/* Mobile: Vertical Stack */}
+      <div className="flex md:hidden flex-col gap-3">
+        {/* Title */}
         <div className="flex items-center gap-3">
           <span
             style={{
@@ -98,7 +110,7 @@ function DimensionHeader() {
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 26,
+              fontSize: 22,
               fontWeight: 700,
               color: "var(--text-primary)",
             }}
@@ -106,6 +118,8 @@ function DimensionHeader() {
             {dim ? `${dim.page_letter} — ${dim.page_name}` : "I — Imprinted in AI"}
           </h1>
         </div>
+
+        {/* Score */}
         <div className="flex items-baseline gap-2">
           <span
             style={{
@@ -126,6 +140,10 @@ function DimensionHeader() {
           >
             74
           </span>
+        </div>
+
+        {/* Delta */}
+        <div>
           <span
             style={{
               fontFamily: "var(--font-body)",
@@ -140,18 +158,92 @@ function DimensionHeader() {
             ▲ 2.8
           </span>
         </div>
+
+        {/* Description */}
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontStyle: "italic",
+            color: "#7A6F65",
+            margin: 0,
+          }}
+        >
+          {dim?.page_description ?? "How deeply and distinctly the brand is encoded in the minds of machines."}
+        </p>
       </div>
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 13,
-          fontStyle: "italic",
-          color: "#7A6F65",
-          marginTop: 8,
-        }}
-      >
-        {dim?.page_description ?? "How deeply and distinctly the brand is encoded in the minds of machines."}
-      </p>
+
+      {/* Desktop: Horizontal Layout */}
+      <div className="hidden md:block">
+        <div className="flex items-baseline justify-between">
+          <div className="flex items-center gap-3">
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor: "#374762",
+                flexShrink: 0,
+              }}
+            />
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 26,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              {dim ? `${dim.page_letter} — ${dim.page_name}` : "I — Imprinted in AI"}
+            </h1>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 13,
+                color: "#7A6F65",
+              }}
+            >
+              Score:
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 32,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              74
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: "rgba(74,102,68,0.1)",
+                color: "#4A6644",
+                fontWeight: 600,
+              }}
+            >
+              ▲ 2.8
+            </span>
+          </div>
+        </div>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontStyle: "italic",
+            color: "#7A6F65",
+            marginTop: 8,
+          }}
+        >
+          {dim?.page_description ?? "How deeply and distinctly the brand is encoded in the minds of machines."}
+        </p>
+      </div>
     </div>
   );
 }
@@ -168,6 +260,8 @@ function ScoreCard({
   delta: string;
 }) {
   const isPositive = delta.includes("▲");
+  const { getAxisLabels } = useDateMode();
+  const axisLabels = getAxisLabels();
   
   return (
     <div
@@ -234,16 +328,18 @@ function ScoreCard({
           />
         </svg>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
-          {["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((month) => (
+          {axisLabels.map((label, i) => (
             <span
-              key={month}
+              key={i}
               style={{
-                fontFamily: "var(--font-body)",
+                fontFamily: "var(--font-mono)",
                 fontSize: 8,
                 color: "#B5ADA5",
+                textAlign: "center",
+                lineHeight: 1.2,
               }}
             >
-              {month}
+              {label}
             </span>
           ))}
         </div>
@@ -253,21 +349,27 @@ function ScoreCard({
 }
 
 function BrandComparison() {
-  const consistencyData = [
-    { brand: "Rhode", score: 85, color: "#B86A54", isRhode: true },
+  const { selectedBrands, mainBrand } = useBrand();
+  
+  const allConsistencyData = [
+    { brand: "Rhode", score: 85, color: "#B86A54" },
     { brand: "Glossier", score: 82, color: "#DAC58C" },
     { brand: "Clinique", score: 78, color: "#ACBDA7" },
     { brand: "Summer Fridays", score: 71, color: "#374762" },
     { brand: "Laneige", score: 68, color: "#6B241E" },
   ];
 
-  const distinctivenessData = [
+  const allDistinctivenessData = [
     { brand: "Glossier", score: 72, color: "#DAC58C" },
     { brand: "Summer Fridays", score: 68, color: "#374762" },
-    { brand: "Rhode", score: 64, color: "#B86A54", isRhode: true },
+    { brand: "Rhode", score: 64, color: "#B86A54" },
     { brand: "Clinique", score: 59, color: "#ACBDA7" },
     { brand: "Laneige", score: 55, color: "#6B241E" },
   ];
+
+  // Filter to only show selected brands
+  const consistencyData = allConsistencyData.filter(item => selectedBrands.includes(item.brand));
+  const distinctivenessData = allDistinctivenessData.filter(item => selectedBrands.includes(item.brand));
 
   const maxScore = 100;
 
@@ -305,7 +407,7 @@ function BrandComparison() {
       </div>
 
       {/* Two-column layout */}
-      <div className="flex" style={{ gap: 32 }}>
+      <div className="flex flex-col md:flex-row" style={{ gap: 32 }}>
         {/* Left column: Consistency */}
         <div style={{ flex: 1 }}>
           <h4
@@ -338,7 +440,7 @@ function BrandComparison() {
                     fontSize: 11,
                     color: "var(--text-primary)",
                     width: 100,
-                    fontWeight: item.isRhode ? 700 : 400,
+                    fontWeight: item.brand === mainBrand ? 700 : 400,
                   }}
                 >
                   {item.brand}
@@ -358,7 +460,7 @@ function BrandComparison() {
                       height: "100%",
                       width: `${(item.score / maxScore) * 100}%`,
                       backgroundColor: item.color,
-                      opacity: item.isRhode ? 1 : 0.5,
+                      opacity: item.brand === mainBrand ? 1 : 0.5,
                       borderRadius: 7,
                     }}
                   />
@@ -370,7 +472,7 @@ function BrandComparison() {
                     color: "var(--text-secondary)",
                     width: 24,
                     textAlign: "right",
-                    fontWeight: item.isRhode ? 700 : 400,
+                    fontWeight: item.brand === mainBrand ? 700 : 400,
                   }}
                 >
                   {item.score}
@@ -412,7 +514,7 @@ function BrandComparison() {
                     fontSize: 11,
                     color: "var(--text-primary)",
                     width: 100,
-                    fontWeight: item.isRhode ? 700 : 400,
+                    fontWeight: item.brand === mainBrand ? 700 : 400,
                   }}
                 >
                   {item.brand}
@@ -432,7 +534,7 @@ function BrandComparison() {
                       height: "100%",
                       width: `${(item.score / maxScore) * 100}%`,
                       backgroundColor: item.color,
-                      opacity: item.isRhode ? 1 : 0.5,
+                      opacity: item.brand === mainBrand ? 1 : 0.5,
                       borderRadius: 7,
                     }}
                   />
@@ -444,7 +546,7 @@ function BrandComparison() {
                     color: "var(--text-secondary)",
                     width: 24,
                     textAlign: "right",
-                    fontWeight: item.isRhode ? 700 : 400,
+                    fontWeight: item.brand === mainBrand ? 700 : 400,
                   }}
                 >
                   {item.score}
@@ -459,6 +561,8 @@ function BrandComparison() {
 }
 
 function ValueAssociations() {
+  const { selectedBrands, mainBrand } = useBrand();
+  
   const brandValues = [
     {
       brand: "Rhode",
@@ -487,6 +591,9 @@ function ValueAssociations() {
       values: ["K-Beauty", "Hydration", "Lip Care", "Overnight", "Affordable Luxury"],
     },
   ];
+
+  // Filter to only show selected brands
+  const filteredBrandValues = brandValues.filter(item => selectedBrands.includes(item.brand));
 
   return (
     <div
@@ -523,7 +630,7 @@ function ValueAssociations() {
 
       {/* Brand rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {brandValues.map((item, index) => (
+        {filteredBrandValues.map((item, index) => (
           <div key={item.brand}>
             {index > 0 && (
               <div
@@ -552,7 +659,7 @@ function ValueAssociations() {
                     fontFamily: "var(--font-body)",
                     fontSize: 12,
                     color: "var(--text-primary)",
-                    fontWeight: item.isRhode ? 700 : 400,
+                    fontWeight: item.brand === mainBrand ? 700 : 400,
                   }}
                 >
                   {item.brand}
@@ -567,10 +674,10 @@ function ValueAssociations() {
                       fontSize: 11,
                       padding: "4px 12px",
                       borderRadius: "var(--radius-pill)",
-                      backgroundColor: item.isRhode
+                      backgroundColor: item.brand === mainBrand
                         ? "rgba(184,106,84,0.1)"
                         : "#F5F0EB",
-                      color: item.isRhode ? "#B86A54" : "#7A6F65",
+                      color: item.brand === mainBrand ? "#B86A54" : "#7A6F65",
                     }}
                   >
                     {value}
@@ -599,28 +706,84 @@ function ValueAssociations() {
 }
 
 function DomainSources() {
-  const rhodeDomains = [
-    { domain: "sephora.com", percentage: 18 },
-    { domain: "vogue.com", percentage: 14 },
-    { domain: "reddit.com", percentage: 12 },
-    { domain: "allure.com", percentage: 11 },
-    { domain: "instagram.com", percentage: 9 },
-    { domain: "byrdie.com", percentage: 8 },
-    { domain: "youtube.com", percentage: 7 },
-    { domain: "tiktok.com", percentage: 6 },
-    { domain: "glamour.com", percentage: 5 },
-    { domain: "rhode.com", percentage: 4 },
-  ];
+  const [selectedBrand, setSelectedBrand] = useState("Rhode");
+  const { selectedBrands, mainBrand } = useBrand();
+
+  // All brands' domain data
+  const allBrandDomainData = {
+    "Rhode": [
+      { domain: "sephora.com", percentage: 18 },
+      { domain: "vogue.com", percentage: 14 },
+      { domain: "reddit.com", percentage: 12 },
+      { domain: "allure.com", percentage: 11 },
+      { domain: "instagram.com", percentage: 9 },
+      { domain: "byrdie.com", percentage: 8 },
+      { domain: "youtube.com", percentage: 7 },
+      { domain: "tiktok.com", percentage: 6 },
+      { domain: "glamour.com", percentage: 5 },
+      { domain: "rhode.com", percentage: 4 },
+    ],
+    "Summer Fridays": [
+      { domain: "sephora.com", percentage: 22 },
+      { domain: "byrdie.com", percentage: 16 },
+      { domain: "youtube.com", percentage: 14 },
+      { domain: "instagram.com", percentage: 11 },
+      { domain: "allure.com", percentage: 9 },
+      { domain: "reddit.com", percentage: 8 },
+      { domain: "summerfridays.com", percentage: 7 },
+      { domain: "vogue.com", percentage: 5 },
+      { domain: "tiktok.com", percentage: 4 },
+      { domain: "harpersbazaar.com", percentage: 3 },
+    ],
+    "Glossier": [
+      { domain: "glossier.com", percentage: 24 },
+      { domain: "reddit.com", percentage: 18 },
+      { domain: "instagram.com", percentage: 15 },
+      { domain: "youtube.com", percentage: 12 },
+      { domain: "intotheg loss.com", percentage: 9 },
+      { domain: "vogue.com", percentage: 7 },
+      { domain: "tiktok.com", percentage: 6 },
+      { domain: "allure.com", percentage: 4 },
+      { domain: "nytimes.com", percentage: 3 },
+      { domain: "sephora.com", percentage: 2 },
+    ],
+    "Clinique": [
+      { domain: "sephora.com", percentage: 20 },
+      { domain: "webmd.com", percentage: 17 },
+      { domain: "nordstrom.com", percentage: 14 },
+      { domain: "clinique.com", percentage: 12 },
+      { domain: "allure.com", percentage: 10 },
+      { domain: "ulta.com", percentage: 8 },
+      { domain: "dermstore.com", percentage: 7 },
+      { domain: "reddit.com", percentage: 5 },
+      { domain: "vogue.com", percentage: 4 },
+      { domain: "youtube.com", percentage: 3 },
+    ],
+    "Laneige": [
+      { domain: "sephora.com", percentage: 25 },
+      { domain: "reddit.com", percentage: 19 },
+      { domain: "allure.com", percentage: 15 },
+      { domain: "youtube.com", percentage: 12 },
+      { domain: "laneige.com", percentage: 10 },
+      { domain: "tiktok.com", percentage: 8 },
+      { domain: "byrdie.com", percentage: 5 },
+      { domain: "instagram.com", percentage: 3 },
+      { domain: "vogue.com", percentage: 2 },
+      { domain: "ulta.com", percentage: 1 },
+    ],
+  };
 
   const brandTopDomains = [
-    { brand: "Rhode", color: "#B86A54", domains: ["sephora.com", "vogue.com", "reddit.com"], isRhode: true },
+    { brand: "Rhode", color: "#B86A54", domains: ["sephora.com", "vogue.com", "reddit.com"] },
     { brand: "Summer Fridays", color: "#374762", domains: ["sephora.com", "byrdie.com", "youtube.com"] },
     { brand: "Glossier", color: "#DAC58C", domains: ["glossier.com", "reddit.com", "instagram.com"] },
     { brand: "Clinique", color: "#ACBDA7", domains: ["sephora.com", "webmd.com", "nordstrom.com"] },
     { brand: "Laneige", color: "#6B241E", domains: ["sephora.com", "reddit.com", "allure.com"] },
   ];
 
-  const maxPercentage = Math.max(...rhodeDomains.map((d) => d.percentage));
+  const selectedBrandData = allBrandDomainData[selectedBrand as keyof typeof allBrandDomainData];
+  const selectedBrandColor = brands.find(b => b.name === selectedBrand)?.color || "#B86A54";
+  const maxPercentage = Math.max(...selectedBrandData.map((d) => d.percentage));
 
   return (
     <div
@@ -632,18 +795,64 @@ function DomainSources() {
         padding: 20,
       }}
     >
-      {/* Header */}
+      {/* Header with brand selector */}
       <div style={{ marginBottom: 16 }}>
-        <h3
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 16,
-            fontWeight: 600,
-            color: "var(--text-primary)",
-          }}
-        >
-          Domain Sources
-        </h3>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3" style={{ marginBottom: 8 }}>
+          <h3
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 16,
+              fontWeight: 600,
+              color: "var(--text-primary)",
+            }}
+          >
+            Domain Sources
+          </h3>
+          
+          {/* Brand selector - scrollable on mobile */}
+          <div style={{ 
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}>
+            <div className="flex items-center gap-1.5" style={{ 
+              backgroundColor: "#F5F0EB",
+              borderRadius: "var(--radius-pill)",
+              padding: "3px",
+              minWidth: "max-content",
+            }}>
+              {brands.filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
+                <button
+                  key={brand.name}
+                  onClick={() => setSelectedBrand(brand.name)}
+                  className="flex items-center gap-1.5"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    padding: "4px 10px",
+                    borderRadius: "var(--radius-pill)",
+                    backgroundColor: selectedBrand === brand.name ? "#FFFFFF" : "transparent",
+                    color: selectedBrand === brand.name ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 700 : selectedBrand === brand.name ? 600 : 400,
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      backgroundColor: brand.color,
+                    }}
+                  />
+                  {brand.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         <p
           style={{
             fontFamily: "var(--font-body)",
@@ -655,12 +864,12 @@ function DomainSources() {
         </p>
       </div>
 
-      {/* Two-column layout */}
-      <div className="flex" style={{ gap: 20, minWidth: 0 }}>
-        {/* Left column: Rhode domain bar chart */}
+      {/* Two-column layout - stacks on mobile */}
+      <div className="flex flex-col md:flex-row" style={{ gap: 20, minWidth: 0 }}>
+        {/* Left column: Selected brand domain bar chart */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {rhodeDomains.map((item) => (
+            {selectedBrandData.map((item) => (
               <div key={item.domain} className="flex items-center gap-2" style={{ minWidth: 0 }}>
                 <span
                   style={{
@@ -678,7 +887,7 @@ function DomainSources() {
                   style={{
                     flex: 1,
                     height: 10,
-                    backgroundColor: "#B86A54",
+                    backgroundColor: selectedBrandColor,
                     borderRadius: 5,
                     opacity: item.percentage / maxPercentage,
                     width: `${(item.percentage / maxPercentage) * 100}%`,
@@ -705,7 +914,7 @@ function DomainSources() {
         {/* Right column: Brand comparison */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {brandTopDomains.map((item) => (
+            {brandTopDomains.filter(item => selectedBrands.includes(item.brand)).map((item) => (
               <div key={item.brand} className="flex items-start gap-2" style={{ minWidth: 0 }}>
                 <div className="flex items-center gap-1.5" style={{ width: 110, flexShrink: 0 }}>
                   <span
@@ -722,7 +931,7 @@ function DomainSources() {
                       fontFamily: "var(--font-body)",
                       fontSize: 11,
                       color: "var(--text-primary)",
-                      fontWeight: item.isRhode ? 700 : 400,
+                      fontWeight: item.brand === mainBrand ? 700 : 400,
                     }}
                   >
                     {item.brand}
@@ -753,39 +962,65 @@ function DomainSources() {
       </div>
 
       {/* Note */}
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 10,
-          color: "#B5ADA5",
-          fontStyle: "italic",
-          marginTop: 12,
-        }}
-      >
-        Based on retrieval-augmented generation source analysis
-      </p>
+      
     </div>
   );
 }
 
 function AudiencePerception() {
-  const rhodeAgeData = [
-    { age: "16–24", percentage: 35 },
-    { age: "25–34", percentage: 42, isPrimary: true },
-    { age: "35–44", percentage: 15 },
-    { age: "45–54", percentage: 6 },
-    { age: "55+", percentage: 2 },
-  ];
+  const [selectedBrand, setSelectedBrand] = useState("Rhode");
+  const { selectedBrands, mainBrand } = useBrand();
+
+  // All brands' age distribution data
+  const allBrandAgeData = {
+    "Rhode": [
+      { age: "16–24", percentage: 35 },
+      { age: "25–34", percentage: 42, isPrimary: true },
+      { age: "35–44", percentage: 15 },
+      { age: "45–54", percentage: 6 },
+      { age: "55+", percentage: 2 },
+    ],
+    "Summer Fridays": [
+      { age: "16–24", percentage: 28 },
+      { age: "25–34", percentage: 38, isPrimary: true },
+      { age: "35–44", percentage: 22 },
+      { age: "45–54", percentage: 9 },
+      { age: "55+", percentage: 3 },
+    ],
+    "Glossier": [
+      { age: "16–24", percentage: 42 },
+      { age: "25–34", percentage: 45, isPrimary: true },
+      { age: "35–44", percentage: 10 },
+      { age: "45–54", percentage: 2 },
+      { age: "55+", percentage: 1 },
+    ],
+    "Clinique": [
+      { age: "16–24", percentage: 8 },
+      { age: "25–34", percentage: 18 },
+      { age: "35–44", percentage: 32 },
+      { age: "45–54", percentage: 28, isPrimary: true },
+      { age: "55+", percentage: 14 },
+    ],
+    "Laneige": [
+      { age: "16–24", percentage: 32 },
+      { age: "25–34", percentage: 40, isPrimary: true },
+      { age: "35–44", percentage: 19 },
+      { age: "45–54", percentage: 7 },
+      { age: "55+", percentage: 2 },
+    ],
+  };
 
   const brandAudienceData = [
-    { brand: "Rhode", color: "#B86A54", primaryAudience: "25–34", confidence: 42, isRhode: true },
+    { brand: "Rhode", color: "#B86A54", primaryAudience: "25–34", confidence: 42 },
     { brand: "Summer Fridays", color: "#374762", primaryAudience: "25–34", confidence: 38 },
     { brand: "Glossier", color: "#DAC58C", primaryAudience: "18–27", confidence: 45 },
     { brand: "Clinique", color: "#ACBDA7", primaryAudience: "35–49", confidence: 51 },
     { brand: "Laneige", color: "#6B241E", primaryAudience: "22–32", confidence: 40 },
   ];
 
-  const maxPercentage = Math.max(...rhodeAgeData.map((d) => d.percentage));
+  const selectedBrandAgeData = allBrandAgeData[selectedBrand as keyof typeof allBrandAgeData];
+  const selectedBrandColor = brands.find(b => b.name === selectedBrand)?.color || "#B86A54";
+  const maxPercentage = Math.max(...selectedBrandAgeData.map((d) => d.percentage));
 
   return (
     <div
@@ -797,18 +1032,64 @@ function AudiencePerception() {
         padding: 20,
       }}
     >
-      {/* Header */}
+      {/* Header with brand selector */}
       <div style={{ marginBottom: 16 }}>
-        <h3
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 16,
-            fontWeight: 600,
-            color: "var(--text-primary)",
-          }}
-        >
-          Audience Perception
-        </h3>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3" style={{ marginBottom: 8 }}>
+          <h3
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 16,
+              fontWeight: 600,
+              color: "var(--text-primary)",
+            }}
+          >
+            Audience Perception
+          </h3>
+          
+          {/* Brand selector - scrollable on mobile */}
+          <div style={{ 
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}>
+            <div className="flex items-center gap-1.5" style={{ 
+              backgroundColor: "#F5F0EB",
+              borderRadius: "var(--radius-pill)",
+              padding: "3px",
+              minWidth: "max-content",
+            }}>
+              {brands.filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
+                <button
+                  key={brand.name}
+                  onClick={() => setSelectedBrand(brand.name)}
+                  className="flex items-center gap-1.5"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    padding: "4px 10px",
+                    borderRadius: "var(--radius-pill)",
+                    backgroundColor: selectedBrand === brand.name ? "#FFFFFF" : "transparent",
+                    color: selectedBrand === brand.name ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 700 : selectedBrand === brand.name ? 600 : 400,
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      backgroundColor: brand.color,
+                    }}
+                  />
+                  {brand.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         <p
           style={{
             fontFamily: "var(--font-body)",
@@ -821,11 +1102,11 @@ function AudiencePerception() {
       </div>
 
       {/* Two-column layout */}
-      <div className="flex" style={{ gap: 24, minWidth: 0 }}>
-        {/* Left column: Rhode age distribution */}
+      <div className="flex flex-col md:flex-row" style={{ gap: 24, minWidth: 0 }}>
+        {/* Left column: Selected brand age distribution */}
         <div style={{ flex: "0 0 45%", minWidth: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {rhodeAgeData.map((item) => (
+            {selectedBrandAgeData.map((item) => (
               <div key={item.age} className="flex items-center" style={{ gap: 8, minWidth: 0 }}>
                 <span
                   style={{
@@ -846,7 +1127,7 @@ function AudiencePerception() {
                       left: 0,
                       top: 0,
                       height: 20,
-                      backgroundColor: "#B86A54",
+                      backgroundColor: selectedBrandColor,
                       borderRadius: 4,
                       width: `${(item.percentage / maxPercentage) * 100}%`,
                       opacity: item.isPrimary ? 1 : item.percentage / maxPercentage,
@@ -880,11 +1161,11 @@ function AudiencePerception() {
                   <th
                     style={{
                       fontFamily: "var(--font-body)",
-                      fontSize: 10,
+                      fontSize: 8,
                       fontWeight: 600,
                       color: "#B5ADA5",
                       textTransform: "uppercase",
-                      letterSpacing: "1px",
+                      letterSpacing: "0.5px",
                       textAlign: "left",
                       padding: "4px 8px",
                       borderBottom: "1px solid #F0EBE6",
@@ -896,11 +1177,11 @@ function AudiencePerception() {
                   <th
                     style={{
                       fontFamily: "var(--font-body)",
-                      fontSize: 10,
+                      fontSize: 8,
                       fontWeight: 600,
                       color: "#B5ADA5",
                       textTransform: "uppercase",
-                      letterSpacing: "1px",
+                      letterSpacing: "0.5px",
                       textAlign: "left",
                       padding: "4px 8px",
                       borderBottom: "1px solid #F0EBE6",
@@ -912,27 +1193,25 @@ function AudiencePerception() {
                   <th
                     style={{
                       fontFamily: "var(--font-body)",
-                      fontSize: 10,
+                      fontSize: 8,
                       fontWeight: 600,
                       color: "#B5ADA5",
                       textTransform: "uppercase",
-                      letterSpacing: "1px",
+                      letterSpacing: "0.5px",
                       textAlign: "left",
                       padding: "4px 8px",
                       borderBottom: "1px solid #F0EBE6",
                       whiteSpace: "nowrap",
                     }}
-                  >
-                    CONF.
-                  </th>
+                  >AUDIENCE SIZE</th>
                 </tr>
               </thead>
               <tbody>
-                {brandAudienceData.map((row) => (
+                {brandAudienceData.filter(row => selectedBrands.includes(row.brand)).map((row) => (
                   <tr
                     key={row.brand}
                     style={{
-                      backgroundColor: row.isRhode ? "rgba(184,106,84,0.06)" : "transparent",
+                      backgroundColor: selectedBrand === row.brand ? "rgba(184,106,84,0.06)" : "transparent",
                     }}
                   >
                     <td
@@ -956,7 +1235,7 @@ function AudiencePerception() {
                             fontFamily: "var(--font-body)",
                             fontSize: 11,
                             color: "var(--text-primary)",
-                            fontWeight: row.isRhode ? 700 : 400,
+                            fontWeight: row.brand === mainBrand ? 700 : 400,
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -971,6 +1250,7 @@ function AudiencePerception() {
                         padding: "8px",
                         borderBottom: "1px solid #F0EBE6",
                         whiteSpace: "nowrap",
+                        color: "var(--text-primary)",
                       }}
                     >
                       {row.primaryAudience}
@@ -982,6 +1262,7 @@ function AudiencePerception() {
                         padding: "8px",
                         borderBottom: "1px solid #F0EBE6",
                         whiteSpace: "nowrap",
+                        color: "var(--text-primary)",
                       }}
                     >
                       {row.confidence}%
@@ -993,19 +1274,7 @@ function AudiencePerception() {
           </div>
 
           {/* Insight below table */}
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              color: "#7A6F65",
-              fontStyle: "italic",
-              marginTop: 12,
-              lineHeight: 1.5,
-            }}
-          >
-            Clinique has the most distinct audience positioning — LLMs associate it most strongly
-            with a specific age group (51% confidence).
-          </p>
+          
         </div>
       </div>
     </div>

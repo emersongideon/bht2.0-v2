@@ -1,7 +1,12 @@
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
-import { useDimension, useSubmetrics } from "../../data/use-dimensions";
+import { useState } from "react";
+import { useDateMode } from "../../contexts/date-mode-context";
+import { useBrand } from "../../contexts/brand-context";
+import { useDimension } from "../../data/use-dimensions";
+import { MobileHeader } from "../mobile-header";
+import { useOutletContext } from "react-router";
 
 const brands = [
   { name: "Rhode", color: "#B86A54" },
@@ -12,46 +17,50 @@ const brands = [
 ];
 
 export function DeepDiveI2Page() {
-  const { submetrics } = useSubmetrics("I2");
+  const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
+
   return (
-    <div
-      className="flex flex-col"
-      style={{
-        padding: 24,
-        minHeight: "100%",
-        width: "100%",
-        gap: 12,
-      }}
-    >
-      {/* Row 1 — Top bar */}
-      <div className="flex items-center justify-between" style={{ flexShrink: 0 }}>
-        <CategoryBrandSelector />
-        <DateModeSelector />
+    <>
+      <MobileHeader title="Deep Dive • I2" dimensionKey="I2" onMenuClick={openMobileMenu} />
+      <div
+        className="flex flex-col"
+        style={{
+          padding: "16px",
+          minHeight: "100%",
+          width: "100%",
+          gap: 12,
+        }}
+      >
+        {/* Row 1 — Top bar (Desktop only) */}
+        <div className="hidden md:flex items-center justify-between" style={{ flexShrink: 0 }}>
+          <CategoryBrandSelector />
+          <DateModeSelector />
+        </div>
+
+        {/* Row 2 — Dimension Tabs (Desktop only) */}
+        <div className="hidden md:block" style={{ flexShrink: 0 }}>
+          <DimensionTabs activeKey="I2" />
+        </div>
+
+        {/* Row 3 — Dimension Header */}
+        <DimensionHeader />
+
+        {/* Row 4 — Social Performance (single full-width card) */}
+        <SocialPerformanceCard />
+
+        {/* Row 5 — Brand Comparison */}
+        <BrandComparison />
+
+        {/* Row 6 — Value Associations */}
+        <ValueAssociations />
+
+        {/* Row 7 — Attribute Comparison (Heatmap Matrix) */}
+        <AttributeComparison />
+
+        {/* Row 8 — Insight Card */}
+        <InsightCard />
       </div>
-
-      {/* Row 2 — Dimension Tabs */}
-      <div style={{ flexShrink: 0 }}>
-        <DimensionTabs activeKey="I2" />
-      </div>
-
-      {/* Row 3 — Dimension Header */}
-      <DimensionHeader />
-
-      {/* Row 4 — Social Performance (single full-width card) */}
-      <SocialPerformanceCard title={submetrics[0]?.submetric_name ?? "Social Performance"} />
-
-      {/* Row 5 — Brand Comparison */}
-      <BrandComparison />
-
-      {/* Row 6 — Value Associations */}
-      <ValueAssociations />
-
-      {/* Row 7 — Attribute Comparison (Heatmap Matrix) */}
-      <AttributeComparison />
-
-      {/* Row 8 — Insight Card */}
-      <InsightCard />
-    </div>
+    </>
   );
 }
 
@@ -68,7 +77,9 @@ function DimensionHeader() {
         padding: 20,
       }}
     >
-      <div className="flex items-baseline justify-between">
+      {/* Mobile: Vertical Stack */}
+      <div className="flex md:hidden flex-col gap-3">
+        {/* Title */}
         <div className="flex items-center gap-3">
           <span
             style={{
@@ -82,7 +93,7 @@ function DimensionHeader() {
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 26,
+              fontSize: 22,
               fontWeight: 700,
               color: "var(--text-primary)",
             }}
@@ -90,6 +101,8 @@ function DimensionHeader() {
             {dim ? `${dim.page_letter} — ${dim.page_name}` : "I — Ingrained in Culture"}
           </h1>
         </div>
+
+        {/* Score */}
         <div className="flex items-baseline gap-2">
           <span
             style={{
@@ -110,6 +123,10 @@ function DimensionHeader() {
           >
             78
           </span>
+        </div>
+
+        {/* Delta */}
+        <div>
           <span
             style={{
               fontFamily: "var(--font-body)",
@@ -124,23 +141,100 @@ function DimensionHeader() {
             ▲ 2.3
           </span>
         </div>
+
+        {/* Description */}
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontStyle: "italic",
+            color: "#7A6F65",
+            margin: 0,
+          }}
+        >
+          {dim?.page_description ?? "How deeply the brand is rooted in people's everyday lives."}
+        </p>
       </div>
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 13,
-          fontStyle: "italic",
-          color: "#7A6F65",
-          marginTop: 8,
-        }}
-      >
-        {dim?.page_description ?? "The values, aesthetics, and symbolic meaning the brand owns in culture."}
-      </p>
+
+      {/* Desktop: Horizontal Layout */}
+      <div className="hidden md:block">
+        <div className="flex items-baseline justify-between">
+          <div className="flex items-center gap-3">
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor: "#6B241E",
+                flexShrink: 0,
+              }}
+            />
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 26,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              {dim ? `${dim.page_letter} — ${dim.page_name}` : "I — Ingrained in Culture"}
+            </h1>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 13,
+                color: "#7A6F65",
+              }}
+            >
+              Score:
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 32,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              78
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: "rgba(74,102,68,0.1)",
+                color: "#4A6644",
+                fontWeight: 600,
+              }}
+            >
+              ▲ 2.3
+            </span>
+          </div>
+        </div>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontStyle: "italic",
+            color: "#7A6F65",
+            marginTop: 8,
+          }}
+        >
+          {dim?.page_description ?? "How deeply the brand is rooted in people's everyday lives."}
+        </p>
+      </div>
     </div>
   );
 }
 
-function SocialPerformanceCard({ title }: { title: string }) {
+function SocialPerformanceCard() {
+  const { getAxisLabels } = useDateMode();
+  const axisLabels = getAxisLabels();
+
   return (
     <div
       style={{
@@ -161,7 +255,7 @@ function SocialPerformanceCard({ title }: { title: string }) {
             color: "var(--text-primary)",
           }}
         >
-          {title}
+          Social Performance
         </h3>
       </div>
 
@@ -204,16 +298,18 @@ function SocialPerformanceCard({ title }: { title: string }) {
           />
         </svg>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
-          {["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((month) => (
+          {axisLabels.map((label, i) => (
             <span
-              key={month}
+              key={i}
               style={{
-                fontFamily: "var(--font-body)",
+                fontFamily: "var(--font-mono)",
                 fontSize: 8,
                 color: "#B5ADA5",
+                textAlign: "center",
+                lineHeight: 1.2,
               }}
             >
-              {month}
+              {label}
             </span>
           ))}
         </div>
@@ -223,13 +319,18 @@ function SocialPerformanceCard({ title }: { title: string }) {
 }
 
 function BrandComparison() {
-  const data = [
-    { brand: "Glossier", score: 84, color: "#DAC58C", isRhode: false },
-    { brand: "Rhode", score: 81, color: "#B86A54", isRhode: true },
-    { brand: "Summer Fridays", score: 78, color: "#374762", isRhode: false },
-    { brand: "Clinique", score: 74, color: "#ACBDA7", isRhode: false },
-    { brand: "Laneige", score: 70, color: "#6B241E", isRhode: false },
+  const { selectedBrands, mainBrand } = useBrand();
+  
+  const allData = [
+    { brand: "Glossier", score: 84, color: "#DAC58C" },
+    { brand: "Rhode", score: 81, color: "#B86A54" },
+    { brand: "Summer Fridays", score: 78, color: "#374762" },
+    { brand: "Clinique", score: 74, color: "#ACBDA7" },
+    { brand: "Laneige", score: 70, color: "#6B241E" },
   ];
+
+  // Filter to only show selected brands
+  const data = allData.filter(item => selectedBrands.includes(item.brand));
 
   const maxScore = 100;
 
@@ -284,7 +385,7 @@ function BrandComparison() {
                 fontSize: 11,
                 color: "var(--text-primary)",
                 width: 100,
-                fontWeight: item.isRhode ? 700 : 400,
+                fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
               {item.brand}
@@ -304,7 +405,7 @@ function BrandComparison() {
                   height: "100%",
                   width: `${(item.score / maxScore) * 100}%`,
                   backgroundColor: item.color,
-                  opacity: item.isRhode ? 1 : 0.5,
+                  opacity: item.brand === mainBrand ? 1 : 0.5,
                   borderRadius: 7,
                 }}
               />
@@ -316,7 +417,7 @@ function BrandComparison() {
                 color: "var(--text-secondary)",
                 width: 24,
                 textAlign: "right",
-                fontWeight: item.isRhode ? 700 : 400,
+                fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
               {item.score}
@@ -368,51 +469,64 @@ function ValueAssociations() {
 }
 
 function AttributeComparison() {
+  const { selectedBrands, mainBrand } = useBrand();
+  
   const attributes = [
     {
       name: "Clean / Ingredients",
-      scores: { Rhode: 88, "Summer Fri.": 82, Glossier: 76, Clinique: 71, Laneige: 68 },
+      scores: { Rhode: 88, "Summer Fridays": 82, Glossier: 76, Clinique: 71, Laneige: 68 },
       territory: "Owned",
     },
     {
       name: "Minimalist",
-      scores: { Rhode: 85, "Summer Fri.": 64, Glossier: 83, Clinique: 48, Laneige: 52 },
+      scores: { Rhode: 85, "Summer Fridays": 64, Glossier: 83, Clinique: 48, Laneige: 52 },
       territory: "Owned",
     },
     {
       name: "Accessible Luxury",
-      scores: { Rhode: 82, "Summer Fri.": 71, Glossier: 69, Clinique: 58, Laneige: 74 },
+      scores: { Rhode: 82, "Summer Fridays": 71, Glossier: 69, Clinique: 58, Laneige: 74 },
       territory: "Owned",
     },
     {
       name: "Gen Z / Youth",
-      scores: { Rhode: 79, "Summer Fri.": 72, Glossier: 81, Clinique: 35, Laneige: 66 },
+      scores: { Rhode: 79, "Summer Fridays": 72, Glossier: 81, Clinique: 35, Laneige: 66 },
       territory: "Contested",
     },
     {
       name: "Skincare-First",
-      scores: { Rhode: 76, "Summer Fri.": 78, Glossier: 62, Clinique: 84, Laneige: 72 },
+      scores: { Rhode: 76, "Summer Fridays": 78, Glossier: 62, Clinique: 84, Laneige: 72 },
       territory: "Contested",
     },
     {
       name: "Hydration",
-      scores: { Rhode: 58, "Summer Fri.": 61, Glossier: 54, Clinique: 52, Laneige: 89 },
+      scores: { Rhode: 58, "Summer Fridays": 61, Glossier: 54, Clinique: 52, Laneige: 89 },
       territory: "Gap",
     },
     {
       name: "Self-Care Ritual",
-      scores: { Rhode: 55, "Summer Fri.": 86, Glossier: 71, Clinique: 44, Laneige: 63 },
+      scores: { Rhode: 55, "Summer Fridays": 86, Glossier: 71, Clinique: 44, Laneige: 63 },
       territory: "Gap",
     },
     {
       name: "Science-Backed",
-      scores: { Rhode: 42, "Summer Fri.": 38, Glossier: 34, Clinique: 91, Laneige: 45 },
+      scores: { Rhode: 42, "Summer Fridays": 38, Glossier: 34, Clinique: 91, Laneige: 45 },
       territory: "Open",
     },
   ];
 
-  const brandColumns = ["Rhode", "Summer Fri.", "Glossier", "Clinique", "Laneige"];
-  const brandColors = ["#B86A54", "#374762", "#DAC58C", "#ACBDA7", "#6B241E"];
+  // Filter to only show selected brands
+  const allBrandColumns = ["Rhode", "Summer Fridays", "Glossier", "Clinique", "Laneige"];
+  const brandColumns = allBrandColumns.filter(brand => selectedBrands.includes(brand));
+  
+  const brandColorMap: Record<string, string> = {
+    "Rhode": "#B86A54",
+    "Summer Fridays": "#374762",
+    "Glossier": "#DAC58C",
+    "Clinique": "#ACBDA7",
+    "Laneige": "#6B241E",
+  };
+  
+  const brandColors = brandColumns.map(brand => brandColorMap[brand]);
 
   const territoryConfig = {
     Owned: { bg: "rgba(74,102,68,0.08)", color: "#4A6644" },
@@ -437,18 +551,45 @@ function AttributeComparison() {
         padding: 20,
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Mobile: Stacked layout with legend */}
+      <div className="block md:hidden" style={{ marginBottom: 16 }}>
         <h3
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 16,
             fontWeight: 600,
             color: "var(--text-primary)",
+            marginBottom: 8,
           }}
         >
           Attribute Comparison
         </h3>
+
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 11,
+            color: "#B5ADA5",
+          }}
+        >
+          How each brand performs on key cultural attributes — revealing owned, contested, and available territories
+        </p>
+      </div>
+
+      {/* Desktop: Title and legend on same row */}
+      <div className="hidden md:block" style={{ marginBottom: 16 }}>
+        <h3
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 16,
+            fontWeight: 600,
+            color: "var(--text-primary)",
+            marginBottom: 8,
+          }}
+        >
+          Attribute Comparison
+        </h3>
+
         <p
           style={{
             fontFamily: "var(--font-body)",
@@ -461,177 +602,157 @@ function AttributeComparison() {
       </div>
 
       {/* Heatmap matrix */}
-      <div>
-        {/* Column headers */}
-        <div className="flex" style={{ gap: 2, marginBottom: 8 }}>
-          <div style={{ width: 140 }} /> {/* Attribute label space */}
-          {brandColumns.map((brand, i) => (
-            <div
-              key={brand}
-              style={{
-                flex: 1,
-                textAlign: "center",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 4,
-              }}
-            >
-              <span
+      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ minWidth: 600 }}>
+          {/* Table header */}
+          <div className="flex" style={{ gap: 2, marginBottom: 8 }}>
+            <div style={{ width: 140 }} /> {/* Attribute column spacer */}
+            {brandColumns.map((brand, i) => (
+              <div
+                key={brand}
                 style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  backgroundColor: brandColors[i],
+                  flex: 1,
+                  textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 4,
                 }}
-              />
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    backgroundColor: brandColors[i],
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    textTransform: "uppercase",
+                    color: "#7A6F65",
+                    fontWeight: brand === mainBrand ? 700 : 400,
+                  }}
+                >
+                  {brand}
+                </span>
+              </div>
+            ))}
+            <div style={{ width: 80, textAlign: "center" }}>
               <span
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 10,
                   textTransform: "uppercase",
                   color: "#7A6F65",
-                  fontWeight: brand === "Rhode" ? 700 : 400,
                 }}
               >
-                {brand}
+                Territory
               </span>
             </div>
-          ))}
-          <div style={{ width: 80, textAlign: "center" }}>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 10,
-                textTransform: "uppercase",
-                color: "#7A6F65",
-              }}
-            >
-              TERRITORY
-            </span>
           </div>
-        </div>
 
-        {/* Attribute rows */}
-        {attributes.map((attr, attrIndex) => {
-          const maxScore = Math.max(...Object.values(attr.scores));
-          const minScore = Math.min(...Object.values(attr.scores));
+          {/* Attribute rows */}
+          {attributes.map((attr, attrIndex) => {
+            const maxScore = Math.max(...Object.values(attr.scores));
+            const minScore = Math.min(...Object.values(attr.scores));
 
-          return (
-            <div key={attr.name}>
-              {attrIndex > 0 && (
-                <div
-                  style={{
-                    height: 1,
-                    backgroundColor: "#F0EBE6",
-                    marginBottom: 8,
-                  }}
-                />
-              )}
-              <div className="flex" style={{ gap: 2, marginBottom: 8 }}>
-                {/* Attribute name */}
-                <div
-                  style={{
-                    width: 140,
-                    fontFamily: "var(--font-body)",
-                    fontSize: 11,
-                    color: "var(--text-primary)",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  {attr.name}
-                </div>
-
-                {/* Score cells */}
-                {brandColumns.map((brand, i) => {
-                  const score = attr.scores[brand as keyof typeof attr.scores];
-                  const isMax = score === maxScore;
-                  const isMin = score === minScore;
-                  const isRhode = brand === "Rhode";
-
-                  return (
-                    <div
-                      key={brand}
-                      style={{
-                        flex: 1,
-                        height: 32,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: isRhode
-                          ? `rgba(107,36,30,${getOpacity(score)})`
-                          : `rgba(213,206,199,${getOpacity(score)})`,
-                        borderRadius: 4,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 11,
-                          fontWeight: isMax ? 700 : 400,
-                          color: isMin ? "#B5ADA5" : "var(--text-primary)",
-                        }}
-                      >
-                        {score}
-                      </span>
-                    </div>
-                  );
-                })}
-
-                {/* Territory badge */}
-                <div
-                  style={{
-                    width: 80,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <span
+            return (
+              <div key={attr.name}>
+                {attrIndex > 0 && (
+                  <div
                     style={{
+                      height: 1,
+                      backgroundColor: "#F0EBE6",
+                      marginBottom: 8,
+                    }}
+                  />
+                )}
+                <div className="flex" style={{ gap: 2, marginBottom: 8 }}>
+                  {/* Attribute name */}
+                  <div
+                    style={{
+                      width: 140,
                       fontFamily: "var(--font-body)",
-                      fontSize: 10,
-                      padding: "3px 8px",
-                      borderRadius: "var(--radius-pill)",
-                      backgroundColor: territoryConfig[attr.territory as keyof typeof territoryConfig].bg,
-                      color: territoryConfig[attr.territory as keyof typeof territoryConfig].color,
-                      fontWeight: 600,
+                      fontSize: 11,
+                      color: "var(--text-primary)",
+                      display: "flex",
+                      alignItems: "center",
                     }}
                   >
-                    {attr.territory}
-                  </span>
+                    {attr.name}
+                  </div>
+
+                  {/* Score cells */}
+                  {brandColumns.map((brand, i) => {
+                    const score = attr.scores[brand as keyof typeof attr.scores];
+                    const isMax = score === maxScore;
+                    const isMin = score === minScore;
+                    const isMainBrand = brand === mainBrand;
+
+                    return (
+                      <div
+                        key={brand}
+                        style={{
+                          flex: 1,
+                          height: 32,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: isMainBrand
+                            ? `${brandColorMap[brand]}${Math.round(getOpacity(score) * 255).toString(16).padStart(2, '0')}`
+                            : `rgba(213,206,199,${getOpacity(score)})`,
+                          borderRadius: 4,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 11,
+                            fontWeight: isMax ? 700 : 400,
+                            color: isMin ? "#B5ADA5" : "var(--text-primary)",
+                          }}
+                        >
+                          {score}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  {/* Territory badge */}
+                  <div
+                    style={{
+                      width: 80,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: 10,
+                        padding: "3px 8px",
+                        borderRadius: "var(--radius-pill)",
+                        backgroundColor: territoryConfig[attr.territory as keyof typeof territoryConfig].bg,
+                        color: territoryConfig[attr.territory as keyof typeof territoryConfig].color,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {attr.territory}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-3" style={{ marginTop: 16 }}>
-        {Object.entries(territoryConfig).map(([label, style]) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <div
-              style={{
-                width: 9,
-                height: 9,
-                backgroundColor: style.bg,
-                border: `1px solid ${style.color}`,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 10,
-                color: "#7A6F65",
-              }}
-            >
-              {label}
-            </span>
-          </div>
-        ))}
-      </div>
+      
     </div>
   );
 }

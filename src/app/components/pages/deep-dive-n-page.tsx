@@ -1,8 +1,12 @@
-import { useState } from "react";
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
-import { useDimension, useSubmetrics } from "../../data/use-dimensions";
+import { useState } from "react";
+import { useDateMode } from "../../contexts/date-mode-context";
+import { MobileHeader } from "../mobile-header";
+import { useOutletContext } from "react-router";
+import { useBrand } from "../../contexts/brand-context";
+import { useDimension } from "../../data/use-dimensions";
 
 const brands = [
   { name: "Rhode", color: "#B86A54" },
@@ -13,64 +17,67 @@ const brands = [
 ];
 
 export function DeepDiveNPage() {
-  const { submetrics } = useSubmetrics("N");
+  const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
   return (
-    <div
-      className="flex flex-col"
-      style={{
-        padding: 24,
-        minHeight: "100%",
-        width: "100%",
-        gap: 12,
-      }}
-    >
-      {/* Row 1 — Top bar */}
-      <div className="flex items-center justify-between" style={{ flexShrink: 0 }}>
-        <CategoryBrandSelector />
-        <DateModeSelector />
+    <>
+      <MobileHeader title="Deep Dive • N" dimensionKey="N" onMenuClick={openMobileMenu} />
+      <div
+        className="flex flex-col"
+        style={{
+          padding: "16px",
+          minHeight: "100%",
+          width: "100%",
+          gap: 12,
+        }}
+      >
+        {/* Row 1 — Top bar (Desktop only) */}
+        <div className="hidden md:flex items-center justify-between" style={{ flexShrink: 0 }}>
+          <CategoryBrandSelector />
+          <DateModeSelector />
+        </div>
+
+        {/* Row 2 — Dimension Tabs (Desktop only) */}
+        <div className="hidden md:block" style={{ flexShrink: 0 }}>
+          <DimensionTabs activeKey="N" />
+        </div>
+
+        {/* Row 3 — Dimension Header */}
+        <DimensionHeader />
+
+        {/* Row 4 — Rhode's Score Cards - stacks on mobile */}
+        <div className="flex flex-col md:flex-row" style={{ gap: 12, flexShrink: 0 }}>
+          <ScoreCard
+            title="Consistency"
+            badge="Social"
+            score="68"
+            delta="▲ 1.2"
+          />
+          <ScoreCard title="Coherence" badge="Social" score="72" delta="▲ 0.4" />
+          <AlignmentScoreCard />
+        </div>
+
+        {/* Row 5 — Brand Comparison */}
+        <BrandComparison />
+
+        {/* Row 6 — Sender/Receiver Alignment */}
+        <SenderReceiverAlignment />
+
+        {/* Row 6b — Alignment Gap Strip */}
+        <AlignmentGapStrip />
+
+        {/* Row 7 — Sender vs Receiver Values - stacks on mobile */}
+        <div className="flex flex-col md:flex-row" style={{ gap: 12, flexShrink: 0 }}>
+          <SenderValues />
+          <ReceiverValues />
+        </div>
+
+        {/* Row 8 — Top Aligned Posts */}
+        <TopAlignedPosts />
+
+        {/* Row 9 — Communication Guidelines */}
+        <CommunicationGuidelines />
       </div>
-
-      {/* Row 2 — Dimension Tabs */}
-      <div style={{ flexShrink: 0 }}>
-        <DimensionTabs activeKey="N" />
-      </div>
-
-      {/* Row 3 — Dimension Header */}
-      <DimensionHeader />
-
-      {/* Row 4 — Rhode's Score Cards */}
-      <div className="flex" style={{ gap: 12, flexShrink: 0 }}>
-        <ScoreCard
-          title={submetrics[0]?.submetric_name ?? "Consistency"}
-          badge="Social"
-          score="68"
-          delta="▲ 1.2"
-        />
-        <ScoreCard title={submetrics[1]?.submetric_name ?? "Coherence"} badge="Social" score="72" delta="▲ 0.4" />
-        <AlignmentScoreCard title={submetrics[2]?.submetric_name ?? "Alignment"} />
-      </div>
-
-      {/* Row 5 — Brand Comparison */}
-      <BrandComparison />
-
-      {/* Row 6 — Sender/Receiver Alignment */}
-      <SenderReceiverAlignment />
-
-      {/* Row 6b — Alignment Gap Strip */}
-      <AlignmentGapStrip />
-
-      {/* Row 7 — Sender vs Receiver Values */}
-      <div className="flex" style={{ gap: 12, flexShrink: 0 }}>
-        <SenderValues />
-        <ReceiverValues />
-      </div>
-
-      {/* Row 8 — Top Aligned Posts */}
-      <TopAlignedPosts />
-
-      {/* Row 9 — Communication Guidelines */}
-      <CommunicationGuidelines />
-    </div>
+    </>
   );
 }
 
@@ -87,7 +94,9 @@ function DimensionHeader() {
         padding: 20,
       }}
     >
-      <div className="flex items-baseline justify-between">
+      {/* Mobile: Vertical Stack */}
+      <div className="flex md:hidden flex-col gap-3">
+        {/* Title */}
         <div className="flex items-center gap-3">
           <span
             style={{
@@ -101,7 +110,7 @@ function DimensionHeader() {
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 26,
+              fontSize: 22,
               fontWeight: 700,
               color: "var(--text-primary)",
             }}
@@ -109,6 +118,8 @@ function DimensionHeader() {
             {dim ? `${dim.page_letter} — ${dim.page_name}` : "N — Never Lost in Translation"}
           </h1>
         </div>
+
+        {/* Score */}
         <div className="flex items-baseline gap-2">
           <span
             style={{
@@ -129,6 +140,10 @@ function DimensionHeader() {
           >
             71
           </span>
+        </div>
+
+        {/* Delta */}
+        <div>
           <span
             style={{
               fontFamily: "var(--font-body)",
@@ -143,46 +158,127 @@ function DimensionHeader() {
             ▲ 0.9
           </span>
         </div>
+
+        {/* Description */}
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontStyle: "italic",
+            color: "#7A6F65",
+            margin: 0,
+          }}
+        >
+          {dim?.page_description ?? "What the brand stands for and how aligned its messages are."}
+        </p>
       </div>
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 13,
-          fontStyle: "italic",
-          color: "#7A6F65",
-          marginTop: 8,
-        }}
-      >
-        {dim?.page_description ?? "How clearly the brand tells its story — and whether the world receives it as intended."}
-      </p>
+
+      {/* Desktop: Horizontal Layout */}
+      <div className="hidden md:block">
+        <div className="flex items-baseline justify-between">
+          <div className="flex items-center gap-3">
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor: "#ACBDA7",
+                flexShrink: 0,
+              }}
+            />
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 26,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              {dim ? `${dim.page_letter} — ${dim.page_name}` : "N — Never Lost in Translation"}
+            </h1>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 13,
+                color: "#7A6F65",
+              }}
+            >
+              Score:
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 32,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              71
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: "rgba(74,102,68,0.1)",
+                color: "#4A6644",
+                fontWeight: 600,
+              }}
+            >
+              ▲ 0.9
+            </span>
+          </div>
+        </div>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontStyle: "italic",
+            color: "#7A6F65",
+            marginTop: 8,
+          }}
+        >
+          {dim?.page_description ?? "What the brand stands for and how aligned its messages are."}
+        </p>
+      </div>
     </div>
   );
 }
 
 function BrandComparison() {
-  const consistencyData = [
+  const { selectedBrands, mainBrand } = useBrand();
+  
+  const allConsistencyData = [
     { brand: "Clinique", score: 85, color: "#ACBDA7" },
-    { brand: "Rhode", score: 82, color: "#B86A54", isRhode: true },
+    { brand: "Rhode", score: 82, color: "#B86A54" },
     { brand: "Glossier", score: 78, color: "#DAC58C" },
     { brand: "Summer Fridays", score: 74, color: "#374762" },
     { brand: "Laneige", score: 70, color: "#6B241E" },
   ];
 
-  const coherenceData = [
+  const allCoherenceData = [
     { brand: "Glossier", score: 80, color: "#DAC58C" },
-    { brand: "Rhode", score: 76, color: "#B86A54", isRhode: true },
+    { brand: "Rhode", score: 76, color: "#B86A54" },
     { brand: "Clinique", score: 72, color: "#ACBDA7" },
     { brand: "Laneige", score: 69, color: "#6B241E" },
     { brand: "Summer Fridays", score: 65, color: "#374762" },
   ];
 
-  const alignmentData = [
+  const allAlignmentData = [
     { brand: "Clinique", score: 79, color: "#ACBDA7" },
-    { brand: "Rhode", score: 74, color: "#B86A54", isRhode: true },
+    { brand: "Rhode", score: 74, color: "#B86A54" },
     { brand: "Laneige", score: 71, color: "#6B241E" },
     { brand: "Glossier", score: 68, color: "#DAC58C" },
     { brand: "Summer Fridays", score: 62, color: "#374762" },
   ];
+
+  // Filter to only show selected brands
+  const consistencyData = allConsistencyData.filter(item => selectedBrands.includes(item.brand));
+  const coherenceData = allCoherenceData.filter(item => selectedBrands.includes(item.brand));
+  const alignmentData = allAlignmentData.filter(item => selectedBrands.includes(item.brand));
 
   const maxScore = 100;
 
@@ -218,7 +314,7 @@ function BrandComparison() {
                 fontSize: 11,
                 color: "var(--text-primary)",
                 width: 100,
-                fontWeight: item.isRhode ? 700 : 400,
+                fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
               {item.brand}
@@ -238,7 +334,7 @@ function BrandComparison() {
                   height: "100%",
                   width: `${(item.score / maxScore) * 100}%`,
                   backgroundColor: item.color,
-                  opacity: item.isRhode ? 1 : 0.5,
+                  opacity: item.brand === mainBrand ? 1 : 0.5,
                   borderRadius: 7,
                 }}
               />
@@ -250,7 +346,7 @@ function BrandComparison() {
                 color: "var(--text-secondary)",
                 width: 24,
                 textAlign: "right",
-                fontWeight: item.isRhode ? 700 : 400,
+                fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
               {item.score}
@@ -294,8 +390,8 @@ function BrandComparison() {
         </p>
       </div>
 
-      {/* Three-column layout */}
-      <div className="flex" style={{ gap: 32 }}>
+      {/* Three-column layout - stacks on mobile */}
+      <div className="flex flex-col md:flex-row" style={{ gap: 32 }}>
         {renderColumn("CONSISTENCY", consistencyData)}
         {renderColumn("COHERENCE", coherenceData)}
         {renderColumn("ALIGNMENT", alignmentData)}
@@ -306,6 +402,8 @@ function BrandComparison() {
 
 function ScoreCard({ title, badge, score, delta }: { title: string; badge: string; score: string; delta: string }) {
   const isPositive = delta.includes("▲");
+  const { getAxisLabels } = useDateMode();
+  const axisLabels = getAxisLabels();
   
   return (
     <div
@@ -371,16 +469,18 @@ function ScoreCard({ title, badge, score, delta }: { title: string; badge: strin
           />
         </svg>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
-          {["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((month) => (
+          {axisLabels.map((label, i) => (
             <span
-              key={month}
+              key={i}
               style={{
-                fontFamily: "var(--font-body)",
+                fontFamily: "var(--font-mono)",
                 fontSize: 8,
                 color: "#B5ADA5",
+                textAlign: "center",
+                lineHeight: 1.2,
               }}
             >
-              {month}
+              {label}
             </span>
           ))}
         </div>
@@ -389,7 +489,10 @@ function ScoreCard({ title, badge, score, delta }: { title: string; badge: strin
   );
 }
 
-function AlignmentScoreCard({ title }: { title: string }) {
+function AlignmentScoreCard() {
+  const { getAxisLabels } = useDateMode();
+  const axisLabels = getAxisLabels();
+
   return (
     <div
       style={{
@@ -411,7 +514,7 @@ function AlignmentScoreCard({ title }: { title: string }) {
             color: "var(--text-primary)",
           }}
         >
-          {title}
+          Alignment
         </h3>
       </div>
 
@@ -454,16 +557,18 @@ function AlignmentScoreCard({ title }: { title: string }) {
           />
         </svg>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
-          {["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((month) => (
+          {axisLabels.map((label, i) => (
             <span
-              key={month}
+              key={i}
               style={{
-                fontFamily: "var(--font-body)",
+                fontFamily: "var(--font-mono)",
                 fontSize: 8,
                 color: "#B5ADA5",
+                textAlign: "center",
+                lineHeight: 1.2,
               }}
             >
-              {month}
+              {label}
             </span>
           ))}
         </div>
@@ -473,11 +578,46 @@ function AlignmentScoreCard({ title }: { title: string }) {
 }
 
 function SenderReceiverAlignment() {
-  const [activeBrand, setActiveBrand] = useState("Rhode");
+  const { selectedBrands, mainBrand } = useBrand();
 
   const axes = ["Clean / Ingredients", "Aesthetic / Visual", "Premium / Luxury", "Skin Health", "Simplicity"];
-  const senderData = [92, 87, 81, 78, 71];
-  const receiverData = [88, 85, 74, 52, 68];
+  
+  // Data for all brands
+  const allBrandData: Record<string, { sender: number[]; receiver: number[] }> = {
+    "Rhode": { 
+      sender: [92, 87, 81, 78, 71], 
+      receiver: [88, 85, 74, 52, 68] 
+    },
+    "Glossier": { 
+      sender: [88, 82, 79, 72, 75], 
+      receiver: [85, 80, 71, 50, 70] 
+    },
+    "Summer Fridays": { 
+      sender: [85, 79, 76, 68, 72], 
+      receiver: [82, 76, 68, 48, 68] 
+    },
+    "Clinique": { 
+      sender: [80, 75, 70, 65, 68], 
+      receiver: [78, 72, 65, 45, 64] 
+    },
+    "Laneige": { 
+      sender: [83, 77, 73, 70, 69], 
+      receiver: [80, 74, 68, 47, 66] 
+    },
+  };
+
+  // Get color for each brand
+  const brandColors: Record<string, string> = {
+    "Rhode": "#B86A54",
+    "Glossier": "#DAC58C",
+    "Summer Fridays": "#374762",
+    "Clinique": "#ACBDA7",
+    "Laneige": "#6B241E",
+  };
+
+  const senderData = allBrandData[mainBrand].sender;
+  const receiverData = allBrandData[mainBrand].receiver;
+  const senderColor = brandColors[mainBrand];
 
   const cx = 180;
   const cy = 140;
@@ -506,7 +646,7 @@ function SenderReceiverAlignment() {
       }}
     >
       {/* Header with brand selector */}
-      <div className="flex items-center justify-between" style={{ marginBottom: 16 }}>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3" style={{ marginBottom: 16 }}>
         <div>
           <h3
             style={{
@@ -524,38 +664,60 @@ function SenderReceiverAlignment() {
               fontSize: 11,
               color: "#B5ADA5",
             }}
-          >
-            What the brand says vs what consumers hear
-          </p>
+          >What the brand vs consumers say</p>
         </div>
-        <div className="flex items-center gap-2">
-          {brands.map((brand) => (
-            <button
-              key={brand.name}
-              onClick={() => setActiveBrand(brand.name)}
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                padding: "4px 12px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor:
-                  brand.name === activeBrand ? brand.color : "transparent",
-                color: brand.name === activeBrand ? "#FFFFFF" : "#7A6F65",
-                border: brand.name === activeBrand ? "none" : "1px solid #E8E2DC",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-            >
-              {brand.name}
-            </button>
-          ))}
+        
+        {/* Brand selector - scrollable on mobile */}
+        <div style={{ 
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+        }}>
+          <div className="flex items-center gap-1.5" style={{ 
+            backgroundColor: "#F5F0EB",
+            borderRadius: "var(--radius-pill)",
+            padding: "3px",
+            minWidth: "max-content",
+            display: "inline-flex",
+          }}>
+            {selectedBrands.map((brandName) => {
+              const brand = brands.find(b => b.name === brandName);
+              if (!brand) return null;
+              
+              return (
+                <div
+                  key={brand.name}
+                  className="flex items-center gap-1.5"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    padding: "4px 10px",
+                    borderRadius: "var(--radius-pill)",
+                    backgroundColor: brand.name === mainBrand ? brand.color : "transparent",
+                    color: brand.name === mainBrand ? "#FFFFFF" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 600 : 400,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      backgroundColor: brand.color,
+                    }}
+                  />
+                  {brand.name}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Two-column layout */}
-      <div className="flex" style={{ gap: 20 }}>
-        {/* Left: Spider chart */}
-        <div style={{ flex: 1.2 }}>
+      {/* Vertical layout */}
+      <div className="flex flex-col" style={{ gap: 20 }}>
+        {/* Spider chart */}
+        <div style={{ display: "flex", justifyContent: "center" }}>
           <svg width="360" height="280" viewBox="0 0 360 280">
             {/* Grid polygons */}
             {rings.map((s) => {
@@ -622,61 +784,61 @@ function SenderReceiverAlignment() {
             {/* Sender polygon (solid) */}
             <polygon
               points={senderPoints.map((p) => p.join(",")).join(" ")}
-              fill="#B86A54"
+              fill={senderColor}
               fillOpacity={0.1}
-              stroke="#B86A54"
+              stroke={senderColor}
               strokeWidth="2"
             />
             {senderPoints.map((p, i) => (
-              <circle key={`s${i}`} cx={p[0]} cy={p[1]} r="3" fill="#B86A54" />
+              <circle key={`s${i}`} cx={p[0]} cy={p[1]} r="3" fill={senderColor} />
             ))}
           </svg>
+        </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-4" style={{ marginTop: 8 }}>
-            <div className="flex items-center gap-2">
-              <div
-                style={{
-                  width: 16,
-                  height: 2,
-                  backgroundColor: "#B86A54",
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  color: "var(--text-secondary)",
-                }}
-              >
-                Sender (brand)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                style={{
-                  width: 16,
-                  height: 2,
-                  backgroundColor: "#ACBDA7",
-                  backgroundImage:
-                    "repeating-linear-gradient(90deg, #ACBDA7 0, #ACBDA7 4px, transparent 4px, transparent 8px)",
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  color: "var(--text-secondary)",
-                }}
-              >
-                Receiver (consumer)
-              </span>
-            </div>
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center gap-2">
+            <div
+              style={{
+                width: 16,
+                height: 2,
+                backgroundColor: "#B86A54",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                color: "var(--text-secondary)",
+              }}
+            >
+              Sender (brand)
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div
+              style={{
+                width: 16,
+                height: 2,
+                backgroundColor: "#ACBDA7",
+                backgroundImage:
+                  "repeating-linear-gradient(90deg, #ACBDA7 0, #ACBDA7 4px, transparent 4px, transparent 8px)",
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                color: "var(--text-secondary)",
+              }}
+            >
+              Receiver (consumer)
+            </span>
           </div>
         </div>
 
-        {/* Right: Summary cards */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Summary cards - 2x2 grid */}
+        <div className="grid grid-cols-2 gap-3">
           {/* Card 1: Overall Alignment Score */}
           <div
             style={{
@@ -721,15 +883,7 @@ function SenderReceiverAlignment() {
                 ▲ 1.1
               </span>
             </div>
-            <div
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 10,
-                color: "#B5ADA5",
-              }}
-            >
-              Rank #2 of 5
-            </div>
+            
           </div>
 
           {/* Card 2: Sender-Receiver Gap */}
@@ -760,9 +914,18 @@ function SenderReceiverAlignment() {
                   color: "#4A6644",
                 }}
               >
-                -8 pts
+                -8
               </span>
-              
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 16,
+                  fontWeight: 400,
+                  color: "#4A6644",
+                }}
+              >
+                pts
+              </span>
             </div>
             
           </div>
@@ -865,7 +1028,7 @@ function AlignmentGapStrip() {
         padding: 16,
       }}
     >
-      <div className="flex items-center" style={{ gap: 24 }}>
+      <div className="flex flex-col" style={{ gap: 12 }}>
         {/* Group 1: Aligned */}
         <div className="flex items-center gap-2">
           <span
@@ -918,7 +1081,7 @@ function AlignmentGapStrip() {
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, height: 24, backgroundColor: "#E8E2DC" }} />
+        <div style={{ height: 1, backgroundColor: "#E8E2DC" }} />
 
         {/* Group 2: Gap Sender Only */}
         <div className="flex items-center gap-2">
@@ -960,7 +1123,7 @@ function AlignmentGapStrip() {
         </div>
 
         {/* Divider */}
-        <div style={{ width: 1, height: 24, backgroundColor: "#E8E2DC" }} />
+        <div style={{ height: 1, backgroundColor: "#E8E2DC" }} />
 
         {/* Group 3: Gap Receiver Only */}
         <div className="flex items-center gap-2">
@@ -1204,18 +1367,7 @@ function ReceiverValues() {
                 {value.name}
               </span>
               {value.aligned && (
-                <span
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 9,
-                    padding: "2px 6px",
-                    borderRadius: "var(--radius-pill)",
-                    backgroundColor: "rgba(74,102,68,0.08)",
-                    color: "#4A6644",
-                  }}
-                >
-                  ↔ aligned
-                </span>
+                null
               )}
               <div
                 style={{

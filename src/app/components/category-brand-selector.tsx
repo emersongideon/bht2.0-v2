@@ -1,67 +1,40 @@
 import { ChevronDown, Folder, X, Plus } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useBrands } from "../data/use-brands";
+import { useBrand } from "../contexts/brand-context";
+
+const categories = ["Beauty", "Fashion", "Personal Care"];
+
+const brands = [
+  { name: "Rhode", score: 76, isPrimary: true },
+  { name: "Summer Fridays", score: 68, isPrimary: false, dot: "#374762" },
+  { name: "Glossier", score: 72, isPrimary: false, dot: "#DAC58C" },
+  { name: "Clinique", score: 65, isPrimary: false, dot: "#ACBDA7" },
+  { name: "Laneige", score: 70, isPrimary: false, dot: "#6B241E" },
+];
 
 export function CategoryBrandSelector() {
-  const { categories, brandsByCategory, loading, error } = useBrands();
-
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState("Beauty");
+  const { selectedBrands, mainBrand, setMainBrand, toggleBrand } = useBrand();
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showBrandDropdown, setShowBrandDropdown] = useState(false);
   const categoryRef = useRef<HTMLDivElement>(null);
+  const brandRef = useRef<HTMLDivElement>(null);
 
-  // Set initial category once data loads
-  useEffect(() => {
-    if (categories.length > 0 && !selectedCategory) {
-      setSelectedCategory(categories[0]);
-    }
-  }, [categories, selectedCategory]);
-
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (categoryRef.current && !categoryRef.current.contains(event.target as Node)) {
         setShowCategoryDropdown(false);
+      }
+      if (brandRef.current && !brandRef.current.contains(event.target as Node)) {
+        setShowBrandDropdown(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // All brands for the selected category
-  const categoryBrands = brandsByCategory[selectedCategory] ?? [];
-  // First brand is the primary brand; rest are competitors
-  const primaryBrand = categoryBrands[0];
-  const competitors = categoryBrands.slice(1);
-
-  // Loading skeleton
-  if (loading) {
-    return (
-      <div className="flex items-center gap-3">
-        <div style={{
-          height: 36,
-          width: 130,
-          borderRadius: "var(--radius-pill)",
-          backgroundColor: "var(--bg-surface)",
-          opacity: 0.5,
-        }} />
-        <div style={{
-          height: 36,
-          width: 90,
-          borderRadius: "var(--radius-pill)",
-          backgroundColor: "var(--bg-surface)",
-          opacity: 0.5,
-        }} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-        Could not load brands: {error}
-      </div>
-    );
-  }
+  const mainBrandData = brands.find(b => b.name === mainBrand) || brands[0];
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -86,7 +59,7 @@ export function CategoryBrandSelector() {
           <ChevronDown size={14} style={{ color: "var(--text-muted)" }} />
         </button>
 
-        {/* Dropdown menu */}
+        {/* Category Dropdown menu */}
         {showCategoryDropdown && (
           <div
             style={{
@@ -140,8 +113,8 @@ export function CategoryBrandSelector() {
         )}
       </div>
 
-      {/* Primary brand pill — solid accent, white text */}
-      {primaryBrand && (
+      {/* Brand selector - multi-select with main brand */}
+      <div style={{ position: "relative" }} ref={brandRef}>
         <button
           className="flex items-center gap-2"
           style={{
@@ -155,60 +128,141 @@ export function CategoryBrandSelector() {
             fontWeight: 700,
             cursor: "pointer",
           }}
+          onClick={() => setShowBrandDropdown(!showBrandDropdown)}
         >
-          <span>{primaryBrand.name}</span>
+          <span>{mainBrandData.name}</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 400 }}>{mainBrandData.score}</span>
+          {selectedBrands.length > 1 && (
+            <span 
+              style={{ 
+                backgroundColor: "rgba(255, 255, 255, 0.2)", 
+                borderRadius: "var(--radius-pill)", 
+                padding: "2px 6px",
+                fontSize: 12,
+                fontFamily: "var(--font-mono)"
+              }}
+            >
+              +{selectedBrands.length - 1}
+            </span>
+          )}
           <ChevronDown size={14} />
         </button>
-      )}
 
-      {/* Competitor pills — white bg, subtle border */}
-      {competitors.map((c) => (
-        <button
-          key={c.name}
-          className="flex items-center gap-2"
-          style={{
-            backgroundColor: "var(--bg-card)",
-            backdropFilter: "blur(var(--blur-glass))",
-            border: "1px solid var(--border-color)",
-            borderRadius: "var(--radius-pill)",
-            padding: "8px 14px",
-            color: "var(--text-primary)",
-            fontFamily: "var(--font-body)",
-            fontSize: 14,
-            cursor: "pointer",
-          }}
-        >
-          <span
+        {/* Brand Dropdown menu */}
+        {showBrandDropdown && (
+          <div
             style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              backgroundColor: c.color,
-              flexShrink: 0,
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0,
+              backgroundColor: "var(--bg-primary)",
+              backdropFilter: "blur(var(--blur-glass))",
+              border: "1px solid var(--border-color)",
+              borderRadius: "var(--radius-md)",
+              boxShadow: "var(--shadow-card)",
+              minWidth: 240,
+              zIndex: 1000,
+              overflow: "hidden",
             }}
-          />
-          <span>{c.name}</span>
-          <X size={12} style={{ color: "var(--text-muted)" }} />
-        </button>
-      ))}
-
-      {/* Add button */}
-      <button
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          border: "2px dashed var(--border-color)",
-          backgroundColor: "transparent",
-          color: "var(--text-muted)",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Plus size={16} />
-      </button>
+          >
+            <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
+              <div style={{ fontSize: 11, fontFamily: "var(--font-body)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Select brands to analyze
+              </div>
+            </div>
+            {brands.map((brand, index) => {
+              const isSelected = selectedBrands.includes(brand.name);
+              const isMain = mainBrand === brand.name;
+              
+              return (
+                <div
+                  key={brand.name}
+                  style={{
+                    borderBottom: index < brands.length - 1 ? "1px solid var(--border-subtle)" : "none",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "10px 16px",
+                      cursor: "pointer",
+                      backgroundColor: isMain ? "var(--bg-surface)" : "transparent",
+                      transition: "background-color 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isMain) {
+                        e.currentTarget.style.backgroundColor = "var(--bg-surface)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isMain) {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }
+                    }}
+                  >
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleBrand(brand.name)}
+                      style={{
+                        width: 16,
+                        height: 16,
+                        marginRight: 12,
+                        cursor: "pointer",
+                        accentColor: "var(--accent-primary)",
+                      }}
+                    />
+                    
+                    {/* Brand info */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                      {brand.dot && (
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            backgroundColor: brand.dot,
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                      <span style={{ fontWeight: brand.isPrimary ? 700 : 400, fontFamily: "var(--font-body)", fontSize: 14, color: "var(--text-primary)", flex: 1 }}>
+                        {brand.name}
+                      </span>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--text-muted)" }}>
+                        {brand.score}
+                      </span>
+                    </div>
+                    
+                    {/* Radio for main brand */}
+                    <input
+                      type="radio"
+                      name="mainBrand"
+                      checked={isMain}
+                      onChange={() => setMainBrand(brand.name)}
+                      disabled={!isSelected}
+                      title="Set as main brand"
+                      style={{
+                        width: 16,
+                        height: 16,
+                        marginLeft: 12,
+                        cursor: isSelected ? "pointer" : "not-allowed",
+                        accentColor: "var(--accent-primary)",
+                        opacity: isSelected ? 1 : 0.3,
+                      }}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+            <div style={{ padding: "8px 12px", borderTop: "1px solid var(--border-subtle)", fontSize: 11, fontFamily: "var(--font-body)", color: "var(--text-muted)" }}>
+              ✓ Include in analysis • ⦿ Main brand
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

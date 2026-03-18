@@ -2,6 +2,10 @@ import { useState } from "react";
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
+import { useDateMode } from "../../contexts/date-mode-context";
+import { MobileHeader } from "../mobile-header";
+import { useOutletContext } from "react-router";
+import { useBrand } from "../../contexts/brand-context";
 import { useDimension, useSubmetrics } from "../../data/use-dimensions";
 
 const brands = [
@@ -13,56 +17,61 @@ const brands = [
 ];
 
 export function DeepDiveC1Page() {
+  const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
   const { submetrics } = useSubmetrics("C1");
+
   return (
-    <div
-      className="flex flex-col"
-      style={{
-        padding: 24,
-        minHeight: "100%",
-        width: "100%",
-        gap: 12,
-      }}
-    >
-      {/* Row 1 — Top bar */}
-      <div className="flex items-center justify-between" style={{ flexShrink: 0 }}>
-        <CategoryBrandSelector />
-        <DateModeSelector />
+    <>
+      <MobileHeader title="Deep Dive • C1" dimensionKey="C1" onMenuClick={openMobileMenu} />
+      <div
+        className="flex flex-col"
+        style={{
+          padding: "16px",
+          minHeight: "100%",
+          width: "100%",
+          gap: 12,
+        }}
+      >
+        {/* Row 1 — Top bar (Desktop only) */}
+        <div className="hidden md:flex items-center justify-between" style={{ flexShrink: 0 }}>
+          <CategoryBrandSelector />
+          <DateModeSelector />
+        </div>
+
+        {/* Row 2 — Dimension Tabs (Desktop only) */}
+        <div className="hidden md:block" style={{ flexShrink: 0 }}>
+          <DimensionTabs activeKey="C1" />
+        </div>
+
+        {/* Row 3 — Dimension Header */}
+        <DimensionHeader />
+
+        {/* Row 4 — Sub-metric cards (3 source cards) */}
+        <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 12, flexShrink: 0 }}>
+          <ScoreCard title={submetrics[0]?.submetric_name ?? "Search"} badge="Search" score="78" delta="▲ 2.4" />
+          <ScoreCard title={submetrics[1]?.submetric_name ?? "Social"} badge="Social" score="76" delta="▲ 1.4" />
+          <ScoreCard title={submetrics[2]?.submetric_name ?? "LLM"} badge="LLM" score="83" delta="▲ 5.1" />
+        </div>
+
+        {/* Row 5 — Brand Comparison */}
+        <BrandComparison />
+
+        {/* Row 6 — Scale & Velocity Panel */}
+        <ScaleVelocityPanel />
+
+        {/* Row 7 — Competitive Ranking Table */}
+        <CompetitiveRankingTable />
+
+        {/* Row 8 — Historical View */}
+        <HistoricalView />
+
+        {/* Row 9 — Brand Comparison Trend */}
+        <BrandComparisonTrend />
+
+        {/* Row 10 — Insight Card */}
+        <InsightCardC1 />
       </div>
-
-      {/* Row 2 — Dimension Tabs */}
-      <div style={{ flexShrink: 0 }}>
-        <DimensionTabs activeKey="C1" />
-      </div>
-
-      {/* Row 3 — Dimension Header */}
-      <DimensionHeader />
-
-      {/* Row 4 — Sub-metric cards (3 source cards) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, flexShrink: 0 }}>
-        <ScoreCard title={submetrics[0]?.submetric_name ?? "Search"} badge="Search" score="78" delta="▲ 2.4" />
-        <ScoreCard title={submetrics[1]?.submetric_name ?? "Social"} badge="Social" score="76" delta="▲ 1.4" />
-        <ScoreCard title={submetrics[2]?.submetric_name ?? "LLM"} badge="LLM" score="83" delta="▲ 5.1" />
-      </div>
-
-      {/* Row 5 — Brand Comparison */}
-      <BrandComparison />
-
-      {/* Row 6 — Scale & Velocity Panel */}
-      <ScaleVelocityPanel />
-
-      {/* Row 7 — Competitive Ranking Table */}
-      <CompetitiveRankingTable />
-
-      {/* Row 8 — Historical View */}
-      <HistoricalView />
-
-      {/* Row 9 — Brand Comparison Trend */}
-      <BrandComparisonTrend />
-
-      {/* Row 10 — Insight Card */}
-      <InsightCardC1 />
-    </div>
+    </>
   );
 }
 
@@ -79,7 +88,9 @@ function DimensionHeader() {
         padding: 20,
       }}
     >
-      <div className="flex items-baseline justify-between">
+      {/* Mobile: Vertical Stack */}
+      <div className="flex md:hidden flex-col gap-3">
+        {/* Title */}
         <div className="flex items-center gap-3">
           <span
             style={{
@@ -93,7 +104,7 @@ function DimensionHeader() {
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 26,
+              fontSize: 22,
               fontWeight: 700,
               color: "var(--text-primary)",
             }}
@@ -101,6 +112,8 @@ function DimensionHeader() {
             {dim ? `${dim.page_letter} — ${dim.page_name}` : "C — Capturing Attention"}
           </h1>
         </div>
+
+        {/* Score */}
         <div className="flex items-baseline gap-2">
           <span
             style={{
@@ -121,6 +134,10 @@ function DimensionHeader() {
           >
             82
           </span>
+        </div>
+
+        {/* Delta */}
+        <div>
           <span
             style={{
               fontFamily: "var(--font-body)",
@@ -135,18 +152,92 @@ function DimensionHeader() {
             ▲ 3.1
           </span>
         </div>
+
+        {/* Description */}
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontStyle: "italic",
+            color: "#7A6F65",
+            margin: 0,
+          }}
+        >
+          {dim?.page_description ?? "The cultural energy and momentum the brand carries right now."}
+        </p>
       </div>
-      <p
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 13,
-          fontStyle: "italic",
-          color: "#7A6F65",
-          marginTop: 8,
-        }}
-      >
-        {dim?.page_description ?? "The cultural energy and momentum the brand carries right now."}
-      </p>
+
+      {/* Desktop: Horizontal Layout */}
+      <div className="hidden md:block">
+        <div className="flex items-baseline justify-between">
+          <div className="flex items-center gap-3">
+            <span
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                backgroundColor: "#DAC58C",
+                flexShrink: 0,
+              }}
+            />
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 26,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              {dim ? `${dim.page_letter} — ${dim.page_name}` : "C — Capturing Attention"}
+            </h1>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 13,
+                color: "#7A6F65",
+              }}
+            >
+              Score:
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 32,
+                fontWeight: 700,
+                color: "var(--text-primary)",
+              }}
+            >
+              82
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: "rgba(74,102,68,0.1)",
+                color: "#4A6644",
+                fontWeight: 600,
+              }}
+            >
+              ▲ 3.1
+            </span>
+          </div>
+        </div>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            fontStyle: "italic",
+            color: "#7A6F65",
+            marginTop: 8,
+          }}
+        >
+          {dim?.page_description ?? "The cultural energy and momentum the brand carries right now."}
+        </p>
+      </div>
     </div>
   );
 }
@@ -163,6 +254,8 @@ function ScoreCard({
   delta: string;
 }) {
   const isPositive = delta.includes("▲");
+  const { getAxisLabels } = useDateMode();
+  const axisLabels = getAxisLabels();
   
   return (
     <div
@@ -228,16 +321,18 @@ function ScoreCard({
           />
         </svg>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
-          {["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"].map((month) => (
+          {axisLabels.map((label, i) => (
             <span
-              key={month}
+              key={i}
               style={{
-                fontFamily: "var(--font-body)",
+                fontFamily: "var(--font-mono)",
                 fontSize: 8,
                 color: "#B5ADA5",
+                textAlign: "center",
+                lineHeight: 1.2,
               }}
             >
-              {month}
+              {label}
             </span>
           ))}
         </div>
@@ -247,29 +342,36 @@ function ScoreCard({
 }
 
 function BrandComparison() {
-  const searchData = [
-    { brand: "Rhode", score: 78, color: "#B86A54", isRhode: true },
+  const { selectedBrands, mainBrand } = useBrand();
+  
+  const allSearchData = [
+    { brand: "Rhode", score: 78, color: "#B86A54" },
     { brand: "Glossier", score: 76, color: "#DAC58C" },
     { brand: "Clinique", score: 74, color: "#ACBDA7" },
     { brand: "Summer Fridays", score: 71, color: "#374762" },
     { brand: "Laneige", score: 68, color: "#6B241E" },
   ];
 
-  const socialData = [
+  const allSocialData = [
     { brand: "Glossier", score: 80, color: "#DAC58C" },
     { brand: "Summer Fridays", score: 78, color: "#374762" },
-    { brand: "Rhode", score: 76, color: "#B86A54", isRhode: true },
+    { brand: "Rhode", score: 76, color: "#B86A54" },
     { brand: "Laneige", score: 73, color: "#6B241E" },
     { brand: "Clinique", score: 69, color: "#ACBDA7" },
   ];
 
-  const llmData = [
-    { brand: "Rhode", score: 83, color: "#B86A54", isRhode: true },
+  const allLlmData = [
+    { brand: "Rhode", score: 83, color: "#B86A54" },
     { brand: "Clinique", score: 81, color: "#ACBDA7" },
     { brand: "Glossier", score: 80, color: "#DAC58C" },
     { brand: "Laneige", score: 77, color: "#6B241E" },
     { brand: "Summer Fridays", score: 72, color: "#374762" },
   ];
+
+  // Filter to only show selected brands
+  const searchData = allSearchData.filter(item => selectedBrands.includes(item.brand));
+  const socialData = allSocialData.filter(item => selectedBrands.includes(item.brand));
+  const llmData = allLlmData.filter(item => selectedBrands.includes(item.brand));
 
   const maxScore = 100;
 
@@ -305,7 +407,7 @@ function BrandComparison() {
                 fontSize: 11,
                 color: "var(--text-primary)",
                 width: 100,
-                fontWeight: item.isRhode ? 700 : 400,
+                fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
               {item.brand}
@@ -325,7 +427,7 @@ function BrandComparison() {
                   height: "100%",
                   width: `${(item.score / maxScore) * 100}%`,
                   backgroundColor: item.color,
-                  opacity: item.isRhode ? 1 : 0.5,
+                  opacity: item.brand === mainBrand ? 1 : 0.5,
                   borderRadius: 7,
                 }}
               />
@@ -337,7 +439,7 @@ function BrandComparison() {
                 color: "var(--text-secondary)",
                 width: 24,
                 textAlign: "right",
-                fontWeight: item.isRhode ? 700 : 400,
+                fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
               {item.score}
@@ -379,8 +481,8 @@ function BrandComparison() {
         >Search, Social & LLM performance across brands</p>
       </div>
 
-      {/* Three-column layout */}
-      <div className="flex" style={{ gap: 24 }}>
+      {/* Three-column layout - stacks on mobile */}
+      <div className="flex flex-col md:flex-row" style={{ gap: 24 }}>
         {renderColumn("SEARCH", searchData)}
         {renderColumn("SOCIAL", socialData)}
         {renderColumn("LLM", llmData)}
@@ -400,8 +502,8 @@ function ScaleVelocityPanel() {
         padding: 20,
       }}
     >
-      {/* Summary Cards */}
-      <div className="flex" style={{ gap: 12, marginBottom: 16 }}>
+      {/* Summary Cards - stacks on mobile */}
+      <div className="flex flex-col md:flex-row" style={{ gap: 12, marginBottom: 16 }}>
         {/* Scale Card */}
         <div
           style={{
@@ -511,8 +613,8 @@ function ScaleVelocityPanel() {
           <div className="flex" style={{ gap: 10 }}>
             <VelocityTile label="SEARCH MOMENTUM" value="+12%" arrows="▲▲▲" />
             <VelocityTile label="FOLLOWER GROWTH" value="+8.3%" arrows="▲▲" />
-            <VelocityTile label="ENG. RATE Δ" value="+1.2pp" arrows="▲" />
-            <VelocityTile label="SOS CHANGE" value="+3.1pp" arrows="▲▲▲" />
+            <VelocityTile label="INTERACTIONS Δ" value="+1.2pp" arrows="▲" />
+            <VelocityTile label="LLM RANK CHANGE" value="+3.1pp" arrows="▲▲▲" />
           </div>
         </div>
       </div>
@@ -530,17 +632,18 @@ function MetricTile({ label, value, rank }: { label: string; value: string; rank
         flex: 1,
         backgroundColor: "rgba(255,255,255,0.6)",
         borderRadius: 10,
-        padding: "8px 10px",
+        padding: "8px 6px",
         textAlign: "center",
       }}
     >
       <div
         style={{
           fontFamily: "var(--font-body)",
-          fontSize: 9,
+          fontSize: 7,
           color: "#B5ADA5",
           textTransform: "uppercase",
-          marginBottom: 4,
+          marginBottom: 3,
+          lineHeight: 1.1,
         }}
       >
         {label}
@@ -548,23 +651,15 @@ function MetricTile({ label, value, rank }: { label: string; value: string; rank
       <div
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 15,
+          fontSize: 13,
           fontWeight: 700,
           color: "var(--text-primary)",
-          marginBottom: 2,
+          marginBottom: 1,
         }}
       >
         {value}
       </div>
-      <div
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 9,
-          color: "#7A6F65",
-        }}
-      >
-        {rank}
-      </div>
+      
     </div>
   );
 }
@@ -576,17 +671,18 @@ function VelocityTile({ label, value, arrows }: { label: string; value: string; 
         flex: 1,
         backgroundColor: "rgba(74,102,68,0.06)",
         borderRadius: 10,
-        padding: "8px 10px",
+        padding: "8px 6px",
         textAlign: "center",
       }}
     >
       <div
         style={{
           fontFamily: "var(--font-body)",
-          fontSize: 9,
+          fontSize: 7,
           color: "#B5ADA5",
           textTransform: "uppercase",
-          marginBottom: 4,
+          marginBottom: 3,
+          lineHeight: 1.1,
         }}
       >
         {label}
@@ -594,79 +690,165 @@ function VelocityTile({ label, value, arrows }: { label: string; value: string; 
       <div
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 15,
+          fontSize: 13,
           fontWeight: 700,
           color: "#4A6644",
-          marginBottom: 2,
+          marginBottom: 1,
         }}
       >
         {value}
       </div>
-      <div
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 9,
-          color: "#4A6644",
-        }}
-      >
-        {arrows}
-      </div>
+      
     </div>
   );
 }
 
 function BrandPositioningScatter() {
-  const brandPositions = [
-    { name: "Rhode", x: 75, y: 78, size: 14, color: "#B86A54", highlighted: true },
-    { name: "Glossier", x: 70, y: 52, size: 11, color: "#DAC58C", highlighted: false },
-    { name: "Summer Fridays", x: 35, y: 75, size: 11, color: "#374762", highlighted: false },
-    { name: "Clinique", x: 72, y: 28, size: 11, color: "#ACBDA7", highlighted: false },
-    { name: "Laneige", x: 52, y: 72, size: 11, color: "#6B241E", highlighted: false },
+  const { selectedBrands, mainBrand } = useBrand();
+  
+  const allBrandPositions = [
+    { name: "Rhode", x: 75, y: 78, size: 14, color: "#B86A54" },
+    { name: "Glossier", x: 70, y: 52, size: 11, color: "#DAC58C" },
+    { name: "Summer Fridays", x: 35, y: 75, size: 11, color: "#374762" },
+    { name: "Clinique", x: 72, y: 28, size: 11, color: "#ACBDA7" },
+    { name: "Laneige", x: 52, y: 72, size: 11, color: "#6B241E" },
   ];
+
+  // Filter to only show selected brands
+  const brandPositions = allBrandPositions.filter(brand => selectedBrands.includes(brand.name));
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-        <div><span
+      {/* Mobile: Stacked layout */}
+      <div className="block md:hidden" style={{ marginBottom: 12 }}>
+        <h3
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 14,
+            fontWeight: 600,
+            color: "var(--text-primary)",
+            marginBottom: 8,
+          }}
+        >
+          Brand Positioning
+        </h3>
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 11,
+            color: "#B5ADA5",
+            marginBottom: 8,
+          }}
+        >
+          Scale (size) vs Velocity (momentum) for Capturing Attention
+        </p>
+        {/* Brand legend */}
+        <div style={{ 
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+        }}>
+          <div className="flex items-center gap-1.5" style={{ 
+            backgroundColor: "#F5F0EB",
+            borderRadius: "var(--radius-pill)",
+            padding: "3px",
+            minWidth: "max-content",
+            display: "inline-flex",
+          }}>
+            {brandPositions.map((brand) => (
+              <div
+                key={brand.name}
+                className="flex items-center gap-1.5"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 10,
+                  padding: "4px 10px",
+                  borderRadius: "var(--radius-pill)",
+                  backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
+                  color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
+                  fontWeight: brand.name === mainBrand ? 600 : 400,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    backgroundColor: brand.color,
+                  }}
+                />
+                {brand.name}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: Title and legend on same row */}
+      <div className="hidden md:block" style={{ marginBottom: 12 }}>
+        <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+          <h3
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 14,
               fontWeight: 600,
               color: "var(--text-primary)",
             }}
-          >Brand Positioning </span><span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              color: "#B5ADA5",
-              marginLeft: 8,
-            }}
-          >Scale (size) vs Velocity (momentum) for Capturing Attention</span></div>
-        <div className="flex items-center gap-3">
-          {brands.map((brand) => (
-            <div key={brand.name} className="flex items-center gap-1.5">
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  backgroundColor: brand.color,
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 10,
-                  color: "var(--text-secondary)",
-                  fontWeight: brand.name === "Rhode" ? 700 : 400,
-                }}
-              >
-                {brand.name}
-              </span>
+          >
+            Brand Positioning
+          </h3>
+          
+          {/* Brand legend - top right on desktop */}
+          <div style={{ 
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}>
+            <div className="flex items-center gap-1.5" style={{ 
+              backgroundColor: "#F5F0EB",
+              borderRadius: "var(--radius-pill)",
+              padding: "3px",
+              minWidth: "max-content",
+              display: "inline-flex",
+            }}>
+              {brandPositions.map((brand) => (
+                <div
+                  key={brand.name}
+                  className="flex items-center gap-1.5"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    padding: "4px 10px",
+                    borderRadius: "var(--radius-pill)",
+                    backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
+                    color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 600 : 400,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      backgroundColor: brand.color,
+                    }}
+                  />
+                  {brand.name}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
+        
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 11,
+            color: "#B5ADA5",
+          }}
+        >
+          Scale (size) vs Velocity (momentum) for Capturing Attention
+        </p>
       </div>
 
       {/* Scatter Chart */}
@@ -717,10 +899,11 @@ function BrandPositioningScatter() {
           {brandPositions.map((brand) => {
             const cx = (brand.x / 100) * 600;
             const cy = 240 - (brand.y / 100) * 240;
+            const isMainBrand = brand.name === mainBrand;
             return (
               <g key={brand.name}>
                 <circle cx={cx} cy={cy} r={brand.size} fill={brand.color} opacity={0.9} />
-                {brand.highlighted && (
+                {isMainBrand && (
                   <rect
                     x={cx + 20}
                     y={cy - 10}
@@ -731,11 +914,11 @@ function BrandPositioningScatter() {
                   />
                 )}
                 <text
-                  x={cx + (brand.highlighted ? 45 : 20)}
+                  x={cx + (isMainBrand ? 45 : 20)}
                   y={cy + 4}
                   fontSize="11"
-                  fill={brand.highlighted ? brand.color : "var(--text-primary)"}
-                  fontWeight={brand.highlighted ? 700 : 400}
+                  fill={isMainBrand ? brand.color : "var(--text-primary)"}
+                  fontWeight={isMainBrand ? 700 : 400}
                   fontFamily="var(--font-body)"
                 >
                   {brand.name}
@@ -853,7 +1036,8 @@ function BrandComparisonTrend() {
     },
   ];
 
-  const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+  const { getAxisLabels } = useDateMode();
+  const months = getAxisLabels();
 
   return (
     null
@@ -861,43 +1045,49 @@ function BrandComparisonTrend() {
 }
 
 function HistoricalView() {
-  const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
+  const { getAxisLabels } = useDateMode();
+  const { selectedBrands, mainBrand } = useBrand();
+  const months = getAxisLabels();
   
   // Share of Search historical data for each brand
-  const shareOfSearchData = [
+  const allShareOfSearchData = [
     { name: "Rhode", color: "#B86A54", data: [16.1, 16.5, 17.0, 17.4, 17.8, 18.0, 18.2] },
     { name: "Glossier", color: "#DAC58C", data: [19.2, 19.0, 18.5, 18.1, 17.8, 17.5, 17.2] },
     { name: "Summer Fridays", color: "#374762", data: [14.2, 14.5, 14.8, 15.1, 15.4, 15.6, 15.8] },
     { name: "Clinique", color: "#ACBDA7", data: [15.8, 15.7, 15.5, 15.3, 15.1, 14.9, 14.7] },
     { name: "Laneige", color: "#6B241E", data: [12.5, 12.8, 13.1, 13.4, 13.7, 14.0, 14.3] },
   ];
+  const shareOfSearchData = allShareOfSearchData.filter(brand => selectedBrands.includes(brand.name));
 
   // Total Followers historical data for each brand (in millions)
-  const totalFollowersData = [
+  const allTotalFollowersData = [
     { name: "Rhode", color: "#B86A54", data: [2.0, 2.1, 2.15, 2.2, 2.28, 2.35, 2.4] },
     { name: "Glossier", color: "#DAC58C", data: [3.2, 3.18, 3.15, 3.1, 3.05, 3.0, 2.95] },
     { name: "Summer Fridays", color: "#374762", data: [1.8, 1.85, 1.9, 1.95, 2.0, 2.05, 2.1] },
     { name: "Clinique", color: "#ACBDA7", data: [2.5, 2.48, 2.45, 2.42, 2.4, 2.38, 2.35] },
     { name: "Laneige", color: "#6B241E", data: [1.6, 1.65, 1.7, 1.75, 1.8, 1.85, 1.9] },
   ];
+  const totalFollowersData = allTotalFollowersData.filter(brand => selectedBrands.includes(brand.name));
 
   // Interactions historical data for each brand (in thousands)
-  const interactionsData = [
+  const allInteractionsData = [
     { name: "Rhode", color: "#B86A54", data: [720, 750, 780, 800, 820, 835, 842] },
     { name: "Glossier", color: "#DAC58C", data: [890, 880, 865, 850, 835, 820, 805] },
     { name: "Summer Fridays", color: "#374762", data: [650, 670, 690, 710, 730, 745, 760] },
     { name: "Clinique", color: "#ACBDA7", data: [780, 775, 765, 755, 745, 735, 725] },
     { name: "Laneige", color: "#6B241E", data: [600, 620, 640, 660, 680, 695, 710] },
   ];
+  const interactionsData = allInteractionsData.filter(brand => selectedBrands.includes(brand.name));
 
   // LLM Rank historical data for each brand (score out of 100)
-  const llmRankData = [
+  const allLlmRankData = [
     { name: "Rhode", color: "#B86A54", data: [75, 76, 78, 79, 81, 82, 83] },
     { name: "Glossier", color: "#DAC58C", data: [82, 82, 81, 81, 80, 80, 80] },
     { name: "Summer Fridays", color: "#374762", data: [68, 69, 69, 70, 71, 71, 72] },
     { name: "Clinique", color: "#ACBDA7", data: [79, 79, 80, 80, 81, 81, 81] },
     { name: "Laneige", color: "#6B241E", data: [72, 73, 74, 75, 76, 77, 77] },
   ];
+  const llmRankData = allLlmRankData.filter(brand => selectedBrands.includes(brand.name));
 
   const MetricChart = ({ 
     title, 
@@ -908,6 +1098,9 @@ function HistoricalView() {
     data: Array<{ name: string; color: string; data: number[] }>; 
     unit: string;
   }) => {
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+    const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+
     // Find global min/max for consistent scaling
     const allValues = data.flatMap(brand => brand.data);
     const globalMax = Math.max(...allValues);
@@ -936,6 +1129,7 @@ function HistoricalView() {
             backgroundColor: "rgba(245,240,235,0.3)",
             borderRadius: 10,
             padding: 16,
+            position: "relative",
           }}
         >
           <svg width="100%" height="140" viewBox="0 0 360 140" preserveAspectRatio="none">
@@ -968,46 +1162,134 @@ function HistoricalView() {
 
               return (
                 <g key={brand.name}>
-                  {/* Area fill */}
-                  <path
-                    d={`${pathData} L 360,130 L 0,130 Z`}
-                    fill={brand.color}
-                    opacity={0.06}
-                  />
                   {/* Line */}
                   <path
                     d={pathData}
                     fill="none"
                     stroke={brand.color}
-                    strokeWidth={brand.name === "Rhode" ? "2.5" : "1.5"}
+                    strokeWidth={brand.name === mainBrand ? "2.5" : "1.5"}
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  {/* Data points */}
-                  {brand.data.map((value, index) => {
-                    const x = (index / (brand.data.length - 1)) * 360;
-                    const y = 130 - ((value - globalMin) / range) * 110;
-                    return (
-                      <circle
-                        key={index}
-                        cx={x}
-                        cy={y}
-                        r={brand.name === "Rhode" ? "3" : "2"}
-                        fill={brand.color}
-                        opacity={index === brand.data.length - 1 ? 1 : 0.6}
-                      />
-                    );
-                  })}
                 </g>
+              );
+            })}
+
+            {/* Invisible hover zones for each month */}
+            {months.map((month, index) => {
+              const x = (index / (months.length - 1)) * 360;
+              const zoneWidth = 360 / (months.length - 1);
+              
+              return (
+                <rect
+                  key={index}
+                  x={index === 0 ? 0 : x - zoneWidth / 2}
+                  y="0"
+                  width={index === 0 || index === months.length - 1 ? zoneWidth / 2 : zoneWidth}
+                  height="140"
+                  fill="transparent"
+                  style={{ cursor: "crosshair" }}
+                  onMouseEnter={(e) => {
+                    setHoveredIndex(index);
+                    const svg = e.currentTarget.ownerSVGElement;
+                    if (svg) {
+                      const container = svg.parentElement;
+                      if (container) {
+                        const containerRect = container.getBoundingClientRect();
+                        const svgRect = svg.getBoundingClientRect();
+                        const svgX = (x / 360) * svgRect.width + (svgRect.left - containerRect.left);
+                        setTooltipPosition({ x: svgX, y: 0 });
+                      }
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredIndex(null);
+                    setTooltipPosition(null);
+                  }}
+                />
               );
             })}
           </svg>
 
+          {/* Tooltip */}
+          {hoveredIndex !== null && tooltipPosition && (
+            <div
+              style={{
+                position: "absolute",
+                left: tooltipPosition.x,
+                top: 0,
+                transform: "translateX(-50%)",
+                backgroundColor: "rgba(255, 255, 255, 0.98)",
+                border: "1px solid #E8E2DC",
+                borderRadius: 8,
+                padding: "8px 12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                pointerEvents: "none",
+                zIndex: 1000,
+                minWidth: 140,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 10,
+                  color: "#B5ADA5",
+                  marginBottom: 6,
+                  fontWeight: 600,
+                }}
+              >
+                {months[hoveredIndex]}
+              </div>
+              {data.map((brand) => (
+                <div
+                  key={brand.name}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginBottom: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: brand.color,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: 10,
+                      color: "var(--text-primary)",
+                      fontWeight: brand.name === mainBrand ? 700 : 400,
+                      flex: 1,
+                    }}
+                  >
+                    {brand.name}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 10,
+                      color: "var(--text-primary)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {brand.data[hoveredIndex]}{unit}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Month labels */}
           <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
-            {months.map((month) => (
+            {months.map((month, i) => (
               <span
-                key={month}
+                key={i}
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 8,
@@ -1034,18 +1316,62 @@ function HistoricalView() {
         padding: 20,
       }}
     >
-      <div style={{ marginBottom: 16 }}>
+      {/* Mobile: Stacked layout */}
+      <div className="block md:hidden" style={{ marginBottom: 16 }}>
         <h3
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 16,
             fontWeight: 600,
             color: "var(--text-primary)",
-            marginBottom: 4,
+            marginBottom: 8,
           }}
         >
           Historical View
         </h3>
+
+        {/* Brand legend */}
+        <div style={{ 
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          marginBottom: 8,
+        }}>
+          <div className="flex items-center gap-1.5" style={{ 
+            backgroundColor: "#F5F0EB",
+            borderRadius: "var(--radius-pill)",
+            padding: "3px",
+            minWidth: "max-content",
+            display: "inline-flex",
+          }}>
+            {shareOfSearchData.map((brand) => (
+              <div
+                key={brand.name}
+                className="flex items-center gap-1.5"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 10,
+                  padding: "4px 10px",
+                  borderRadius: "var(--radius-pill)",
+                  backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
+                  color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
+                  fontWeight: brand.name === mainBrand ? 600 : 400,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: "50%",
+                    backgroundColor: brand.color,
+                  }}
+                />
+                {brand.name}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <p
           style={{
             fontFamily: "var(--font-body)",
@@ -1053,42 +1379,83 @@ function HistoricalView() {
             color: "#B5ADA5",
           }}
         >
-          7-month brand performance trends across key metrics
+          Brand performance trends across key metrics
         </p>
       </div>
 
-      {/* Four metric charts in a 2x2 grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 16 }}>
+      {/* Desktop: Title and legend on same row */}
+      <div className="hidden md:block" style={{ marginBottom: 16 }}>
+        <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+          <h3
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 16,
+              fontWeight: 600,
+              color: "var(--text-primary)",
+            }}
+          >
+            Historical View
+          </h3>
+
+          {/* Brand legend - top right on desktop */}
+          <div style={{ 
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}>
+            <div className="flex items-center gap-1.5" style={{ 
+              backgroundColor: "#F5F0EB",
+              borderRadius: "var(--radius-pill)",
+              padding: "3px",
+              minWidth: "max-content",
+              display: "inline-flex",
+            }}>
+              {shareOfSearchData.map((brand) => (
+                <div
+                  key={brand.name}
+                  className="flex items-center gap-1.5"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    padding: "4px 10px",
+                    borderRadius: "var(--radius-pill)",
+                    backgroundColor: brand.name === "Rhode" ? "#FFFFFF" : "transparent",
+                    color: brand.name === "Rhode" ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === "Rhode" ? 600 : 400,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      backgroundColor: brand.color,
+                    }}
+                  />
+                  {brand.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <p
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 11,
+            color: "#B5ADA5",
+          }}
+        >
+          Brand performance trends across key metrics
+        </p>
+      </div>
+
+      {/* Four metric charts - one per row on mobile, 2x2 on desktop */}
+      <div className="flex flex-col md:grid md:grid-cols-2" style={{ gap: 16 }}>
         <MetricChart title="Share of Search" data={shareOfSearchData} unit="%" />
         <MetricChart title="Total Followers" data={totalFollowersData} unit="M" />
         <MetricChart title="Interactions" data={interactionsData} unit="K" />
         <MetricChart title="LLM Rank" data={llmRankData} unit="" />
-      </div>
-
-      {/* Brand legend */}
-      <div className="flex items-center justify-center" style={{ gap: 24, paddingTop: 12, borderTop: "1px solid #F0EBE6" }}>
-        {shareOfSearchData.map((brand) => (
-          <div key={brand.name} className="flex items-center gap-2">
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                backgroundColor: brand.color,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                color: "var(--text-primary)",
-                fontWeight: brand.name === "Rhode" ? 700 : 400,
-              }}
-            >
-              {brand.name}
-            </span>
-          </div>
-        ))}
       </div>
     </div>
   );
