@@ -54,7 +54,29 @@ export const brandSubScores: Record<string, Record<string, number>> = {
   "The Ordinary":   { i1_consistency: 80, i1_distinctiveness: 72, c1_search: 78, c1_social: 76, c1_llm: 74, o_favourability: 78, n_consistency: 80, n_coherence: 74, n_alignment: 72, i2_social: 78, c2_price: 71, c2_quality: 84 },
 };
 
-// SVG trend paths for the dashboard chart (viewBox: 0 0 600 200, lower y = higher score)
+// 7-point trend values for the dashboard chart (range ~35–85)
+export const brandTrendValues: Record<string, number[]> = {
+  // Beauty
+  "Rhode":          [62, 65, 68, 66, 71, 74, 78],
+  "Summer Fridays": [55, 56, 54, 57, 58, 60, 62],
+  "Glossier":       [70, 68, 69, 67, 66, 65, 64],
+  "Clinique":       [42, 43, 44, 43, 45, 46, 48],
+  "Laneige":        [50, 51, 53, 54, 55, 57, 58],
+  // Fashion
+  "Nike":           [74, 76, 78, 77, 79, 81, 83],
+  "Adidas":         [68, 70, 69, 72, 71, 74, 75],
+  "Zara":           [58, 59, 57, 60, 61, 62, 63],
+  "H&M":            [48, 47, 49, 48, 50, 51, 52],
+  "Uniqlo":         [65, 66, 68, 67, 69, 71, 72],
+  // Personal Care
+  "Dove":           [66, 68, 70, 69, 71, 73, 75],
+  "Nivea":          [58, 60, 61, 59, 62, 63, 64],
+  "CeraVe":         [63, 65, 68, 70, 71, 73, 75],
+  "Cetaphil":       [52, 53, 54, 53, 55, 56, 57],
+  "The Ordinary":   [60, 62, 64, 63, 65, 67, 68],
+};
+
+// SVG trend paths for fallback (viewBox: 0 0 600 200, lower y = higher score)
 export const brandTrendPaths: Record<string, string> = {
   // Beauty
   "Rhode":          "M0,160 C40,140 80,120 120,130 C160,140 200,100 240,90 C280,80 320,70 360,60 C400,65 440,50 480,55 C520,45 560,40 600,35",
@@ -90,4 +112,8 @@ export function getBrandSubScore(brandName: string, metric: string): number {
 
 export function getBrandTrendPath(brandName: string): string {
   return brandTrendPaths[brandName] ?? "M0,150 C200,140 400,130 600,120";
+}
+
+export function getBrandTrendValues(brandName: string): number[] {
+  return brandTrendValues[brandName] ?? [50, 52, 51, 53, 54, 55, 56];
 }
