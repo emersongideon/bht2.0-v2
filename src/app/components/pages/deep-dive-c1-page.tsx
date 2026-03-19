@@ -1,18 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
+import { supabase } from "../../../lib/supabase";
+import { toISODateString, computeAxisDates } from "../../utils/date-utils";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
 import { useBrand } from "../../contexts/brand-context";
+import { useDimension } from "../../data/use-dimensions";
+import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
-import { useDimension, useSubmetrics } from "../../data/use-dimensions";
+import { useSubmetricScores } from "../../hooks/use-submetric-scores";
+import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
+import { useC1LatestMetrics, type C1LatestRow } from "../../hooks/use-c1-latest-metrics";
 
 export function DeepDiveC1Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
-  const { submetrics } = useSubmetrics("C1");
+  const subScores = useSubmetricScores("C1");
 
   return (
     <>
@@ -38,13 +44,13 @@ export function DeepDiveC1Page() {
         </div>
 
         {/* Row 3 — Dimension Header */}
-        <DimensionHeader />
+        <DimensionHeader pageKey="C1" />
 
         {/* Row 4 — Sub-metric cards (3 source cards) */}
         <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 12, flexShrink: 0 }}>
-          <ScoreCard title={submetrics[0]?.submetric_name ?? "Search"} badge="Search" score="78" delta="▲ 2.4" />
-          <ScoreCard title={submetrics[1]?.submetric_name ?? "Social"} badge="Social" score="76" delta="▲ 1.4" />
-          <ScoreCard title={submetrics[2]?.submetric_name ?? "LLM"} badge="LLM" score="83" delta="▲ 5.1" />
+          <ScoreCard title="Search" badge="Search" liveScore={subScores["Search"]?.score ?? null} liveDelta={subScores["Search"]?.delta ?? null} trendValues={subScores["Search"]?.trendValues} />
+          <ScoreCard title="Social" badge="Social" liveScore={subScores["Social"]?.score ?? null} liveDelta={subScores["Social"]?.delta ?? null} trendValues={subScores["Social"]?.trendValues} />
+          <ScoreCard title="LLM" badge="LLM" liveScore={subScores["LLM"]?.score ?? null} liveDelta={subScores["LLM"]?.delta ?? null} trendValues={subScores["LLM"]?.trendValues} />
         </div>
 
         {/* Row 5 — Brand Comparison */}
@@ -69,8 +75,10 @@ export function DeepDiveC1Page() {
   );
 }
 
-function DimensionHeader() {
-  const { dimension: dim } = useDimension("C1");
+function DimensionHeader({ pageKey }: { pageKey: string }) {
+  const { dimension: dim } = useDimension(pageKey);
+  const { score, delta } = useDimensionScore(pageKey);
+  const isPositive = !delta || delta >= 0;
   return (
     <div
       style={{
@@ -126,25 +134,27 @@ function DimensionHeader() {
               color: "var(--text-primary)",
             }}
           >
-            82
+            {score ?? "—"}
           </span>
         </div>
 
         {/* Delta */}
         <div>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              padding: "3px 8px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(74,102,68,0.1)",
-              color: "#4A6644",
-              fontWeight: 600,
-            }}
-          >
-            ▲ 3.1
-          </span>
+          {delta !== null && (
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                fontWeight: 600,
+              }}
+            >
+              {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+            </span>
+          )}
         </div>
 
         {/* Description */}
@@ -203,21 +213,23 @@ function DimensionHeader() {
                 color: "var(--text-primary)",
               }}
             >
-              82
+              {score ?? "—"}
             </span>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                padding: "3px 8px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor: "rgba(74,102,68,0.1)",
-                color: "#4A6644",
-                fontWeight: 600,
-              }}
-            >
-              ▲ 3.1
-            </span>
+            {delta !== null && (
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                  padding: "3px 8px",
+                  borderRadius: "var(--radius-pill)",
+                  backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                  color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                  fontWeight: 600,
+                }}
+              >
+                {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+              </span>
+            )}
           </div>
         </div>
         <p
@@ -239,18 +251,45 @@ function DimensionHeader() {
 function ScoreCard({
   title,
   badge,
-  score,
-  delta,
+  liveScore,
+  liveDelta,
+  trendValues,
 }: {
   title: string;
   badge: string;
-  score: string;
-  delta: string;
+  liveScore?: number | null;
+  liveDelta?: number | null;
+  trendValues?: (number | null)[];
 }) {
-  const isPositive = delta.includes("▲");
+  const isPositive = !liveDelta || liveDelta >= 0;
   const { getAxisLabels } = useDateMode();
   const axisLabels = getAxisLabels();
-  
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  // Build live sparkline path + dots from trendValues (fixed 0-100 scale)
+  const W = 300; const H = 36;
+  const n = trendValues?.length ?? 0;
+  const toX = (i: number) => n > 1 ? (i / (n - 1)) * W : W / 2;
+  const toY = (v: number) => H - 1 - (v / 100) * (H - 2); // fixed 0-100 scale
+  const yBottom = H - 1;
+
+  // Baseline path: nulls draw at physical bottom (continuous line, no gaps)
+  let sparkPath = "";
+  if (trendValues && trendValues.length > 0) {
+    const parts: string[] = [];
+    for (let i = 0; i < trendValues.length; i++) {
+      const v = trendValues[i];
+      const y = v !== null ? toY(v) : yBottom;
+      parts.push(`${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${y.toFixed(1)}`);
+    }
+    sparkPath = parts.join(" ");
+  }
+
+  const sparkDots = trendValues
+    ? trendValues.map((v, i) => v !== null ? { x: toX(i), y: toY(v), i } : null).filter(Boolean) as { x: number; y: number; i: number }[]
+    : [];
+  const hasData = trendValues ? trendValues.some((v) => v !== null) : false;
+
   return (
     <div
       style={{
@@ -273,7 +312,7 @@ function ScoreCard({
         >
           {title}
         </h3>
-        
+
       </div>
 
       {/* Score row */}
@@ -286,34 +325,93 @@ function ScoreCard({
             color: "var(--text-primary)",
           }}
         >
-          {score}
+          {liveScore !== null && liveScore !== undefined ? liveScore : "—"}
         </span>
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            padding: "3px 8px",
-            borderRadius: "var(--radius-pill)",
-            backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
-            color: isPositive ? "#4A6644" : "#B86A54",
-            fontWeight: 600,
-          }}
-        >
-          {delta}
-        </span>
+        {liveDelta !== null && liveDelta !== undefined && (
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              padding: "3px 8px",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+              color: isPositive ? "#4A6644" : "#B86A54",
+              fontWeight: 600,
+            }}
+          >
+            {isPositive ? "▲" : "▼"} {Math.abs(liveDelta).toFixed(1)}
+          </span>
+        )}
       </div>
 
       {/* Sparkline */}
       <div>
-        <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
-          <path
-            d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12"
-            fill="none"
-            stroke="#B5ADA5"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <div
+          style={{ position: "relative" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xRatio = (e.clientX - rect.left) / rect.width;
+            const idx = Math.round(xRatio * (axisLabels.length - 1));
+            setHoverIndex(Math.max(0, Math.min(axisLabels.length - 1, idx)));
+          }}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          {/* Hover tooltip */}
+          {hoverIndex !== null && trendValues && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 4px)",
+              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
+              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "3px 7px",
+              boxShadow: "var(--shadow-card)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              zIndex: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#B5ADA5" }}>
+                {axisLabels[hoverIndex]}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
+                {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+              </span>
+            </div>
+          )}
+          <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+            {/* Fallback line when no live data */}
+            {!hasData && (
+              <path
+                d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12"
+                fill="none"
+                stroke="#B5ADA5"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.4"
+              />
+            )}
+            {/* Live sparkline line */}
+            {hasData && sparkPath && (
+              <path
+                d={sparkPath}
+                fill="none"
+                stroke="#B5ADA5"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+            {/* Dots at each non-null data point */}
+            {sparkDots.map((pt) => (
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
+            ))}
+          </svg>
+        </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
           {axisLabels.map((label, i) => (
             <span
@@ -338,25 +436,11 @@ function ScoreCard({
 function BrandComparison() {
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
-
-  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
-
-  const allSearchData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c1_search"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  const allSocialData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c1_social"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  const allLlmData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c1_llm"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  // Filter to only show selected brands
-  const searchData = allSearchData.filter(item => selectedBrands.includes(item.brand));
-  const socialData = allSocialData.filter(item => selectedBrands.includes(item.brand));
-  const llmData = allLlmData.filter(item => selectedBrands.includes(item.brand));
+  const categoryBrands = (brandsByCategory[selectedCategory] ?? []).filter(b => selectedBrands.includes(b.name));
+  const allScores = useAllBrandsSubmetricScores("C1");
+  const searchData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Search"] ?? null, color: b.color }));
+  const socialData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Social"] ?? null, color: b.color }));
+  const llmData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["LLM"] ?? null, color: b.color }));
 
   const maxScore = 100;
 
@@ -410,7 +494,7 @@ function BrandComparison() {
               <div
                 style={{
                   height: "100%",
-                  width: `${(item.score / maxScore) * 100}%`,
+                  width: `${((item.score ?? 0) / maxScore) * 100}%`,
                   backgroundColor: item.color,
                   opacity: item.brand === mainBrand ? 1 : 0.5,
                   borderRadius: 7,
@@ -427,7 +511,7 @@ function BrandComparison() {
                 fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
-              {item.score}
+              {item.score ?? "—"}
             </span>
           </div>
         ))}
@@ -477,6 +561,25 @@ function BrandComparison() {
 }
 
 function ScaleVelocityPanel() {
+  const { mainBrand } = useBrand();
+  const latestByBrand = useC1LatestMetrics();
+  const d = latestByBrand[mainBrand];
+
+  const fmtPct = (v: number | null | undefined, digits = 1) =>
+    v != null ? `${v.toFixed(digits)}%` : "—";
+  const fmtPosPct = (v: number | null | undefined) =>
+    v != null ? `+${v.toFixed(1)}%` : "—";
+  const fmtM = (v: number | null | undefined) =>
+    v != null ? `${(v / 1_000_000).toFixed(1)}M` : "—";
+  const fmtK = (v: number | null | undefined) =>
+    v != null ? `${(v / 1000).toFixed(0)}K` : "—";
+  const fmtRank = (v: number | null | undefined) =>
+    v != null ? `#${v}` : "—";
+  const fmtPp = (v: number | null | undefined) =>
+    v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}pp` : "—";
+  const fmtRankChange = (v: number | null | undefined) =>
+    v != null ? (v === 0 ? "±0" : `${v > 0 ? "+" : ""}${v}`) : "—";
+
   return (
     <div
       style={{
@@ -490,127 +593,53 @@ function ScaleVelocityPanel() {
       {/* Summary Cards - stacks on mobile */}
       <div className="flex flex-col md:flex-row" style={{ gap: 12, marginBottom: 16 }}>
         {/* Scale Card */}
-        <div
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(245,240,235,0.6)",
-            borderRadius: 14,
-            padding: 16,
-          }}
-        >
+        <div style={{ flex: 1, backgroundColor: "rgba(245,240,235,0.6)", borderRadius: 14, padding: 16 }}>
           <div className="flex items-baseline justify-between" style={{ marginBottom: 12 }}>
-            <div><span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#7A6F65",
-                  letterSpacing: "1px",
-                  textTransform: "uppercase",
-                }}
-              >SCALE</span><span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  color: "#B5ADA5",
-                  marginLeft: 8,
-                }}
-              >Where you stand right now</span></div>
             <div>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: "var(--text-primary)",
-                }}
-              >
-                78
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  color: "#B5ADA5",
-                }}
-              >
-                /100
-              </span>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600, color: "#7A6F65", letterSpacing: "1px", textTransform: "uppercase" }}>SCALE</span>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "#B5ADA5", marginLeft: 8 }}>Where you stand right now</span>
+            </div>
+            <div>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: "var(--text-primary)" }}>{d?.c1_scale_score ?? "—"}</span>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "#B5ADA5" }}>/100</span>
             </div>
           </div>
           <div className="flex" style={{ gap: 10 }}>
-            <MetricTile label="SHARE OF SEARCH" value="18.2%" rank="Rank #2" />
-            <MetricTile label="TOTAL FOLLOWERS" value="2.4M" rank="Rank #3" />
-            <MetricTile label="INTERACTIONS" value="842K" rank="Rank #2" />
-            <MetricTile label="LLM RANK" value="#2" rank="of 5" />
+            <MetricTile label="SHARE OF SEARCH" value={fmtPct(d?.c1_scale_share_of_search_pct)} />
+            <MetricTile label="TOTAL FOLLOWERS" value={fmtM(d?.c1_scale_total_followers)} />
+            <MetricTile label="INTERACTIONS" value={fmtK(d?.c1_scale_interactions)} />
+            <MetricTile label="LLM RANK" value={fmtRank(d?.c1_scale_llm_rank)} />
           </div>
         </div>
 
         {/* Velocity Card */}
-        <div
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(74,102,68,0.04)",
-            borderRadius: 14,
-            padding: 16,
-          }}
-        >
+        <div style={{ flex: 1, backgroundColor: "rgba(74,102,68,0.04)", borderRadius: 14, padding: 16 }}>
           <div className="flex items-baseline justify-between" style={{ marginBottom: 12 }}>
-            <div><span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#4A6644",
-                  letterSpacing: "1px",
-                  textTransform: "uppercase",
-                }}
-              >VELOCITY</span><span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  color: "#B5ADA5",
-                  marginLeft: 8,
-                }}
-              >Where you're headed</span></div>
             <div>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: "#4A6644",
-                }}
-              >
-                87
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  color: "#B5ADA5",
-                }}
-              >
-                /100
-              </span>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600, color: "#4A6644", letterSpacing: "1px", textTransform: "uppercase" }}>VELOCITY</span>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "#B5ADA5", marginLeft: 8 }}>Where you're headed</span>
+            </div>
+            <div>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: "#4A6644" }}>{d?.c1_velocity_score ?? "—"}</span>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "#B5ADA5" }}>/100</span>
             </div>
           </div>
           <div className="flex" style={{ gap: 10 }}>
-            <VelocityTile label="SEARCH MOMENTUM" value="+12%" arrows="▲▲▲" />
-            <VelocityTile label="FOLLOWER GROWTH" value="+8.3%" arrows="▲▲" />
-            <VelocityTile label="INTERACTIONS Δ" value="+1.2pp" arrows="▲" />
-            <VelocityTile label="LLM RANK CHANGE" value="+3.1pp" arrows="▲▲▲" />
+            <VelocityTile label="SEARCH MOMENTUM" value={fmtPosPct(d?.c1_velocity_search_momentum_pct)} />
+            <VelocityTile label="FOLLOWER GROWTH" value={fmtPosPct(d?.c1_velocity_follower_growth_pct)} />
+            <VelocityTile label="INTERACTIONS Δ" value={fmtPp(d?.c1_velocity_interactions_growth)} />
+            <VelocityTile label="LLM RANK CHANGE" value={fmtRankChange(d?.c1_velocity_llm_rank_change)} />
           </div>
         </div>
       </div>
 
-      {/* 2x2 Scatter Chart */}
-      <BrandPositioningScatter />
+      {/* Scatter Chart */}
+      <BrandPositioningScatter latestByBrand={latestByBrand} />
     </div>
   );
 }
 
-function MetricTile({ label, value, rank }: { label: string; value: string; rank: string }) {
+function MetricTile({ label, value }: { label: string; value: string }) {
   return (
     <div
       style={{
@@ -649,7 +678,7 @@ function MetricTile({ label, value, rank }: { label: string; value: string; rank
   );
 }
 
-function VelocityTile({ label, value, arrows }: { label: string; value: string; arrows: string }) {
+function VelocityTile({ label, value }: { label: string; value: string }) {
   return (
     <div
       style={{
@@ -688,19 +717,23 @@ function VelocityTile({ label, value, arrows }: { label: string; value: string; 
   );
 }
 
-function BrandPositioningScatter() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const allBrandPositions = [
-    { name: "Rhode", x: 75, y: 78, size: 14, color: "#B86A54" },
-    { name: "Glossier", x: 70, y: 52, size: 11, color: "#DAC58C" },
-    { name: "Summer Fridays", x: 35, y: 75, size: 11, color: "#374762" },
-    { name: "Clinique", x: 72, y: 28, size: 11, color: "#ACBDA7" },
-    { name: "Laneige", x: 52, y: 72, size: 11, color: "#6B241E" },
-  ];
+function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<string, C1LatestRow> }) {
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
 
-  // Filter to only show selected brands
-  const brandPositions = allBrandPositions.filter(brand => selectedBrands.includes(brand.name));
+  const brandPositions = selectedBrands
+    .filter(b => latestByBrand[b])
+    .map(b => {
+      const row = latestByBrand[b];
+      const color = categoryBrandList.find(c => c.name === b)?.color ?? "#B86A54";
+      return {
+        name: b,
+        color,
+        x: row.c1_scale_score ?? 50,
+        y: row.c1_velocity_score ?? 50,
+      };
+    });
 
   return (
     <div>
@@ -852,16 +885,16 @@ function BrandPositioningScatter() {
           <line x1="0" y1="120" x2="600" y2="120" stroke="#E8E2DC" strokeWidth="1" strokeDasharray="4 4" />
 
           {/* Quadrant labels */}
-          <text x="150" y="30" fontSize="11" fill="#B5ADA5" textAnchor="middle">
+          <text x="8" y="16" fontSize="11" fill="#B5ADA5" textAnchor="start">
             Rising Star
           </text>
-          <text x="450" y="30" fontSize="11" fill="#B5ADA5" textAnchor="middle">
+          <text x="592" y="16" fontSize="11" fill="#B5ADA5" textAnchor="end">
             Dominant
           </text>
-          <text x="150" y="220" fontSize="11" fill="#B5ADA5" textAnchor="middle">
+          <text x="8" y="236" fontSize="11" fill="#B5ADA5" textAnchor="start">
             Stalling
           </text>
-          <text x="450" y="220" fontSize="11" fill="#B5ADA5" textAnchor="middle">
+          <text x="592" y="236" fontSize="11" fill="#B5ADA5" textAnchor="end">
             Coasting
           </text>
 
@@ -887,19 +920,9 @@ function BrandPositioningScatter() {
             const isMainBrand = brand.name === mainBrand;
             return (
               <g key={brand.name}>
-                <circle cx={cx} cy={cy} r={brand.size} fill={brand.color} opacity={0.9} />
-                {isMainBrand && (
-                  <rect
-                    x={cx + 20}
-                    y={cy - 10}
-                    width={50}
-                    height={20}
-                    rx="10"
-                    fill="rgba(184,106,84,0.15)"
-                  />
-                )}
+                <circle cx={cx} cy={cy} r={isMainBrand ? 14 : 11} fill={brand.color} opacity={0.9} />
                 <text
-                  x={cx + (isMainBrand ? 45 : 20)}
+                  x={cx + 20}
                   y={cy + 4}
                   fontSize="11"
                   fill={isMainBrand ? brand.color : "var(--text-primary)"}
@@ -1030,67 +1053,115 @@ function BrandComparisonTrend() {
 }
 
 function HistoricalView() {
-  const { getAxisLabels } = useDateMode();
-  const { selectedBrands, mainBrand } = useBrand();
-  const months = getAxisLabels();
-  
-  // Share of Search historical data for each brand
-  const allShareOfSearchData = [
-    { name: "Rhode", color: "#B86A54", data: [16.1, 16.5, 17.0, 17.4, 17.8, 18.0, 18.2] },
-    { name: "Glossier", color: "#DAC58C", data: [19.2, 19.0, 18.5, 18.1, 17.8, 17.5, 17.2] },
-    { name: "Summer Fridays", color: "#374762", data: [14.2, 14.5, 14.8, 15.1, 15.4, 15.6, 15.8] },
-    { name: "Clinique", color: "#ACBDA7", data: [15.8, 15.7, 15.5, 15.3, 15.1, 14.9, 14.7] },
-    { name: "Laneige", color: "#6B241E", data: [12.5, 12.8, 13.1, 13.4, 13.7, 14.0, 14.3] },
-  ];
-  const shareOfSearchData = allShareOfSearchData.filter(brand => selectedBrands.includes(brand.name));
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { selectedDate, dateMode } = useDateMode();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
 
-  // Total Followers historical data for each brand (in millions)
-  const allTotalFollowersData = [
-    { name: "Rhode", color: "#B86A54", data: [2.0, 2.1, 2.15, 2.2, 2.28, 2.35, 2.4] },
-    { name: "Glossier", color: "#DAC58C", data: [3.2, 3.18, 3.15, 3.1, 3.05, 3.0, 2.95] },
-    { name: "Summer Fridays", color: "#374762", data: [1.8, 1.85, 1.9, 1.95, 2.0, 2.05, 2.1] },
-    { name: "Clinique", color: "#ACBDA7", data: [2.5, 2.48, 2.45, 2.42, 2.4, 2.38, 2.35] },
-    { name: "Laneige", color: "#6B241E", data: [1.6, 1.65, 1.7, 1.75, 1.8, 1.85, 1.9] },
-  ];
-  const totalFollowersData = allTotalFollowersData.filter(brand => selectedBrands.includes(brand.name));
+  type BrandSeries = { name: string; color: string; data: (number | null)[] };
+  const [shareOfSearchData, setShareOfSearchData] = useState<BrandSeries[]>([]);
+  const [totalFollowersData, setTotalFollowersData] = useState<BrandSeries[]>([]);
+  const [interactionsData, setInteractionsData] = useState<BrandSeries[]>([]);
+  const [llmRankData, setLlmRankData] = useState<BrandSeries[]>([]);
+  const [chartLabels, setChartLabels] = useState<string[]>([]);
 
-  // Interactions historical data for each brand (in thousands)
-  const allInteractionsData = [
-    { name: "Rhode", color: "#B86A54", data: [720, 750, 780, 800, 820, 835, 842] },
-    { name: "Glossier", color: "#DAC58C", data: [890, 880, 865, 850, 835, 820, 805] },
-    { name: "Summer Fridays", color: "#374762", data: [650, 670, 690, 710, 730, 745, 760] },
-    { name: "Clinique", color: "#ACBDA7", data: [780, 775, 765, 755, 745, 735, 725] },
-    { name: "Laneige", color: "#6B241E", data: [600, 620, 640, 660, 680, 695, 710] },
-  ];
-  const interactionsData = allInteractionsData.filter(brand => selectedBrands.includes(brand.name));
+  useEffect(() => {
+    setShareOfSearchData([]);
+    setTotalFollowersData([]);
+    setInteractionsData([]);
+    setLlmRankData([]);
+    setChartLabels([]);
 
-  // LLM Rank historical data for each brand (score out of 100)
-  const allLlmRankData = [
-    { name: "Rhode", color: "#B86A54", data: [75, 76, 78, 79, 81, 82, 83] },
-    { name: "Glossier", color: "#DAC58C", data: [82, 82, 81, 81, 80, 80, 80] },
-    { name: "Summer Fridays", color: "#374762", data: [68, 69, 69, 70, 71, 71, 72] },
-    { name: "Clinique", color: "#ACBDA7", data: [79, 79, 80, 80, 81, 81, 81] },
-    { name: "Laneige", color: "#6B241E", data: [72, 73, 74, 75, 76, 77, 77] },
-  ];
-  const llmRankData = allLlmRankData.filter(brand => selectedBrands.includes(brand.name));
+    async function load() {
+      const toDate = new Date(selectedDate);
+      // Last 7 periods: 7 days for Daily/Rolling 30, 7 months for Monthly
+      const fromDate = computeAxisDates(dateMode, selectedDate)[0];
 
-  const MetricChart = ({ 
-    title, 
-    data, 
-    unit 
-  }: { 
-    title: string; 
-    data: Array<{ name: string; color: string; data: number[] }>; 
-    unit: string;
+      const { data } = await supabase
+        .from("c1_attention_metrics")
+        .select("brand_name, date, c1_scale_share_of_search_pct, c1_scale_total_followers, c1_scale_interactions, c1_scale_llm_rank")
+        .eq("category_name", selectedCategory)
+        .in("brand_name", selectedBrands)
+        .gte("date", toISODateString(fromDate))
+        .lte("date", toISODateString(toDate))
+        .order("date", { ascending: true });
+
+      // Always render the 7 axis labels even when there's no data
+      const axisDatesEarly = computeAxisDates(dateMode, selectedDate);
+      setChartLabels(axisDatesEarly.map(d =>
+        dateMode === "Monthly"
+          ? d.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+          : d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      ));
+
+      if (!data?.length) return;
+
+      // Group rows by brand → date → row (keyed by exact DB date string)
+      const byBrand: Record<string, Record<string, typeof data[0]>> = {};
+      for (const row of data) {
+        if (!byBrand[row.brand_name]) byBrand[row.brand_name] = {};
+        byBrand[row.brand_name][row.date] = row;
+      }
+
+      // Always use the 7 fixed axis positions — labels shown even with no data
+      const axisDates = computeAxisDates(dateMode, selectedDate);
+      const axisKeys = axisDates.map(d => toISODateString(d));
+
+      const colors: Record<string, string> = {};
+      for (const b of categoryBrandList) colors[b.name] = b.color;
+
+      const mkSeries = (metricKey: "c1_scale_share_of_search_pct" | "c1_scale_total_followers" | "c1_scale_interactions" | "c1_scale_llm_rank"): BrandSeries[] =>
+        selectedBrands
+          .map(b => ({
+            name: b,
+            color: colors[b] ?? "#B86A54",
+            data: axisKeys.map(axisKey => {
+              const brandData = byBrand[b] ?? {};
+              if (dateMode === "Monthly") {
+                // Match any DB date in the same YYYY-MM, take the latest available
+                const month = axisKey.substring(0, 7);
+                const matches = Object.keys(brandData).filter(d => d.startsWith(month)).sort();
+                const hit = matches.length ? matches[matches.length - 1] : null;
+                return hit ? (brandData[hit]?.[metricKey] ?? null) : null;
+              }
+              return brandData[axisKey]?.[metricKey] ?? null;
+            }),
+          }));
+
+      setShareOfSearchData(mkSeries("c1_scale_share_of_search_pct"));
+      setTotalFollowersData(mkSeries("c1_scale_total_followers"));
+      setInteractionsData(mkSeries("c1_scale_interactions"));
+      setLlmRankData(mkSeries("c1_scale_llm_rank"));
+
+      // X-axis: always the 7 formatted axis labels
+      setChartLabels(axisDates.map(d =>
+        dateMode === "Monthly"
+          ? d.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+          : d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      ));
+    }
+    load();
+  }, [selectedBrands, selectedCategory, selectedDate, dateMode]);
+
+  const MetricChart = ({
+    title,
+    data,
+    format,
+  }: {
+    title: string;
+    data: Array<{ name: string; color: string; data: (number | null)[] }>;
+    format: (val: number) => string;
   }) => {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+    const labels = chartLabels;
+    const numPoints = data[0]?.data.length ?? 0;
 
     // Find global min/max for consistent scaling
-    const allValues = data.flatMap(brand => brand.data);
-    const globalMax = Math.max(...allValues);
-    const globalMin = Math.min(...allValues);
-    const range = globalMax - globalMin;
+    const allValues = data.flatMap(brand => brand.data).filter((v): v is number => v !== null);
+    const globalMax = allValues.length ? Math.max(...allValues) : 1;
+    const globalMin = allValues.length ? Math.min(...allValues) : 0;
+    const range = globalMax - globalMin || 1;
 
     return (
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1135,42 +1206,70 @@ function HistoricalView() {
               );
             })}
 
-            {/* Brand trend lines */}
+            {/* Brand trend lines + dots */}
             {data.map((brand) => {
-              // Generate SVG path for this brand
-              const points = brand.data.map((value, index) => {
-                const x = (index / (brand.data.length - 1)) * 360;
+              // Collect non-null points (for dots only)
+              const points: { x: number; y: number; i: number }[] = [];
+              for (let i = 0; i < brand.data.length; i++) {
+                const value = brand.data[i];
+                if (value === null) continue;
+                const x = numPoints > 1 ? (i / (numPoints - 1)) * 360 : 180;
                 const y = 130 - ((value - globalMin) / range) * 110;
-                return `${x},${y}`;
-              });
-              const pathData = `M ${points.join(" L ")}`;
+                points.push({ x, y, i });
+              }
+
+              // Build continuous path: nulls draw at y=130 (physical bottom)
+              const pathParts: string[] = [];
+              for (let i = 0; i < brand.data.length; i++) {
+                const value = brand.data[i];
+                const x = numPoints > 1 ? (i / (numPoints - 1)) * 360 : 180;
+                const y = value !== null ? (130 - ((value - globalMin) / range) * 110) : 130;
+                pathParts.push(`${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`);
+              }
+              const pathData = pathParts.join(" ");
+
+              const r = brand.name === mainBrand ? 3.5 : 2.5;
 
               return (
                 <g key={brand.name}>
                   {/* Line */}
-                  <path
-                    d={pathData}
-                    fill="none"
-                    stroke={brand.color}
-                    strokeWidth={brand.name === mainBrand ? "2.5" : "1.5"}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                  {pathData && (
+                    <path
+                      d={pathData}
+                      fill="none"
+                      stroke={brand.color}
+                      strokeWidth={brand.name === mainBrand ? "2.5" : "1.5"}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                  {/* Dots at every non-null data point */}
+                  {points.map(({ x, y, i: di }) => (
+                    <circle
+                      key={di}
+                      cx={x}
+                      cy={y}
+                      r={hoveredIndex === di ? r + 1.5 : r}
+                      fill={brand.color}
+                      stroke="#fff"
+                      strokeWidth={brand.name === mainBrand ? "1.5" : "1"}
+                    />
+                  ))}
                 </g>
               );
             })}
 
-            {/* Invisible hover zones for each month */}
-            {months.map((month, index) => {
-              const x = (index / (months.length - 1)) * 360;
-              const zoneWidth = 360 / (months.length - 1);
+            {/* Invisible hover zones for each label */}
+            {labels.map((_, index) => {
+              const x = labels.length > 1 ? (index / (labels.length - 1)) * 360 : 180;
+              const zoneWidth = labels.length > 1 ? 360 / (labels.length - 1) : 360;
               
               return (
                 <rect
                   key={index}
                   x={index === 0 ? 0 : x - zoneWidth / 2}
                   y="0"
-                  width={index === 0 || index === months.length - 1 ? zoneWidth / 2 : zoneWidth}
+                  width={index === 0 || index === labels.length - 1 ? zoneWidth / 2 : zoneWidth}
                   height="140"
                   fill="transparent"
                   style={{ cursor: "crosshair" }}
@@ -1201,7 +1300,7 @@ function HistoricalView() {
             <div
               style={{
                 position: "absolute",
-                left: tooltipPosition.x,
+                left: `clamp(80px, ${tooltipPosition.x}px, calc(100% - 80px))`,
                 top: 0,
                 transform: "translateX(-50%)",
                 backgroundColor: "rgba(255, 255, 255, 0.98)",
@@ -1223,7 +1322,7 @@ function HistoricalView() {
                   fontWeight: 600,
                 }}
               >
-                {months[hoveredIndex]}
+                {labels[hoveredIndex]}
               </div>
               {data.map((brand) => (
                 <div
@@ -1263,16 +1362,23 @@ function HistoricalView() {
                       fontWeight: 600,
                     }}
                   >
-                    {brand.data[hoveredIndex]}{unit}
+                    {(() => {
+                      // Map hoveredIndex (label index) to closest data index
+                      const dataIdx = numPoints > 1
+                        ? Math.round(hoveredIndex! * (numPoints - 1) / Math.max(labels.length - 1, 1))
+                        : 0;
+                      const val = brand.data[dataIdx];
+                      return val != null ? format(val) : "—";
+                    })()}
                   </span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Month labels */}
+          {/* Date labels */}
           <div className="flex items-center justify-between" style={{ marginTop: 8 }}>
-            {months.map((month, i) => (
+            {labels.map((label, i) => (
               <span
                 key={i}
                 style={{
@@ -1282,7 +1388,7 @@ function HistoricalView() {
                   fontWeight: 500,
                 }}
               >
-                {month}
+                {label}
               </span>
             ))}
           </div>
@@ -1403,9 +1509,9 @@ function HistoricalView() {
                     fontSize: 10,
                     padding: "4px 10px",
                     borderRadius: "var(--radius-pill)",
-                    backgroundColor: brand.name === "Rhode" ? "#FFFFFF" : "transparent",
-                    color: brand.name === "Rhode" ? "var(--text-primary)" : "#7A6F65",
-                    fontWeight: brand.name === "Rhode" ? 600 : 400,
+                    backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
+                    color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 600 : 400,
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -1437,10 +1543,10 @@ function HistoricalView() {
 
       {/* Four metric charts - one per row on mobile, 2x2 on desktop */}
       <div className="flex flex-col md:grid md:grid-cols-2" style={{ gap: 16 }}>
-        <MetricChart title="Share of Search" data={shareOfSearchData} unit="%" />
-        <MetricChart title="Total Followers" data={totalFollowersData} unit="M" />
-        <MetricChart title="Interactions" data={interactionsData} unit="K" />
-        <MetricChart title="LLM Rank" data={llmRankData} unit="" />
+        <MetricChart title="Share of Search" data={shareOfSearchData} format={v => `${v.toFixed(1)}%`} />
+        <MetricChart title="Total Followers" data={totalFollowersData} format={v => `${(v / 1_000_000).toFixed(2)}M`} />
+        <MetricChart title="Interactions" data={interactionsData} format={v => `${(v / 1000).toFixed(0)}K`} />
+        <MetricChart title="LLM Rank" data={llmRankData} format={v => `#${v}`} />
       </div>
     </div>
   );

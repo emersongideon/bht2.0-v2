@@ -1,12 +1,16 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useState, useEffect } from "react";
+import { useNavigate, useOutletContext } from "react-router";
 import { ChevronDown } from "lucide-react";
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
+import { MobileHeader } from "../mobile-header";
+import { supabase } from "../../../lib/supabase";
+import { useBrand } from "../../contexts/brand-context";
 
-type Severity = "Critical" | "Positive" | "Notable";
+type Severity = "Positive" | "Negative" | "Neutral";
 
 interface AlertData {
+  id: number;
   severity: Severity;
   dimensionDot: string;
   dimensionKey: string;
@@ -15,67 +19,78 @@ interface AlertData {
   timestamp: string;
 }
 
-const alerts: AlertData[] = [
-  {
-    severity: "Critical",
-    dimensionDot: "var(--dim-C1)",
-    dimensionKey: "C1",
-    title: "Capturing Attention — Share of Search",
-    body: "Dropped 8% WoW. Glossier gained equivalent share.",
-    timestamp: "Mar 4, 2026, 2:15 PM",
-  },
-  {
-    severity: "Positive",
-    dimensionDot: "var(--dim-I1)",
-    dimensionKey: "I1",
-    title: "Imprinted in AI — LLM Consistency",
-    body: "Rose 5 pts to 85. Rhode now #2 behind Glossier.",
-    timestamp: "Mar 3, 2026, 9:00 AM",
-  },
-  {
-    severity: "Notable",
-    dimensionDot: "var(--dim-O)",
-    dimensionKey: "O",
-    title: "Openly Adored — Social Sentiment",
-    body: "Shifted +6% positive after influencer campaign.",
-    timestamp: "Mar 4, 2026",
-  },
-  {
-    severity: "Critical",
-    dimensionDot: "var(--dim-C2)",
-    dimensionKey: "C2",
-    title: "Chosen for a Reason — Value Conversation Share",
-    body: "Dropped 5%. Price increase backlash detected.",
-    timestamp: "Mar 4, 2026, 11:30 AM",
-  },
-  {
-    severity: "Positive",
-    dimensionDot: "var(--dim-N)",
-    dimensionKey: "N",
-    title: "Never Lost in Translation — Sender-Receiver Alignment",
-    body: "Improved by 4 pts. Campaign message landing as intended.",
-    timestamp: "Mar 2, 2026",
-  },
-  {
-    severity: "Notable",
-    dimensionDot: "var(--dim-I2)",
-    dimensionKey: "I2",
-    title: "Ingrained in Culture — Value Associations",
-    body: 'New association "clean beauty" emerging. Not yet in brand-owned messaging.',
-    timestamp: "Mar 3, 2026",
-  },
-];
+const dimDotColors: Record<string, string> = {
+  I1: "var(--dim-I1)",
+  C1: "var(--dim-C1)",
+  O:  "var(--dim-O)",
+  N:  "var(--dim-N)",
+  I2: "var(--dim-I2)",
+  C2: "var(--dim-C2)",
+};
 
-const filters: ("All" | Severity)[] = ["All", "Critical", "Positive", "Notable"];
+function mapSeverity(raw: string): Severity {
+  if (raw === "positive") return "Positive";
+  if (raw === "neutral")  return "Neutral";
+  return "Negative"; // "negative" → Negative
+}
+
+function formatTimestamp(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+const filters: ("All" | Severity)[] = ["All", "Positive", "Negative", "Neutral"];
 
 const severityColors: Record<Severity, string> = {
-  Critical: "var(--color-negative)",
   Positive: "var(--color-positive)",
-  Notable: "var(--color-neutral)",
+  Negative: "var(--color-negative)",
+  Neutral:  "var(--color-neutral)",
 };
+
+const legendItems: { label: string; color: string }[] = [
+  { label: "Positive", color: "var(--color-positive)" },
+  { label: "Negative", color: "var(--color-negative)" },
+  { label: "Neutral",  color: "var(--color-neutral)"  },
+];
 
 export function AlertsPage() {
   const [activeFilter, setActiveFilter] = useState<"All" | Severity>("All");
+  const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
+  const { mainBrand, selectedCategory } = useBrand();
+  const [alerts, setAlerts] = useState<AlertData[]>([]);
+
+  useEffect(() => {
+    setAlerts([]);
+    async function load() {
+      const { data } = await supabase
+        .from("iconic_alerts")
+        .select("id, brand_name, page_key, alert_severity, alert_title, alert_body, alert_created_at")
+        .eq("brand_name", mainBrand)
+        .eq("category_name", selectedCategory)
+        .order("alert_created_at", { ascending: false });
+
+      if (!data?.length) return;
+
+      setAlerts(
+        data.map((row) => ({
+          id:           row.id,
+          severity:     mapSeverity(row.alert_severity),
+          dimensionDot: dimDotColors[row.page_key] ?? "var(--text-muted)",
+          dimensionKey: row.page_key,
+          title:        row.alert_title,
+          body:         row.alert_body,
+          timestamp:    formatTimestamp(row.alert_created_at),
+        }))
+      );
+    }
+    load();
+  }, [mainBrand, selectedCategory]);
 
   const filtered =
     activeFilter === "All"
@@ -83,95 +98,136 @@ export function AlertsPage() {
       : alerts.filter((a) => a.severity === activeFilter);
 
   return (
-    <div
-      className="flex flex-col"
-      style={{
-        padding: 24,
-        height: 900,
-        width: "100%",
-        gap: 12,
-        overflow: "auto",
-      }}
-    >
-      {/* Row 1 — Top bar */}
+    <>
+      <MobileHeader title="Alerts" onMenuClick={openMobileMenu} />
       <div
-        className="flex items-center justify-between"
-        style={{ flexShrink: 0 }}
+        className="flex flex-col"
+        style={{
+          padding: "16px",
+          minHeight: "100%",
+          width: "100%",
+          gap: 12,
+        }}
       >
-        <CategoryBrandSelector />
-        <DateModeSelector />
-      </div>
-
-      {/* Row 2 — Filter Bar */}
-      <div
-        className="flex items-center gap-3"
-        style={{ flexShrink: 0 }}
-      >
+        {/* Row 1 — Top bar (Desktop only) */}
         <div
-          className="flex items-center"
-          style={{
-            backgroundColor: "var(--bg-surface)",
-            borderRadius: "var(--radius-pill)",
-            padding: 3,
-            border: "1px solid var(--border-subtle)",
-          }}
+          className="hidden md:flex items-center justify-between"
+          style={{ flexShrink: 0 }}
         >
-          {filters.map((f) => (
+          <CategoryBrandSelector />
+          <DateModeSelector />
+        </div>
+
+        {/* Row 2 — Filter Bar + Legend */}
+        <div
+          className="flex items-center justify-between flex-wrap gap-3"
+          style={{ flexShrink: 0 }}
+        >
+          {/* Left: severity pill filter + dimension dropdown */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div
+              className="flex items-center"
+              style={{
+                backgroundColor: "var(--bg-surface)",
+                borderRadius: "var(--radius-pill)",
+                padding: 3,
+                border: "1px solid var(--border-subtle)",
+              }}
+            >
+              {filters.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setActiveFilter(f)}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "var(--radius-pill)",
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "var(--font-body)",
+                    fontSize: 13,
+                    fontWeight: activeFilter === f ? 600 : 400,
+                    backgroundColor:
+                      activeFilter === f ? "var(--bg-card-hover)" : "transparent",
+                    color:
+                      activeFilter === f
+                        ? "var(--text-primary)"
+                        : "var(--text-muted)",
+                    transition: "all 0.2s ease",
+                    boxShadow:
+                      activeFilter === f ? "var(--shadow-card)" : "none",
+                  }}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+
             <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
+              className="flex items-center gap-2"
               style={{
                 padding: "6px 14px",
                 borderRadius: "var(--radius-pill)",
-                border: "none",
+                border: "1px solid var(--border-color)",
+                backgroundColor: "var(--bg-card)",
                 cursor: "pointer",
                 fontFamily: "var(--font-body)",
                 fontSize: 13,
-                fontWeight: activeFilter === f ? 600 : 400,
-                backgroundColor:
-                  activeFilter === f ? "var(--bg-card-hover)" : "transparent",
-                color:
-                  activeFilter === f
-                    ? "var(--text-primary)"
-                    : "var(--text-muted)",
-                transition: "all 0.2s ease",
-                boxShadow:
-                  activeFilter === f ? "var(--shadow-card)" : "none",
+                color: "var(--text-secondary)",
               }}
             >
-              {f}
+              All Dimensions
+              <ChevronDown size={14} />
             </button>
-          ))}
+          </div>
+
+          {/* Right: colour legend */}
+          <div className="flex items-center gap-4">
+            {legendItems.map(({ label, color }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    backgroundColor: color,
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 12,
+                    color: "var(--text-muted)",
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <button
-          className="flex items-center gap-2"
-          style={{
-            padding: "6px 14px",
-            borderRadius: "var(--radius-pill)",
-            border: "1px solid var(--border-color)",
-            backgroundColor: "var(--bg-card)",
-            cursor: "pointer",
-            fontFamily: "var(--font-body)",
-            fontSize: 13,
-            color: "var(--text-secondary)",
-          }}
-        >
-          All Dimensions
-          <ChevronDown size={14} />
-        </button>
+        {/* Row 3 — Alert cards */}
+        <div className="flex flex-col" style={{ gap: 12 }}>
+          {filtered.length === 0 ? (
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 14,
+                color: "var(--text-muted)",
+                paddingTop: 8,
+              }}
+            >
+              No alerts found.
+            </span>
+          ) : (
+            filtered.map((alert) => (
+              <AlertCard key={alert.id} alert={alert} />
+            ))
+          )}
+        </div>
       </div>
-
-      {/* Row 3 — Alert cards */}
-      <div
-        className="flex flex-col"
-        style={{ gap: 12 }}
-      >
-        {filtered.map((alert, i) => (
-          <AlertCard key={i} alert={alert} />
-        ))}
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -181,18 +237,20 @@ function AlertCard({ alert }: { alert: AlertData }) {
 
   return (
     <div
-      className="relative"
       style={{
+        position: "relative",
         backgroundColor: "var(--bg-card)",
         backdropFilter: "blur(var(--blur-glass))",
         borderRadius: "var(--radius-md)",
         padding: 16,
+        borderTop: "1px solid var(--border-subtle)",
+        borderRight: "1px solid var(--border-subtle)",
+        borderBottom: "1px solid var(--border-subtle)",
         borderLeft: `3px solid ${borderColor}`,
         boxShadow: "var(--shadow-card)",
         display: "flex",
         flexDirection: "column",
         gap: 10,
-        border: "1px solid var(--border-subtle)",
       }}
     >
       {/* Top row */}

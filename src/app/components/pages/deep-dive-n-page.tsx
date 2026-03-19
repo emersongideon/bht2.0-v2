@@ -1,17 +1,25 @@
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Instagram } from "lucide-react";
+import { supabase } from "../../../lib/supabase";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
 import { useBrand } from "../../contexts/brand-context";
+import { useDimension } from "../../data/use-dimensions";
+import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
-import { useDimension } from "../../data/use-dimensions";
+import { useSubmetricScores } from "../../hooks/use-submetric-scores";
+import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
+import { useNAlignmentLatest } from "../../hooks/use-n-alignment";
 
 export function DeepDiveNPage() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
+  const subScores = useSubmetricScores("N");
+
   return (
     <>
       <MobileHeader title="Deep Dive • N" dimensionKey="N" onMenuClick={openMobileMenu} />
@@ -36,18 +44,19 @@ export function DeepDiveNPage() {
         </div>
 
         {/* Row 3 — Dimension Header */}
-        <DimensionHeader />
+        <DimensionHeader pageKey="N" />
 
         {/* Row 4 — Rhode's Score Cards - stacks on mobile */}
         <div className="flex flex-col md:flex-row" style={{ gap: 12, flexShrink: 0 }}>
           <ScoreCard
             title="Consistency"
             badge="Social"
-            score="68"
-            delta="▲ 1.2"
+            liveScore={subScores["Consistency"]?.score ?? null}
+            liveDelta={subScores["Consistency"]?.delta ?? null}
+            trendValues={subScores["Consistency"]?.trendValues}
           />
-          <ScoreCard title="Coherence" badge="Social" score="72" delta="▲ 0.4" />
-          <AlignmentScoreCard />
+          <ScoreCard title="Coherence" badge="Social" liveScore={subScores["Coherence"]?.score ?? null} liveDelta={subScores["Coherence"]?.delta ?? null} trendValues={subScores["Coherence"]?.trendValues} />
+          <AlignmentScoreCard liveScore={subScores["Alignment"]?.score ?? null} liveDelta={subScores["Alignment"]?.delta ?? null} trendValues={subScores["Alignment"]?.trendValues} />
         </div>
 
         {/* Row 5 — Brand Comparison */}
@@ -75,8 +84,10 @@ export function DeepDiveNPage() {
   );
 }
 
-function DimensionHeader() {
-  const { dimension: dim } = useDimension("N");
+function DimensionHeader({ pageKey }: { pageKey: string }) {
+  const { dimension: dim } = useDimension(pageKey);
+  const { score, delta } = useDimensionScore(pageKey);
+  const isPositive = !delta || delta >= 0;
   return (
     <div
       style={{
@@ -132,25 +143,27 @@ function DimensionHeader() {
               color: "var(--text-primary)",
             }}
           >
-            71
+            {score ?? "—"}
           </span>
         </div>
 
         {/* Delta */}
         <div>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              padding: "3px 8px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(74,102,68,0.1)",
-              color: "#4A6644",
-              fontWeight: 600,
-            }}
-          >
-            ▲ 0.9
-          </span>
+          {delta !== null && (
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                fontWeight: 600,
+              }}
+            >
+              {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+            </span>
+          )}
         </div>
 
         {/* Description */}
@@ -209,21 +222,23 @@ function DimensionHeader() {
                 color: "var(--text-primary)",
               }}
             >
-              71
+              {score ?? "—"}
             </span>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                padding: "3px 8px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor: "rgba(74,102,68,0.1)",
-                color: "#4A6644",
-                fontWeight: 600,
-              }}
-            >
-              ▲ 0.9
-            </span>
+            {delta !== null && (
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                  padding: "3px 8px",
+                  borderRadius: "var(--radius-pill)",
+                  backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                  color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                  fontWeight: 600,
+                }}
+              >
+                {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+              </span>
+            )}
           </div>
         </div>
         <p
@@ -245,25 +260,11 @@ function DimensionHeader() {
 function BrandComparison() {
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
-
-  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
-
-  const allConsistencyData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "n_consistency"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  const allCoherenceData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "n_coherence"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  const allAlignmentData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "n_alignment"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  // Filter to only show selected brands
-  const consistencyData = allConsistencyData.filter(item => selectedBrands.includes(item.brand));
-  const coherenceData = allCoherenceData.filter(item => selectedBrands.includes(item.brand));
-  const alignmentData = allAlignmentData.filter(item => selectedBrands.includes(item.brand));
+  const categoryBrands = (brandsByCategory[selectedCategory] ?? []).filter(b => selectedBrands.includes(b.name));
+  const allScores = useAllBrandsSubmetricScores("N");
+  const consistencyData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Consistency"] ?? null, color: b.color }));
+  const coherenceData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Coherence"] ?? null, color: b.color }));
+  const alignmentData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Alignment"] ?? null, color: b.color }));
 
   const maxScore = 100;
 
@@ -317,7 +318,7 @@ function BrandComparison() {
               <div
                 style={{
                   height: "100%",
-                  width: `${(item.score / maxScore) * 100}%`,
+                  width: `${((item.score ?? 0) / maxScore) * 100}%`,
                   backgroundColor: item.color,
                   opacity: item.brand === mainBrand ? 1 : 0.5,
                   borderRadius: 7,
@@ -334,7 +335,7 @@ function BrandComparison() {
                 fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
-              {item.score}
+              {item.score ?? "—"}
             </span>
           </div>
         ))}
@@ -385,11 +386,32 @@ function BrandComparison() {
   );
 }
 
-function ScoreCard({ title, badge, score, delta }: { title: string; badge: string; score: string; delta: string }) {
-  const isPositive = delta.includes("▲");
+function ScoreCard({ title, badge, liveScore, liveDelta, trendValues }: { title: string; badge: string; liveScore?: number | null; liveDelta?: number | null; trendValues?: (number | null)[] }) {
+  const isPositive = !liveDelta || liveDelta >= 0;
   const { getAxisLabels } = useDateMode();
   const axisLabels = getAxisLabels();
-  
+
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const W = 300; const H = 36;
+  const n = trendValues?.length ?? 0;
+  const toX = (i: number) => n > 1 ? (i / (n - 1)) * W : W / 2;
+  const toY = (v: number) => H - 1 - (v / 100) * (H - 2); // fixed 0-100 scale
+  const yBottom = H - 1;
+  let sparkPath = "";
+  if (trendValues && trendValues.length > 0) {
+    const parts: string[] = [];
+    for (let i = 0; i < trendValues.length; i++) {
+      const v = trendValues[i];
+      const y = v !== null ? toY(v) : yBottom;
+      parts.push(`${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${y.toFixed(1)}`);
+    }
+    sparkPath = parts.join(" ");
+  }
+  const sparkDots = trendValues
+    ? trendValues.map((v, i) => v !== null ? { x: toX(i), y: toY(v), i } : null).filter(Boolean) as { x: number; y: number; i: number }[]
+    : [];
+  const hasData = trendValues ? trendValues.some((v) => v !== null) : false;
+
   return (
     <div
       style={{
@@ -425,34 +447,75 @@ function ScoreCard({ title, badge, score, delta }: { title: string; badge: strin
             color: "var(--text-primary)",
           }}
         >
-          {score}
+          {liveScore !== null && liveScore !== undefined ? liveScore : "—"}
         </span>
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            padding: "3px 8px",
-            borderRadius: "var(--radius-pill)",
-            backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
-            color: isPositive ? "#4A6644" : "#B86A54",
-            fontWeight: 600,
-          }}
-        >
-          {delta}
-        </span>
+        {liveDelta !== null && liveDelta !== undefined && (
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              padding: "3px 8px",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+              color: isPositive ? "#4A6644" : "#B86A54",
+              fontWeight: 600,
+            }}
+          >
+            {isPositive ? "▲" : "▼"} {Math.abs(liveDelta).toFixed(1)}
+          </span>
+        )}
       </div>
 
       {/* Sparkline */}
       <div>
-        <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
-          <path
-            d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12"
-            fill="none"
-            stroke="#B5ADA5"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <div
+          style={{ position: "relative" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xRatio = (e.clientX - rect.left) / rect.width;
+            const idx = Math.round(xRatio * (axisLabels.length - 1));
+            setHoverIndex(Math.max(0, Math.min(axisLabels.length - 1, idx)));
+          }}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          {hoverIndex !== null && trendValues && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 4px)",
+              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
+              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "3px 7px",
+              boxShadow: "var(--shadow-card)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              zIndex: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#B5ADA5" }}>
+                {axisLabels[hoverIndex]}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
+                {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+              </span>
+            </div>
+          )}
+          <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+            {!hasData && (
+              <path d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12" fill="none" stroke="#B5ADA5" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+            )}
+            {hasData && sparkPath && (
+              <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            {sparkDots.map((pt) => (
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
+            ))}
+          </svg>
+        </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
           {axisLabels.map((label, i) => (
             <span
@@ -474,9 +537,33 @@ function ScoreCard({ title, badge, score, delta }: { title: string; badge: strin
   );
 }
 
-function AlignmentScoreCard() {
+function AlignmentScoreCard({ liveScore, liveDelta, trendValues }: { liveScore?: number | null; liveDelta?: number | null; trendValues?: (number | null)[] }) {
+  const isPositive = !liveDelta || liveDelta >= 0;
   const { getAxisLabels } = useDateMode();
   const axisLabels = getAxisLabels();
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  const W = 300; const H = 36;
+  const n = trendValues?.length ?? 0;
+  const toX = (i: number) => n > 1 ? (i / (n - 1)) * W : W / 2;
+  const toY = (v: number) => H - 1 - (v / 100) * (H - 2); // fixed 0-100 scale
+  const yBottom = H - 1;
+
+  let sparkPath = "";
+  if (trendValues && trendValues.length > 0) {
+    const parts: string[] = [];
+    for (let i = 0; i < trendValues.length; i++) {
+      const v = trendValues[i];
+      const y = v !== null ? toY(v) : yBottom;
+      parts.push(`${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${y.toFixed(1)}`);
+    }
+    sparkPath = parts.join(" ");
+  }
+
+  const sparkDots: { x: number; y: number; i: number }[] = trendValues
+    ? trendValues.map((v, i) => v !== null ? { x: toX(i), y: toY(v), i } : null).filter((pt): pt is { x: number; y: number; i: number } => pt !== null)
+    : [];
+  const hasData = trendValues ? trendValues.some((v) => v !== null) : false;
 
   return (
     <div
@@ -513,34 +600,71 @@ function AlignmentScoreCard() {
             color: "var(--text-primary)",
           }}
         >
-          74
+          {liveScore !== null && liveScore !== undefined ? liveScore : "—"}
         </span>
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            padding: "3px 8px",
-            borderRadius: "var(--radius-pill)",
-            backgroundColor: "rgba(74,102,68,0.1)",
-            color: "#4A6644",
-            fontWeight: 600,
-          }}
-        >
-          ▲ 1.1
-        </span>
+        {liveDelta !== null && liveDelta !== undefined && (
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              padding: "3px 8px",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+              color: isPositive ? "#4A6644" : "#B86A54",
+              fontWeight: 600,
+            }}
+          >
+            {isPositive ? "▲" : "▼"} {Math.abs(liveDelta).toFixed(1)}
+          </span>
+        )}
       </div>
 
       {/* Sparkline */}
       <div>
-        <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
-          <path
-            d="M0,24 C50,22 100,23 150,21 C200,19 250,17 300,15"
-            fill="none"
-            stroke="#B5ADA5"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <div
+          style={{ position: "relative" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xRatio = (e.clientX - rect.left) / rect.width;
+            const idx = Math.round(xRatio * (axisLabels.length - 1));
+            setHoverIndex(Math.max(0, Math.min(axisLabels.length - 1, idx)));
+          }}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          {hoverIndex !== null && trendValues && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 4px)",
+              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
+              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "3px 7px",
+              boxShadow: "var(--shadow-card)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              zIndex: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#B5ADA5" }}>
+                {axisLabels[hoverIndex]}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
+                {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+              </span>
+            </div>
+          )}
+          <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+            {!hasData && <path d="M0,24 C50,22 100,23 150,21 C200,19 250,17 300,15" fill="none" stroke="#B5ADA5" strokeWidth="2" strokeLinecap="round" opacity="0.4" />}
+            {hasData && sparkPath && <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />}
+            {sparkDots.map((pt) => (
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
+            ))}
+          </svg>
+        </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
           {axisLabels.map((label, i) => (
             <span
@@ -563,46 +687,42 @@ function AlignmentScoreCard() {
 }
 
 function SenderReceiverAlignment() {
-  const { selectedBrands, mainBrand } = useBrand();
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
+  const subScores = useSubmetricScores("N");
+  const nData = useNAlignmentLatest();
 
-  const axes = ["Clean / Ingredients", "Aesthetic / Visual", "Premium / Luxury", "Skin Health", "Simplicity"];
-  
-  // Data for all brands
-  const allBrandData: Record<string, { sender: number[]; receiver: number[] }> = {
-    "Rhode": { 
-      sender: [92, 87, 81, 78, 71], 
-      receiver: [88, 85, 74, 52, 68] 
-    },
-    "Glossier": { 
-      sender: [88, 82, 79, 72, 75], 
-      receiver: [85, 80, 71, 50, 70] 
-    },
-    "Summer Fridays": { 
-      sender: [85, 79, 76, 68, 72], 
-      receiver: [82, 76, 68, 48, 68] 
-    },
-    "Clinique": { 
-      sender: [80, 75, 70, 65, 68], 
-      receiver: [78, 72, 65, 45, 64] 
-    },
-    "Laneige": { 
-      sender: [83, 77, 73, 70, 69], 
-      receiver: [80, 74, 68, 47, 66] 
-    },
-  };
+  const mainBrandRows = nData[mainBrand] ?? [];
+  const axes = mainBrandRows.length > 0
+    ? mainBrandRows.map(r => r.n_attribute_name)
+    : ["Clean / Ingredients", "Aesthetic / Visual", "Premium / Luxury", "Skin Health", "Simplicity"];
 
-  // Get color for each brand
-  const brandColors: Record<string, string> = {
-    "Rhode": "#B86A54",
-    "Glossier": "#DAC58C",
-    "Summer Fridays": "#374762",
-    "Clinique": "#ACBDA7",
-    "Laneige": "#6B241E",
-  };
+  const senderData = mainBrandRows.length > 0
+    ? mainBrandRows.map(r => r.n_sender_score ?? 0)
+    : [92, 87, 81, 78, 71];
+  const receiverData = mainBrandRows.length > 0
+    ? mainBrandRows.map(r => r.n_receiver_score ?? 0)
+    : [88, 85, 74, 52, 68];
 
-  const senderData = allBrandData[mainBrand].sender;
-  const receiverData = allBrandData[mainBrand].receiver;
-  const senderColor = brandColors[mainBrand];
+  const mainBrandInfo = categoryBrandList.find(b => b.name === mainBrand);
+  const senderColor = mainBrandInfo?.color ?? "#B86A54";
+
+  // Summary card derived values
+  const alignmentScore = subScores["Alignment"]?.score ?? null;
+  const alignmentDelta = subScores["Alignment"]?.delta ?? null;
+  const isAlignmentPositive = !alignmentDelta || alignmentDelta >= 0;
+
+  const avgGap = mainBrandRows.length > 0
+    ? mainBrandRows.reduce((sum, r) => sum + (r.n_alignment_gap ?? 0), 0) / mainBrandRows.length
+    : null;
+
+  const biggestGapRow = mainBrandRows.length > 0
+    ? mainBrandRows.reduce((a, b) => (b.n_alignment_gap ?? 0) > (a.n_alignment_gap ?? 0) ? b : a)
+    : null;
+  const bestAlignmentRow = mainBrandRows.length > 0
+    ? mainBrandRows.reduce((a, b) => (b.n_alignment_gap ?? Infinity) < (a.n_alignment_gap ?? Infinity) ? b : a)
+    : null;
 
   const cx = 180;
   const cy = 140;
@@ -665,7 +785,7 @@ function SenderReceiverAlignment() {
             display: "inline-flex",
           }}>
             {selectedBrands.map((brandName) => {
-              const brand = (brandsByCategory[selectedCategory] ?? []).find(b => b.name === brandName);
+              const brand = categoryBrandList.find(b => b.name === brandName);
               if (!brand) return null;
               
               return (
@@ -852,23 +972,24 @@ function SenderReceiverAlignment() {
                   color: "var(--text-primary)",
                 }}
               >
-                74
+                {alignmentScore ?? "—"}
               </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  padding: "3px 8px",
-                  borderRadius: "var(--radius-pill)",
-                  backgroundColor: "rgba(74,102,68,0.1)",
-                  color: "#4A6644",
-                  fontWeight: 600,
-                }}
-              >
-                ▲ 1.1
-              </span>
+              {alignmentDelta !== null && alignmentDelta !== undefined && (
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 11,
+                    padding: "3px 8px",
+                    borderRadius: "var(--radius-pill)",
+                    backgroundColor: isAlignmentPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                    color: isAlignmentPositive ? "#4A6644" : "#B86A54",
+                    fontWeight: 600,
+                  }}
+                >
+                  {isAlignmentPositive ? "▲" : "▼"} {Math.abs(alignmentDelta).toFixed(1)}
+                </span>
+              )}
             </div>
-            
           </div>
 
           {/* Card 2: Sender-Receiver Gap */}
@@ -899,20 +1020,21 @@ function SenderReceiverAlignment() {
                   color: "#4A6644",
                 }}
               >
-                -8
+                {avgGap !== null ? (avgGap >= 0 ? "+" : "") + avgGap.toFixed(1) : "—"}
               </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 16,
-                  fontWeight: 400,
-                  color: "#4A6644",
-                }}
-              >
-                pts
-              </span>
+              {avgGap !== null && (
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 16,
+                    fontWeight: 400,
+                    color: "#4A6644",
+                  }}
+                >
+                  pts
+                </span>
+              )}
             </div>
-            
           </div>
 
           {/* Card 3: Biggest Gap */}
@@ -943,17 +1065,19 @@ function SenderReceiverAlignment() {
                 marginBottom: 2,
               }}
             >
-              Skin Health
+              {biggestGapRow?.n_attribute_name ?? "—"}
             </div>
-            <div
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 10,
-                color: "#B5ADA5",
-              }}
-            >
-              Sender: 78 → Receiver: 52 (−26 pts)
-            </div>
+            {biggestGapRow && (
+              <div
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 10,
+                  color: "#B5ADA5",
+                }}
+              >
+                Sender: {biggestGapRow.n_sender_score ?? "—"} → Receiver: {biggestGapRow.n_receiver_score ?? "—"} ({biggestGapRow.n_alignment_gap !== null ? `${biggestGapRow.n_alignment_gap > 0 ? "+" : ""}${biggestGapRow.n_alignment_gap.toFixed(0)} pts` : "—"})
+              </div>
+            )}
           </div>
 
           {/* Card 4: Best Alignment */}
@@ -984,17 +1108,19 @@ function SenderReceiverAlignment() {
                 marginBottom: 2,
               }}
             >
-              Clean / Ingredients
+              {bestAlignmentRow?.n_attribute_name ?? "—"}
             </div>
-            <div
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 10,
-                color: "#B5ADA5",
-              }}
-            >
-              Sender: 92 → Receiver: 88 (−4 pts)
-            </div>
+            {bestAlignmentRow && (
+              <div
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 10,
+                  color: "#B5ADA5",
+                }}
+              >
+                Sender: {bestAlignmentRow.n_sender_score ?? "—"} → Receiver: {bestAlignmentRow.n_receiver_score ?? "—"} ({bestAlignmentRow.n_alignment_gap !== null ? `${bestAlignmentRow.n_alignment_gap > 0 ? "+" : ""}${bestAlignmentRow.n_alignment_gap.toFixed(0)} pts` : "—"})
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1003,6 +1129,39 @@ function SenderReceiverAlignment() {
 }
 
 function AlignmentGapStrip() {
+  const { mainBrand } = useBrand();
+  const nData = useNAlignmentLatest();
+  const mainBrandRows = nData[mainBrand] ?? [];
+
+  const aligned = mainBrandRows.filter(
+    r => r.n_sender_alignment_status === false && r.n_receiver_alignment_status === false
+  );
+  const senderOnly = mainBrandRows.filter(
+    r => r.n_sender_alignment_status === true && r.n_receiver_alignment_status === false
+  );
+  const receiverOnly = mainBrandRows.filter(
+    r => r.n_sender_alignment_status === false && r.n_receiver_alignment_status === true
+  );
+
+  const pillStyle = (bg: string, color: string) => ({
+    fontFamily: "var(--font-body)" as const,
+    fontSize: 10,
+    padding: "4px 10px",
+    borderRadius: "var(--radius-pill)" as const,
+    backgroundColor: bg,
+    color,
+    whiteSpace: "nowrap" as const,
+  });
+
+  const labelStyle = {
+    fontFamily: "var(--font-body)" as const,
+    fontSize: 9,
+    color: "#B5ADA5",
+    textTransform: "uppercase" as const,
+    marginRight: 4,
+    flexShrink: 0,
+  };
+
   return (
     <div
       style={{
@@ -1015,138 +1174,46 @@ function AlignmentGapStrip() {
     >
       <div className="flex flex-col" style={{ gap: 12 }}>
         {/* Group 1: Aligned */}
-        <div className="flex items-center gap-2">
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 9,
-              color: "#B5ADA5",
-              textTransform: "uppercase",
-              marginRight: 4,
-            }}
-          >
-            ALIGNED
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(74,102,68,0.08)",
-              color: "#4A6644",
-            }}
-          >
-            ✓ Clean
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(74,102,68,0.08)",
-              color: "#4A6644",
-            }}
-          >
-            ✓ Aesthetic
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(74,102,68,0.08)",
-              color: "#4A6644",
-            }}
-          >
-            ✓ Premium
-          </span>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+          <span style={labelStyle}>ALIGNED</span>
+          {aligned.length === 0
+            ? <span style={{ ...pillStyle("rgba(74,102,68,0.08)", "#4A6644"), opacity: 0.4 }}>—</span>
+            : aligned.map(r => (
+              <span key={r.n_attribute_name} style={pillStyle("rgba(74,102,68,0.08)", "#4A6644")}>
+                ✓ {r.n_attribute_name}
+              </span>
+            ))
+          }
         </div>
 
-        {/* Divider */}
         <div style={{ height: 1, backgroundColor: "#E8E2DC" }} />
 
         {/* Group 2: Gap Sender Only */}
-        <div className="flex items-center gap-2">
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 9,
-              color: "#B5ADA5",
-              textTransform: "uppercase",
-              marginRight: 4,
-            }}
-          >
-            GAP: SENDER ONLY
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(184,106,84,0.08)",
-              color: "#B86A54",
-            }}
-          >
-            → Skin Health
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(184,106,84,0.08)",
-              color: "#B86A54",
-            }}
-          >
-            → Effortless
-          </span>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+          <span style={labelStyle}>GAP: SENDER ONLY</span>
+          {senderOnly.length === 0
+            ? <span style={{ ...pillStyle("rgba(184,106,84,0.08)", "#B86A54"), opacity: 0.4 }}>—</span>
+            : senderOnly.map(r => (
+              <span key={r.n_attribute_name} style={pillStyle("rgba(184,106,84,0.08)", "#B86A54")}>
+                → {r.n_attribute_name}
+              </span>
+            ))
+          }
         </div>
 
-        {/* Divider */}
         <div style={{ height: 1, backgroundColor: "#E8E2DC" }} />
 
         {/* Group 3: Gap Receiver Only */}
-        <div className="flex items-center gap-2">
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 9,
-              color: "#B5ADA5",
-              textTransform: "uppercase",
-              marginRight: 4,
-            }}
-          >
-            GAP: RECEIVER ONLY
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(55,71,98,0.08)",
-              color: "#374762",
-            }}
-          >
-            ← Celebrity-Backed
-          </span>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 10,
-              padding: "4px 10px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(55,71,98,0.08)",
-              color: "#374762",
-            }}
-          >
-            ← Hydration
-          </span>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+          <span style={labelStyle}>GAP: RECEIVER ONLY</span>
+          {receiverOnly.length === 0
+            ? <span style={{ ...pillStyle("rgba(55,71,98,0.08)", "#374762"), opacity: 0.4 }}>—</span>
+            : receiverOnly.map(r => (
+              <span key={r.n_attribute_name} style={pillStyle("rgba(55,71,98,0.08)", "#374762")}>
+                ← {r.n_attribute_name}
+              </span>
+            ))
+          }
         </div>
       </div>
     </div>
@@ -1154,13 +1221,23 @@ function AlignmentGapStrip() {
 }
 
 function SenderValues() {
-  const values = [
-    { rank: 1, name: "Clean Ingredients", score: 92 },
-    { rank: 2, name: "Minimalist Aesthetic", score: 87 },
-    { rank: 3, name: "Accessible Luxury", score: 81 },
-    { rank: 4, name: "Skin Health", score: 78 },
-    { rank: 5, name: "Effortless Beauty", score: 71 },
-  ];
+  const { mainBrand } = useBrand();
+  const nData = useNAlignmentLatest();
+  const mainBrandRows = nData[mainBrand] ?? [];
+
+  const sorted = [...mainBrandRows]
+    .sort((a, b) => (b.n_sender_score ?? 0) - (a.n_sender_score ?? 0))
+    .slice(0, 5);
+
+  const values = sorted.length > 0
+    ? sorted.map((r, i) => ({ rank: i + 1, name: r.n_attribute_name, score: r.n_sender_score ?? 0 }))
+    : [
+        { rank: 1, name: "Clean Ingredients", score: 92 },
+        { rank: 2, name: "Minimalist Aesthetic", score: 87 },
+        { rank: 3, name: "Accessible Luxury", score: 81 },
+        { rank: 4, name: "Skin Health", score: 78 },
+        { rank: 5, name: "Effortless Beauty", score: 71 },
+      ];
 
   const maxScore = 100;
 
@@ -1272,13 +1349,23 @@ function SenderValues() {
 }
 
 function ReceiverValues() {
-  const values = [
-    { rank: 1, name: "Clean Beauty", score: 88, aligned: true },
-    { rank: 2, name: "Aesthetic / Visual", score: 85, aligned: true },
-    { rank: 3, name: "Affordable Premium", score: 74, aligned: true },
-    { rank: 4, name: "Hydration / Glow", score: 72, aligned: false },
-    { rank: 5, name: "Celebrity-Backed", score: 68, aligned: false },
-  ];
+  const { mainBrand } = useBrand();
+  const nData = useNAlignmentLatest();
+  const mainBrandRows = nData[mainBrand] ?? [];
+
+  const sorted = [...mainBrandRows]
+    .sort((a, b) => (b.n_receiver_score ?? 0) - (a.n_receiver_score ?? 0))
+    .slice(0, 5);
+
+  const values = sorted.length > 0
+    ? sorted.map((r, i) => ({ rank: i + 1, name: r.n_attribute_name, score: r.n_receiver_score ?? 0 }))
+    : [
+        { rank: 1, name: "Clean Beauty", score: 88 },
+        { rank: 2, name: "Aesthetic / Visual", score: 85 },
+        { rank: 3, name: "Affordable Premium", score: 74 },
+        { rank: 4, name: "Hydration / Glow", score: 72 },
+        { rank: 5, name: "Celebrity-Backed", score: 68 },
+      ];
 
   const maxScore = 100;
 
@@ -1351,9 +1438,6 @@ function ReceiverValues() {
               >
                 {value.name}
               </span>
-              {value.aligned && (
-                null
-              )}
               <div
                 style={{
                   width: 80,
@@ -1393,48 +1477,50 @@ function ReceiverValues() {
 }
 
 function TopAlignedPosts() {
-  const posts = [
-    {
-      rank: 1,
-      platform: "IG",
-      caption: "Your skin barrier called — it wants the peptide glazing fluid ✨",
-      handle: "@rhode",
-      alignment: 94,
-      engagement: 8.2,
-    },
-    {
-      rank: 2,
-      platform: "TT",
-      caption: "3 ingredients. That's it. That's the whole formula.",
-      handle: "@rhode",
-      alignment: 91,
-      engagement: 11.4,
-    },
-    {
-      rank: 3,
-      platform: "TT",
-      caption: "POV: skincare that doesn't need 12 steps",
-      handle: "@rhode",
-      alignment: 88,
-      engagement: 9.7,
-    },
-    {
-      rank: 4,
-      platform: "IG",
-      caption: "The Rhode barrier restore cream — clinically tested, beautifully simple",
-      handle: "@rhode",
-      alignment: 85,
-      engagement: 6.8,
-    },
-    {
-      rank: 5,
-      platform: "IG",
-      caption: "Less is more. More glow, that is 💧",
-      handle: "@rhode",
-      alignment: 82,
-      engagement: 7.3,
-    },
-  ];
+  const { mainBrand, selectedCategory } = useBrand();
+  const [posts, setPosts] = useState<{
+    id: number;
+    platform: string;
+    handle: string;
+    caption: string;
+    alignment: number;
+    engagement: number;
+    postUrl: string | null;
+    imageUrl: string | null;
+  }[]>([]);
+
+  useEffect(() => {
+    setPosts([]);
+    async function load() {
+      const { data } = await supabase
+        .from("iconic_social_feed")
+        .select("id, social_platform, social_handle, social_caption, social_engagement_rate, social_post_url, social_image_url, n_alignment_score")
+        .eq("brand_name", mainBrand)
+        .eq("category_name", selectedCategory)
+        .order("n_alignment_score", { ascending: false })
+        .limit(5);
+
+      if (!data?.length) return;
+
+      setPosts(data.map((row, i) => {
+        const url = row.social_post_url ?? "";
+        const platform = url.includes("tiktok.com") ? "TikTok"
+          : url.includes("instagram.com") ? "Instagram"
+          : row.social_platform;
+        return {
+          id: row.id ?? i,
+          platform,
+          handle: row.social_handle,
+          caption: row.social_caption,
+          alignment: row.n_alignment_score,
+          engagement: row.social_engagement_rate,
+          postUrl: row.social_post_url,
+          imageUrl: row.social_image_url,
+        };
+      }));
+    }
+    load();
+  }, [mainBrand, selectedCategory]);
 
   return (
     <div
@@ -1470,9 +1556,14 @@ function TopAlignedPosts() {
       </div>
 
       {/* Posts list */}
+      {posts.length === 0 && (
+        <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "#B5ADA5" }}>
+          Loading…
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {posts.map((post, index) => (
-          <div key={post.rank}>
+          <div key={post.id}>
             {index > 0 && (
               <div
                 style={{
@@ -1482,7 +1573,11 @@ function TopAlignedPosts() {
                 }}
               />
             )}
-            <div className="flex items-center gap-3">
+            <div
+              className="flex items-center gap-3"
+              onClick={() => post.postUrl && window.open(post.postUrl, "_blank")}
+              style={{ cursor: post.postUrl ? "pointer" : "default" }}
+            >
               {/* Rank */}
               <span
                 style={{
@@ -1493,7 +1588,7 @@ function TopAlignedPosts() {
                   width: 24,
                 }}
               >
-                {post.rank}
+                {index + 1}
               </span>
 
               {/* Thumbnail */}
@@ -1505,27 +1600,44 @@ function TopAlignedPosts() {
                   backgroundColor: "rgba(245,240,235,0.8)",
                   flexShrink: 0,
                   position: "relative",
+                  overflow: "hidden",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <span
+                {post.imageUrl && (
+                  <img
+                    src={post.imageUrl}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                )}
+                {/* Platform icon */}
+                <div
                   style={{
                     position: "absolute",
-                    top: 4,
+                    bottom: 4,
                     right: 4,
-                    fontFamily: "var(--font-body)",
-                    fontSize: 8,
-                    fontWeight: 700,
-                    color: "#FFFFFF",
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    padding: "2px 4px",
-                    borderRadius: 3,
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    backgroundColor: post.platform === "Instagram" ? "#E4405F" : "#000000",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
                   }}
                 >
-                  {post.platform}
-                </span>
+                  {post.platform === "Instagram" ? (
+                    <Instagram size={10} color="#FFFFFF" />
+                  ) : (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#FFFFFF">
+                      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+                    </svg>
+                  )}
+                </div>
               </div>
 
               {/* Caption */}
@@ -1566,7 +1678,7 @@ function TopAlignedPosts() {
                     color: "#4A6644",
                   }}
                 >
-                  {post.alignment}%
+                  {post.alignment != null ? `${Number(post.alignment).toFixed(0)}%` : "—"}
                 </div>
                 <div
                   style={{
@@ -1590,7 +1702,7 @@ function TopAlignedPosts() {
                     color: "var(--text-primary)",
                   }}
                 >
-                  {post.engagement}%
+                  {post.engagement != null ? `${Number(post.engagement).toFixed(1)}%` : "—"}
                 </div>
                 <div
                   style={{

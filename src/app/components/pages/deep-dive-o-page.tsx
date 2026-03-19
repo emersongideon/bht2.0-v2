@@ -1,18 +1,25 @@
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { useBrand } from "../../contexts/brand-context";
+import { useDimension } from "../../data/use-dimensions";
+import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
-import { useDimension, useSubmetrics } from "../../data/use-dimensions";
+import { useSubmetricScores } from "../../hooks/use-submetric-scores";
+import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
+import { supabase } from "../../../lib/supabase";
+import { toISODateString, computeAxisDates } from "../../utils/date-utils";
+import { useOSentimentLatest } from "../../hooks/use-o-sentiment";
+import { Instagram } from "lucide-react";
 
 export function DeepDiveOPage() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
-  const { submetrics } = useSubmetrics("O");
+  const subScores = useSubmetricScores("O");
 
   return (
     <>
@@ -41,11 +48,11 @@ export function DeepDiveOPage() {
         </div>
 
         {/* Row 3 — Dimension Header */}
-        <DimensionHeader />
+        <DimensionHeader pageKey="O" />
 
         {/* Row 4 — Sub-metric card (1 card) */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, flexShrink: 0 }}>
-          <ScoreCard title={submetrics[0]?.submetric_name ?? "Favourability"} badge="Social" score="82" delta="▲ 0.8" />
+          <ScoreCard title="Favorability" badge="Social" liveScore={subScores["Favorability"]?.score ?? null} liveDelta={subScores["Favorability"]?.delta ?? null} trendValues={subScores["Favorability"]?.trendValues} />
         </div>
 
         {/* Row 5 — Brand Comparison */}
@@ -78,8 +85,10 @@ export function DeepDiveOPage() {
   );
 }
 
-function DimensionHeader() {
-  const { dimension: dim } = useDimension("O");
+function DimensionHeader({ pageKey }: { pageKey: string }) {
+  const { dimension: dim } = useDimension(pageKey);
+  const { score, delta } = useDimensionScore(pageKey);
+  const isPositive = !delta || delta >= 0;
   return (
     <div
       style={{
@@ -135,25 +144,27 @@ function DimensionHeader() {
               color: "var(--text-primary)",
             }}
           >
-            85
+            {score ?? "—"}
           </span>
         </div>
 
         {/* Delta */}
         <div>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              padding: "3px 8px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(74,102,68,0.1)",
-              color: "#4A6644",
-              fontWeight: 600,
-            }}
-          >
-            ▲ 1.6
-          </span>
+          {delta !== null && (
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                fontWeight: 600,
+              }}
+            >
+              {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+            </span>
+          )}
         </div>
 
         {/* Description */}
@@ -212,21 +223,23 @@ function DimensionHeader() {
                 color: "var(--text-primary)",
               }}
             >
-              85
+              {score ?? "—"}
             </span>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                padding: "3px 8px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor: "rgba(74,102,68,0.1)",
-                color: "#4A6644",
-                fontWeight: 600,
-              }}
-            >
-              ▲ 1.6
-            </span>
+            {delta !== null && (
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                  padding: "3px 8px",
+                  borderRadius: "var(--radius-pill)",
+                  backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                  color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                  fontWeight: 600,
+                }}
+              >
+                {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+              </span>
+            )}
           </div>
         </div>
         <p
@@ -248,18 +261,42 @@ function DimensionHeader() {
 function ScoreCard({
   title,
   badge,
-  score,
-  delta,
+  liveScore,
+  liveDelta,
+  trendValues,
 }: {
   title: string;
   badge: string;
-  score: string;
-  delta: string;
+  liveScore?: number | null;
+  liveDelta?: number | null;
+  trendValues?: (number | null)[];
 }) {
-  const isPositive = delta.includes("▲");
+  const isPositive = !liveDelta || liveDelta >= 0;
   const { getAxisLabels } = useDateMode();
   const axisLabels = getAxisLabels();
-  
+
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const W = 300; const H = 36;
+  const n = trendValues?.length ?? 0;
+  const toX = (i: number) => n > 1 ? (i / (n - 1)) * W : W / 2;
+  const toY = (v: number) => H - 1 - (v / 100) * (H - 2); // fixed 0-100 scale
+  const yBottom = H - 1;
+  // Baseline path: nulls draw at physical bottom (continuous line, no gaps)
+  let sparkPath = "";
+  if (trendValues && trendValues.length > 0) {
+    const parts: string[] = [];
+    for (let i = 0; i < trendValues.length; i++) {
+      const v = trendValues[i];
+      const y = v !== null ? toY(v) : yBottom;
+      parts.push(`${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${y.toFixed(1)}`);
+    }
+    sparkPath = parts.join(" ");
+  }
+  const sparkDots = trendValues
+    ? trendValues.map((v, i) => v !== null ? { x: toX(i), y: toY(v), i } : null).filter(Boolean) as { x: number; y: number; i: number }[]
+    : [];
+  const hasData = trendValues ? trendValues.some((v) => v !== null) : false;
+
   return (
     <div
       style={{
@@ -282,7 +319,7 @@ function ScoreCard({
         >
           {title}
         </h3>
-        
+
       </div>
 
       {/* Score row */}
@@ -295,34 +332,75 @@ function ScoreCard({
             color: "var(--text-primary)",
           }}
         >
-          {score}
+          {liveScore !== null && liveScore !== undefined ? liveScore : "—"}
         </span>
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            padding: "3px 8px",
-            borderRadius: "var(--radius-pill)",
-            backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
-            color: isPositive ? "#4A6644" : "#B86A54",
-            fontWeight: 600,
-          }}
-        >
-          {delta}
-        </span>
+        {liveDelta !== null && liveDelta !== undefined && (
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              padding: "3px 8px",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+              color: isPositive ? "#4A6644" : "#B86A54",
+              fontWeight: 600,
+            }}
+          >
+            {isPositive ? "▲" : "▼"} {Math.abs(liveDelta).toFixed(1)}
+          </span>
+        )}
       </div>
 
       {/* Sparkline */}
       <div>
-        <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
-          <path
-            d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12"
-            fill="none"
-            stroke="#B5ADA5"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <div
+          style={{ position: "relative" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xRatio = (e.clientX - rect.left) / rect.width;
+            const idx = Math.round(xRatio * (axisLabels.length - 1));
+            setHoverIndex(Math.max(0, Math.min(axisLabels.length - 1, idx)));
+          }}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          {hoverIndex !== null && trendValues && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 4px)",
+              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
+              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "3px 7px",
+              boxShadow: "var(--shadow-card)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              zIndex: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#B5ADA5" }}>
+                {axisLabels[hoverIndex]}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
+                {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+              </span>
+            </div>
+          )}
+          <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+            {!hasData && (
+              <path d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12" fill="none" stroke="#B5ADA5" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+            )}
+            {hasData && sparkPath && (
+              <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            {sparkDots.map((pt) => (
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
+            ))}
+          </svg>
+        </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
           {axisLabels.map((label, i) => (
             <span
@@ -347,15 +425,9 @@ function ScoreCard({
 function BrandComparison() {
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
-
-  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
-
-  const allFavourabilityData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "o_favourability"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  // Filter to only show selected brands
-  const favourabilityData = allFavourabilityData.filter(item => selectedBrands.includes(item.brand));
+  const categoryBrands = (brandsByCategory[selectedCategory] ?? []).filter(b => selectedBrands.includes(b.name));
+  const allScores = useAllBrandsSubmetricScores("O");
+  const favourabilityData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Favorability"] ?? null, color: b.color }));
 
   const maxScore = 100;
 
@@ -442,7 +514,7 @@ function BrandComparison() {
                 <div
                   style={{
                     height: "100%",
-                    width: `${(item.score / maxScore) * 100}%`,
+                    width: `${((item.score ?? 0) / maxScore) * 100}%`,
                     backgroundColor: item.color,
                     opacity: item.brand === mainBrand ? 1 : 0.5,
                     borderRadius: 7,
@@ -459,7 +531,7 @@ function BrandComparison() {
                   fontWeight: item.brand === mainBrand ? 700 : 400,
                 }}
               >
-                {item.score}
+                {item.score ?? "—"}
               </span>
             </div>
           ))}
@@ -470,49 +542,139 @@ function BrandComparison() {
 }
 
 function SentimentTrend() {
-  const { getAxisLabels } = useDateMode();
-  const months = getAxisLabels();
-  const { selectedBrands, mainBrand } = useBrand();
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { selectedDate, dateMode, getAxisLabels } = useDateMode();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+
+  type BrandLine = { name: string; color: string; values: (number | null)[] };
+  const [brandLines, setBrandLines] = useState<BrandLine[]>([]);
+  const [chartLabels, setChartLabels] = useState<string[]>([]);
+  const [sortedDates, setSortedDates] = useState<string[]>([]);
+
+  useEffect(() => {
+    setBrandLines([]);
+    setChartLabels([]);
+    setSortedDates([]);
+
+    async function load() {
+      // Always use 7 fixed axis positions determined by date mode
+      const axisDates = computeAxisDates(dateMode, selectedDate);
+      const fromDate = axisDates[0];
+      const toDate = axisDates[axisDates.length - 1];
+
+      // For monthly mode, extend toDate to end of that month so we capture all rows
+      const toDateEnd = dateMode === "Monthly"
+        ? new Date(toDate.getFullYear(), toDate.getMonth() + 1, 0)
+        : toDate;
+
+      const { data } = await supabase
+        .from("o_sentiment")
+        .select("brand_name, date, o_positive_pct")
+        .eq("category_name", selectedCategory)
+        .in("brand_name", selectedBrands)
+        .gte("date", toISODateString(fromDate))
+        .lte("date", toISODateString(toDateEnd))
+        .order("date", { ascending: true });
+
+      const colors: Record<string, string> = {};
+      for (const b of categoryBrandList) colors[b.name] = b.color;
+
+      const axisISODates = axisDates.map(d => toISODateString(d));
+
+      if (!data?.length) {
+        // No data: set empty values for all brands aligned to axis
+        setBrandLines(
+          selectedBrands.map(b => ({
+            name: b,
+            color: colors[b] ?? "#B86A54",
+            values: Array(axisDates.length).fill(null),
+          }))
+        );
+        setSortedDates(axisISODates);
+        setChartLabels(getAxisLabels());
+        return;
+      }
+
+      let brandValues: Record<string, (number | null)[]>;
+
+      if (dateMode === "Monthly") {
+        // Aggregate by month: average o_positive_pct per brand per YYYY-MM
+        const byBrandMonth: Record<string, Record<string, number[]>> = {};
+        for (const row of data) {
+          const monthKey = row.date.slice(0, 7); // "YYYY-MM"
+          if (!byBrandMonth[row.brand_name]) byBrandMonth[row.brand_name] = {};
+          if (!byBrandMonth[row.brand_name][monthKey]) byBrandMonth[row.brand_name][monthKey] = [];
+          byBrandMonth[row.brand_name][monthKey].push(row.o_positive_pct);
+        }
+        brandValues = {};
+        for (const b of selectedBrands) {
+          brandValues[b] = axisDates.map(axisDate => {
+            const monthKey = toISODateString(axisDate).slice(0, 7);
+            const vals = byBrandMonth[b]?.[monthKey];
+            if (!vals || vals.length === 0) return null;
+            return vals.reduce((a, c) => a + c, 0) / vals.length;
+          });
+        }
+      } else {
+        // Daily / Rolling 30: exact date match
+        const byBrandDate: Record<string, Record<string, number>> = {};
+        for (const row of data) {
+          if (!byBrandDate[row.brand_name]) byBrandDate[row.brand_name] = {};
+          byBrandDate[row.brand_name][row.date] = row.o_positive_pct;
+        }
+        brandValues = {};
+        for (const b of selectedBrands) {
+          brandValues[b] = axisISODates.map(isoDate => byBrandDate[b]?.[isoDate] ?? null);
+        }
+      }
+
+      setBrandLines(
+        selectedBrands.map(b => ({
+          name: b,
+          color: colors[b] ?? "#B86A54",
+          values: brandValues[b] ?? Array(axisDates.length).fill(null),
+        }))
+      );
+      setSortedDates(axisISODates);
+      setChartLabels(getAxisLabels());
+    }
+    load();
+  }, [selectedBrands, selectedCategory, selectedDate, dateMode]);
 
   // Chart dimensions in viewBox units
   const VB_W = 600;
   const VB_H = 200;
   const PAD_TOP = 20;
   const PAD_BOT = 20;
-  const Y_MIN = 38; // lowest displayed %
-  const Y_MAX = 84; // highest displayed %
+
+  const allValues = brandLines.flatMap(b => b.values).filter((v): v is number => v !== null);
+  const rawMin = allValues.length ? Math.min(...allValues) : 30;
+  const rawMax = allValues.length ? Math.max(...allValues) : 90;
+  const Y_MIN = Math.max(0, Math.floor(rawMin - 5));
+  const Y_MAX = Math.ceil(rawMax + 5);
   const plotH = VB_H - PAD_TOP - PAD_BOT;
 
   const valueToY = (val: number) =>
     PAD_TOP + ((Y_MAX - val) / (Y_MAX - Y_MIN)) * plotH;
-  const indexToX = (i: number) => (i / (months.length - 1)) * VB_W;
+  const indexToX = (i: number) => (i / Math.max(sortedDates.length - 1, 1)) * VB_W;
 
-  const allBrandLines = [
-    { name: "Glossier", color: "#DAC58C",
-      values: [68.9, 69.8, 72.4, 74.2, 76.0, 78.7, 81.3] },
-    { name: "Rhode", color: "#B86A54",
-      values: [60.0, 60.9, 62.7, 64.4, 66.7, 69.8, 72.4] },
-    { name: "Laneige", color: "#6B241E",
-      values: [53.3, 54.2, 55.6, 57.3, 59.1, 60.9, 62.7] },
-    { name: "Summer Fridays", color: "#374762",
-      values: [48.9, 49.3, 50.2, 52.0, 53.3, 54.7, 56.4] },
-    { name: "Clinique", color: "#ACBDA7",
-      values: [42.2, 43.1, 44.0, 45.3, 46.7, 47.6, 48.9] },
-  ];
+  const buildPath = (values: (number | null)[]) => {
+    const parts: string[] = [];
+    const yBottom = valueToY(Y_MIN); // physical bottom of plot area
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+      // Nulls draw at physical bottom (continuous line, no gaps)
+      const y = v !== null ? valueToY(v) : yBottom;
+      parts.push(`${i === 0 ? "M" : "L"}${indexToX(i).toFixed(1)},${y.toFixed(1)}`);
+    }
+    return parts.join(" ");
+  };
 
-  // Filter to only show selected brands
-  const brandLines = allBrandLines.filter(brand => selectedBrands.includes(brand.name));
-
-  // Build SVG path strings from data
-  const buildPath = (values: number[]) =>
-    values
-      .map((v, i) => `${i === 0 ? "M" : "L"}${indexToX(i).toFixed(1)},${valueToY(v).toFixed(1)}`)
-      .join(" ");
-
-  // Gridline Y positions
-  const gridlines = [80, 60, 40];
+  const gridStep = Math.round((Y_MAX - Y_MIN) / 3 / 10) * 10 || 10;
+  const gridlines = Array.from({ length: 4 }, (_, i) => Math.round(Y_MIN + i * (Y_MAX - Y_MIN) / 3));
 
   return (
     <div
@@ -524,6 +686,7 @@ function SentimentTrend() {
         padding: 20,
         display: "flex",
         flexDirection: "column",
+        flex: 1,
         width: "100%",
         maxWidth: "100%",
         minWidth: 0,
@@ -610,7 +773,7 @@ function SentimentTrend() {
         </div>
       </div>
 
-      <div className="sentiment-chart-wrapper">
+      <div className="sentiment-chart-wrapper" style={{ flex: 1, display: "flex", flexDirection: "column" }}>
       {/* Chart area with Y-axis labels */}
       <div className="flex" style={{ flex: 1, marginBottom: 8, minWidth: 0 }}>
         {/* Y-axis labels */}
@@ -619,42 +782,37 @@ function SentimentTrend() {
             width: 28,
             flexShrink: 0,
             position: "relative",
-            height: 120,
-            paddingTop: PAD_TOP * 0.6,
-            paddingBottom: PAD_BOT * 0.6,
+            paddingTop: `${PAD_TOP * 0.6}px`,
+            paddingBottom: `${PAD_BOT * 0.6}px`,
             boxSizing: "border-box",
           }}
         >
-          {gridlines.map((val) => {
-            // Calculate position relative to the container that now has padding
-            const yPos = ((Y_MAX - val) / (Y_MAX - Y_MIN)) * (120 - (PAD_TOP * 0.6) - (PAD_BOT * 0.6));
-            return (
-              <span
-                key={val}
-                style={{
-                  position: "absolute",
-                  right: 4,
-                  top: yPos,
-                  transform: "translateY(-50%)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9,
-                  color: "#B5ADA5",
-                }}
-              >
-                {val}%
-              </span>
-            );
-          })}
+          {gridlines.map((val) => (
+            <span
+              key={val}
+              style={{
+                position: "absolute",
+                right: 4,
+                top: `${((Y_MAX - val) / (Y_MAX - Y_MIN)) * 100}%`,
+                transform: "translateY(-50%)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                color: "#B5ADA5",
+              }}
+            >
+              {val}%
+            </span>
+          ))}
         </div>
 
         {/* SVG chart */}
-        <div style={{ position: "relative", flex: 1, height: 120 }}>
+        <div style={{ position: "relative", flex: 1 }}>
           <svg
             width="100%"
-            height="120"
+            height="100%"
             viewBox={`0 0 ${VB_W} ${VB_H}`}
             preserveAspectRatio="none"
-            style={{ display: "block" }}
+            style={{ display: "block", position: "absolute", inset: 0 }}
             onMouseMove={(e) => {
               const svg = e.currentTarget;
               const svgRect = svg.getBoundingClientRect();
@@ -663,9 +821,9 @@ function SentimentTrend() {
               const containerRect = container.getBoundingClientRect();
               const mouseXRatio = (e.clientX - svgRect.left) / svgRect.width;
               const mouseXInVB = mouseXRatio * VB_W;
-              // Snap to nearest month
-              const idx = Math.round((mouseXInVB / VB_W) * (months.length - 1));
-              const clampedIdx = Math.max(0, Math.min(months.length - 1, idx));
+              // Snap to nearest data point
+              const idx = Math.round((mouseXInVB / VB_W) * (sortedDates.length - 1));
+              const clampedIdx = Math.max(0, Math.min(sortedDates.length - 1, idx));
               // Pixel X for that month's data point
               const pointXRatio = indexToX(clampedIdx) / VB_W;
               const pixelX = pointXRatio * svgRect.width + (svgRect.left - containerRect.left);
@@ -716,9 +874,9 @@ function SentimentTrend() {
               />
             )}
 
-            {/* Clickable month zones */}
-            {months.map((month, i) => {
-              const zoneW = VB_W / months.length;
+            {/* Clickable date zones */}
+            {sortedDates.map((_d, i) => {
+              const zoneW = VB_W / Math.max(sortedDates.length, 1);
               return (
                 <rect
                   key={i}
@@ -733,12 +891,38 @@ function SentimentTrend() {
             })}
           </svg>
 
+          {/* Always-visible dots at every non-null data point */}
+          {brandLines.map((brand) =>
+            brand.values.map((v, i) => {
+              if (v === null || v === undefined) return null;
+              const isMain = brand.name === mainBrand;
+              const size = isMain ? 7 : 5;
+              return (
+                <div
+                  key={`dot-${brand.name}-${i}`}
+                  style={{
+                    position: "absolute",
+                    left: `${(indexToX(i) / VB_W) * 100}%`,
+                    top: `${(valueToY(v) / VB_H) * 100}%`,
+                    width: size,
+                    height: size,
+                    borderRadius: "50%",
+                    backgroundColor: brand.color,
+                    border: "1.5px solid #fff",
+                    transform: "translate(-50%, -50%)",
+                    pointerEvents: "none",
+                  }}
+                />
+              );
+            })
+          )}
+
           {/* Tooltip */}
           {hoveredIndex !== null && tooltipPos && (
             <div
               style={{
                 position: "absolute",
-                left: tooltipPos.x,
+                left: `clamp(80px, ${tooltipPos.x}px, calc(100% - 80px))`,
                 top: 0,
                 transform: "translateX(-50%)",
                 backgroundColor: "rgba(255, 255, 255, 0.98)",
@@ -760,7 +944,7 @@ function SentimentTrend() {
                   fontWeight: 600,
                 }}
               >
-                {months[hoveredIndex]}
+                {hoveredIndex !== null ? chartLabels[hoveredIndex] ?? "" : ""}
               </div>
               {brandLines.map((brand) => (
                 <div
@@ -800,7 +984,7 @@ function SentimentTrend() {
                       fontWeight: 600,
                     }}
                   >
-                    {brand.values[hoveredIndex].toFixed(1)}%
+                    {hoveredIndex !== null && brand.values[hoveredIndex] != null ? `${(brand.values[hoveredIndex] as number).toFixed(1)}%` : "—"}
                   </span>
                 </div>
               ))}
@@ -814,18 +998,17 @@ function SentimentTrend() {
         className="flex items-center justify-between"
         style={{ marginBottom: 12, paddingLeft: 28 }}
       >
-        {months.map((month, i) => (
+        {chartLabels.map((label, i) => (
           <span
             key={i}
             style={{
               fontFamily: "var(--font-body)",
               fontSize: 9,
-              color: mainBrand === "Rhode" ? "#B86A54" : "#B5ADA5",
-              fontWeight: mainBrand === "Rhode" ? 700 : 400,
+              color: "#B5ADA5",
               textAlign: "center",
             }}
           >
-            {month}
+            {label}
           </span>
         ))}
       </div>
@@ -835,67 +1018,23 @@ function SentimentTrend() {
 }
 
 function SentimentSplit() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const monthFullNames: Record<string, string> = {
-    Sep: "September 2025", Oct: "October 2025", Nov: "November 2025",
-    Dec: "December 2025", Jan: "January 2026", Feb: "February 2026", Mar: "March 2026",
-  };
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
+  const latestByBrand = useOSentimentLatest();
 
-  const monthlyData: Record<string, { brand: string; color: string; positive: number; neutral: number; negative: number }[]> = {
-    Sep: [
-      { brand: "Rhode", color: "#B86A54", positive: 62, neutral: 24, negative: 14 },
-      { brand: "Summer Fridays", color: "#374762", positive: 58, neutral: 26, negative: 16 },
-      { brand: "Glossier", color: "#DAC58C", positive: 70, neutral: 18, negative: 12 },
-      { brand: "Clinique", color: "#ACBDA7", positive: 52, neutral: 30, negative: 18 },
-      { brand: "Laneige", color: "#6B241E", positive: 60, neutral: 24, negative: 16 },
-    ],
-    Oct: [
-      { brand: "Rhode", color: "#B86A54", positive: 64, neutral: 23, negative: 13 },
-      { brand: "Summer Fridays", color: "#374762", positive: 59, neutral: 25, negative: 16 },
-      { brand: "Glossier", color: "#DAC58C", positive: 71, neutral: 18, negative: 11 },
-      { brand: "Clinique", color: "#ACBDA7", positive: 53, neutral: 30, negative: 17 },
-      { brand: "Laneige", color: "#6B241E", positive: 61, neutral: 23, negative: 16 },
-    ],
-    Nov: [
-      { brand: "Rhode", color: "#B86A54", positive: 66, neutral: 21, negative: 13 },
-      { brand: "Summer Fridays", color: "#374762", positive: 60, neutral: 25, negative: 15 },
-      { brand: "Glossier", color: "#DAC58C", positive: 73, neutral: 17, negative: 10 },
-      { brand: "Clinique", color: "#ACBDA7", positive: 54, neutral: 29, negative: 17 },
-      { brand: "Laneige", color: "#6B241E", positive: 63, neutral: 22, negative: 15 },
-    ],
-    Dec: [
-      { brand: "Rhode", color: "#B86A54", positive: 67, neutral: 20, negative: 13 },
-      { brand: "Summer Fridays", color: "#374762", positive: 61, neutral: 24, negative: 15 },
-      { brand: "Glossier", color: "#DAC58C", positive: 74, neutral: 16, negative: 10 },
-      { brand: "Clinique", color: "#ACBDA7", positive: 55, neutral: 29, negative: 16 },
-      { brand: "Laneige", color: "#6B241E", positive: 64, neutral: 22, negative: 14 },
-    ],
-    Jan: [
-      { brand: "Rhode", color: "#B86A54", positive: 69, neutral: 19, negative: 12 },
-      { brand: "Summer Fridays", color: "#374762", positive: 62, neutral: 24, negative: 14 },
-      { brand: "Glossier", color: "#DAC58C", positive: 76, neutral: 15, negative: 9 },
-      { brand: "Clinique", color: "#ACBDA7", positive: 56, neutral: 29, negative: 15 },
-      { brand: "Laneige", color: "#6B241E", positive: 66, neutral: 21, negative: 13 },
-    ],
-    Feb: [
-      { brand: "Rhode", color: "#B86A54", positive: 70, neutral: 19, negative: 11 },
-      { brand: "Summer Fridays", color: "#374762", positive: 63, neutral: 23, negative: 14 },
-      { brand: "Glossier", color: "#DAC58C", positive: 77, neutral: 15, negative: 8 },
-      { brand: "Clinique", color: "#ACBDA7", positive: 57, neutral: 28, negative: 15 },
-      { brand: "Laneige", color: "#6B241E", positive: 67, neutral: 21, negative: 12 },
-    ],
-    Mar: [
-      { brand: "Rhode", color: "#B86A54", positive: 72, neutral: 18, negative: 10 },
-      { brand: "Summer Fridays", color: "#374762", positive: 65, neutral: 22, negative: 13 },
-      { brand: "Glossier", color: "#DAC58C", positive: 78, neutral: 14, negative: 8 },
-      { brand: "Clinique", color: "#ACBDA7", positive: 58, neutral: 28, negative: 14 },
-      { brand: "Laneige", color: "#6B241E", positive: 68, neutral: 20, negative: 12 },
-    ],
-  };
+  const colors: Record<string, string> = {};
+  for (const b of categoryBrandList) colors[b.name] = b.color;
 
-  // Filter to only show selected brands
-  const data = monthlyData["Mar"].filter(item => selectedBrands.includes(item.brand));
+  const data = selectedBrands
+    .filter(b => latestByBrand[b])
+    .map(b => ({
+      brand: b,
+      color: colors[b] ?? "#B86A54",
+      positive: Math.round(latestByBrand[b].o_positive_pct ?? 0),
+      neutral: Math.round(latestByBrand[b].o_neutral_pct ?? 0),
+      negative: Math.round(latestByBrand[b].o_negative_pct ?? 0),
+    }));
 
   return (
     <div
@@ -1024,75 +1163,28 @@ function SentimentSplit() {
 }
 
 function PassionScore() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const allDonutData = [
-    { brand: "Rhode", percentage: 28, color: "#B86A54" },
-    { brand: "Glossier", percentage: 24, color: "#DAC58C" },
-    { brand: "Laneige", percentage: 19, color: "#6B241E" },
-    { brand: "Summer Fridays", percentage: 16, color: "#374762" },
-    { brand: "Clinique", percentage: 13, color: "#ACBDA7" },
-  ];
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
+  const latestByBrand = useOSentimentLatest();
 
-  // Filter to only show selected brands
-  const donutData = allDonutData.filter(item => selectedBrands.includes(item.brand));
+  const colors: Record<string, string> = {};
+  for (const b of categoryBrandList) colors[b.name] = b.color;
 
-  // Calculate donut segments
-  let cumulativePercentage = 0;
-  const segments = donutData.map((item) => {
-    const startAngle = (cumulativePercentage / 100) * 360;
-    cumulativePercentage += item.percentage;
-    const endAngle = (cumulativePercentage / 100) * 360;
-    return { ...item, startAngle, endAngle };
-  });
+  const donutData = selectedBrands
+    .filter(b => latestByBrand[b])
+    .map(b => ({
+      brand: b,
+      percentage: latestByBrand[b].o_passion_score ?? 0,
+      color: colors[b] ?? "#B86A54",
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
 
-  const getArc = (startAngle: number, endAngle: number, outerRadius: number, innerRadius: number) => {
-    const start = polarToCartesian(90, 90, outerRadius, endAngle);
-    const end = polarToCartesian(90, 90, outerRadius, startAngle);
-    const innerStart = polarToCartesian(90, 90, innerRadius, endAngle);
-    const innerEnd = polarToCartesian(90, 90, innerRadius, startAngle);
+  const mainRow = latestByBrand[mainBrand];
+  const mainScore = mainRow?.o_passion_score ?? 0;
+  const mainColor = colors[mainBrand] ?? "#B86A54";
+  const mainLlmRec = mainRow?.o_llm_rec_share ?? null;
 
-    const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
-
-    return [
-      "M",
-      start.x,
-      start.y,
-      "A",
-      outerRadius,
-      outerRadius,
-      0,
-      largeArcFlag,
-      0,
-      end.x,
-      end.y,
-      "L",
-      innerEnd.x,
-      innerEnd.y,
-      "A",
-      innerRadius,
-      innerRadius,
-      0,
-      largeArcFlag,
-      1,
-      innerStart.x,
-      innerStart.y,
-      "Z",
-    ].join(" ");
-  };
-
-  const polarToCartesian = (
-    centerX: number,
-    centerY: number,
-    radius: number,
-    angleInDegrees: number
-  ) => {
-    const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
-    return {
-      x: centerX + radius * Math.cos(angleInRadians),
-      y: centerY + radius * Math.sin(angleInRadians),
-    };
-  };
 
   return (
     <div
@@ -1143,10 +1235,10 @@ function PassionScore() {
               cy="90"
               r="70"
               fill="none"
-              stroke="#B86A54"
+              stroke={mainColor}
               strokeWidth="16"
               strokeLinecap="round"
-              strokeDasharray={`${(28 / 100) * 2 * Math.PI * 70} ${2 * Math.PI * 70}`}
+              strokeDasharray={`${(mainScore / 100) * 2 * Math.PI * 70} ${2 * Math.PI * 70}`}
               transform="rotate(-90 90 90)"
             />
           </svg>
@@ -1168,7 +1260,7 @@ function PassionScore() {
                 lineHeight: 1,
               }}
             >
-              28
+              {mainScore}
             </div>
             <div
               style={{
@@ -1251,87 +1343,62 @@ function PassionScore() {
               fontWeight: 700,
               color: "var(--text-primary)",
             }}
-          >79%</span>
+          >{mainLlmRec != null ? `${mainLlmRec.toFixed(1)}%` : "—"}</span>
         </div>
       </div>
     </div>
   );
 }
 
+function PlatformBadge({ platform }: { platform: string }) {
+  const p = platform.toLowerCase();
+  const bgColor = p === "instagram" ? "#E4405F" : p === "reddit" ? "#FF4500" : p === "youtube" ? "#FF0000" : "#000000";
+  return (
+    <div style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${bgColor}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative" }}>
+      <div style={{ width: 22, height: 22, borderRadius: "50%", backgroundColor: bgColor, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {p === "instagram" ? (
+          <Instagram size={12} color="#FFFFFF" />
+        ) : p === "tiktok" ? (
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="#FFFFFF">
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+          </svg>
+        ) : p === "youtube" ? (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#FFFFFF">
+            <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.5v-7l6.25 3.5-6.25 3.5z" />
+          </svg>
+        ) : (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFFFFF">
+            <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z" />
+          </svg>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function RecommendationList() {
-  const recommendations = [
-    {
-      platform: "Reddit",
-      platformAbbr: "R",
-      platformColor: "rgba(255,87,34,0.08)",
-      author: "u/skincarejunkie_",
-      engagement: "2.4K upvotes",
-      quote:
-        "Rhode's peptide lip treatment is the only lip product that actually hydrates overnight. I've repurchased 4 times.",
-    },
-    {
-      platform: "TikTok",
-      platformAbbr: "TT",
-      platformColor: "rgba(0,0,0,0.06)",
-      author: "@glowwithme",
-      engagement: "184K views",
-      quote:
-        "Tried the glazing milk and my skin has never looked this good. The glow is insane for a $29 product.",
-    },
-    {
-      platform: "Instagram",
-      platformAbbr: "IG",
-      platformColor: "rgba(184,106,84,0.08)",
-      author: "@thebeautyedit",
-      engagement: "12.3K likes",
-      quote:
-        "If you want Drunk Elephant results without the price tag, Rhode barrier cream is it. Period.",
-    },
-    {
-      platform: "YouTube",
-      platformAbbr: "YT",
-      platformColor: "rgba(255,0,0,0.06)",
-      author: "@skinbysarah",
-      engagement: "89K views",
-      quote:
-        "I recommend Rhode to literally everyone. The formulas are so clean and the results are visible in days.",
-    },
-    {
-      platform: "TikTok",
-      platformAbbr: "TT",
-      platformColor: "rgba(0,0,0,0.06)",
-      author: "@beautyboss22",
-      engagement: "312K views",
-      quote:
-        "This brand doesn't miss. Every single product I've tried from Rhode has become a staple.",
-    },
-    {
-      platform: "Instagram",
-      platformAbbr: "IG",
-      platformColor: "rgba(184,106,84,0.08)",
-      author: "@minimalbeauty",
-      engagement: "8.7K likes",
-      quote: "Honestly the packaging alone makes it worth it but the product inside is even better.",
-    },
-    {
-      platform: "Reddit",
-      platformAbbr: "R",
-      platformColor: "rgba(255,87,34,0.08)",
-      author: "u/skincareobsessed",
-      engagement: "1.8K upvotes",
-      quote:
-        "Rhode glazing fluid > every other serum I've tried this year. Not even close.",
-    },
-    {
-      platform: "TikTok",
-      platformAbbr: "TT",
-      platformColor: "rgba(0,0,0,0.06)",
-      author: "@realreviews_",
-      engagement: "95K views",
-      quote:
-        "Bought this for my sister and she's now converted her whole friend group. It sells itself.",
-    },
-  ];
+  const { mainBrand, selectedCategory } = useBrand();
+  const { selectedDate } = useDateMode();
+
+  type Rec = { id: number; platform: string; author: string; quote: string; sentiment: string; posted_at: string };
+  const [recs, setRecs] = useState<Rec[]>([]);
+
+  useEffect(() => {
+    setRecs([]);
+    async function load() {
+      const { data } = await supabase
+        .from("o_recommendations")
+        .select("id, o_platform, o_author, o_quote, o_sentiment, o_posted_at")
+        .eq("brand_name", mainBrand)
+        .eq("category_name", selectedCategory)
+        .order("o_posted_at", { ascending: false });
+      if (!data?.length) return;
+      setRecs(data.map(r => ({ id: r.id, platform: r.o_platform, author: r.o_author, quote: r.o_quote, sentiment: r.o_sentiment, posted_at: r.o_posted_at })));
+    }
+    load();
+  }, [mainBrand, selectedCategory, selectedDate]);
+
+  const sentimentDotColor = (s: string) => s === "positive" ? "#4A6644" : s === "negative" ? "#B86A54" : "#B5ADA5";
 
   return (
     <div
@@ -1373,36 +1440,14 @@ function RecommendationList() {
       {/* Scrollable list */}
       <div style={{ maxHeight: 380, overflowY: "auto" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {recommendations.map((rec, index) => (
-            <div key={index}>
+          {recs.map((rec, index) => (
+            <div key={rec.id}>
               {index > 0 && (
                 <div style={{ height: 1, backgroundColor: "#F0EBE6", marginBottom: 12 }} />
               )}
               <div className="flex items-start gap-3">
                 {/* Platform icon */}
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 8,
-                    backgroundColor: rec.platformColor,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontSize: 9,
-                      fontWeight: 700,
-                      color: "#7A6F65",
-                    }}
-                  >
-                    {rec.platformAbbr}
-                  </span>
-                </div>
+                <PlatformBadge platform={rec.platform} />
 
                 {/* Quote + metadata */}
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1432,7 +1477,7 @@ function RecommendationList() {
                     width: 8,
                     height: 8,
                     borderRadius: "50%",
-                    backgroundColor: "#4A6644",
+                    backgroundColor: sentimentDotColor(rec.sentiment),
                     flexShrink: 0,
                     marginTop: 6,
                   }}

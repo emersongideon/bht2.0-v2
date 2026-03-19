@@ -13,7 +13,7 @@ export function BrandPickerDropdown() {
     <div
       className="relative"
       style={{
-        width: 300,
+        width: "100%",
         backgroundColor: "var(--bg-card)",
         backdropFilter: "blur(var(--blur-glass))",
         borderRadius: "var(--radius-md)",

@@ -1,18 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { useBrand } from "../../contexts/brand-context";
+import { useDimension } from "../../data/use-dimensions";
+import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
-import { useDimension, useSubmetrics } from "../../data/use-dimensions";
+import { useSubmetricScores } from "../../hooks/use-submetric-scores";
+import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
+import { supabase } from "../../../lib/supabase";
+import { toISODateString, computeAxisDates } from "../../utils/date-utils";
 
 export function DeepDiveC2Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
-  const { submetrics } = useSubmetrics("C2");
+  const subScores = useSubmetricScores("C2");
 
   return (
     <>
@@ -38,12 +43,12 @@ export function DeepDiveC2Page() {
         </div>
 
         {/* Row 3 — Dimension Header */}
-        <DimensionHeader />
+        <DimensionHeader pageKey="C2" />
 
         {/* Row 4 — Sub-metric cards (2 cards) */}
         <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 12, flexShrink: 0 }}>
-          <ScoreCard title={submetrics[0]?.submetric_name ?? "Price Perception"} badge="Social" score="62" delta="▼ 2.1" />
-          <ScoreCard title={submetrics[1]?.submetric_name ?? "Quality Perception"} badge="Social" score="74" delta="▲ 0.8" />
+          <ScoreCard title="Price Perception" badge="Social" liveScore={subScores["Price Perception"]?.score ?? null} liveDelta={subScores["Price Perception"]?.delta ?? null} trendValues={subScores["Price Perception"]?.trendValues} />
+          <ScoreCard title="Quality Perception" badge="Social" liveScore={subScores["Quality Perception"]?.score ?? null} liveDelta={subScores["Quality Perception"]?.delta ?? null} trendValues={subScores["Quality Perception"]?.trendValues} />
         </div>
 
         {/* Row 5 — Brand Comparison */}
@@ -62,8 +67,10 @@ export function DeepDiveC2Page() {
   );
 }
 
-function DimensionHeader() {
-  const { dimension: dim } = useDimension("C2");
+function DimensionHeader({ pageKey }: { pageKey: string }) {
+  const { dimension: dim } = useDimension(pageKey);
+  const { score, delta } = useDimensionScore(pageKey);
+  const isPositive = !delta || delta >= 0;
   return (
     <div
       style={{
@@ -119,25 +126,27 @@ function DimensionHeader() {
               color: "var(--text-primary)",
             }}
           >
-            66
+            {score ?? "—"}
           </span>
         </div>
 
         {/* Delta */}
         <div>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              padding: "3px 8px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(184,106,84,0.1)",
-              color: "#B86A54",
-              fontWeight: 600,
-            }}
-          >
-            ▼ 1.2
-          </span>
+          {delta !== null && (
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                fontWeight: 600,
+              }}
+            >
+              {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+            </span>
+          )}
         </div>
 
         {/* Description */}
@@ -196,21 +205,23 @@ function DimensionHeader() {
                 color: "var(--text-primary)",
               }}
             >
-              66
+              {score ?? "—"}
             </span>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                padding: "3px 8px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor: "rgba(184,106,84,0.1)",
-                color: "#B86A54",
-                fontWeight: 600,
-              }}
-            >
-              ▼ 1.2
-            </span>
+            {delta !== null && (
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                  padding: "3px 8px",
+                  borderRadius: "var(--radius-pill)",
+                  backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                  color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                  fontWeight: 600,
+                }}
+              >
+                {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+              </span>
+            )}
           </div>
         </div>
         <p
@@ -232,18 +243,42 @@ function DimensionHeader() {
 function ScoreCard({
   title,
   badge,
-  score,
-  delta,
+  liveScore,
+  liveDelta,
+  trendValues,
 }: {
   title: string;
   badge: string;
-  score: string;
-  delta: string;
+  liveScore?: number | null;
+  liveDelta?: number | null;
+  trendValues?: (number | null)[];
 }) {
-  const isPositive = delta.includes("▲");
+  const isPositive = !liveDelta || liveDelta >= 0;
   const { getAxisLabels } = useDateMode();
   const axisLabels = getAxisLabels();
-  
+
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const W = 300; const H = 36;
+  const n = trendValues?.length ?? 0;
+  const toX = (i: number) => n > 1 ? (i / (n - 1)) * W : W / 2;
+  const toY = (v: number) => H - 1 - (v / 100) * (H - 2); // fixed 0-100 scale
+  const yBottom = H - 1;
+  // Baseline path: nulls draw at physical bottom (continuous line, no gaps)
+  let sparkPath = "";
+  if (trendValues && trendValues.length > 0) {
+    const parts: string[] = [];
+    for (let i = 0; i < trendValues.length; i++) {
+      const v = trendValues[i];
+      const y = v !== null ? toY(v) : yBottom;
+      parts.push(`${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${y.toFixed(1)}`);
+    }
+    sparkPath = parts.join(" ");
+  }
+  const sparkDots = trendValues
+    ? trendValues.map((v, i) => v !== null ? { x: toX(i), y: toY(v), i } : null).filter(Boolean) as { x: number; y: number; i: number }[]
+    : [];
+  const hasData = trendValues ? trendValues.some((v) => v !== null) : false;
+
   return (
     <div
       style={{
@@ -266,7 +301,7 @@ function ScoreCard({
         >
           {title}
         </h3>
-        
+
       </div>
 
       {/* Score row */}
@@ -279,34 +314,75 @@ function ScoreCard({
             color: "var(--text-primary)",
           }}
         >
-          {score}
+          {liveScore !== null && liveScore !== undefined ? liveScore : "—"}
         </span>
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            padding: "3px 8px",
-            borderRadius: "var(--radius-pill)",
-            backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
-            color: isPositive ? "#4A6644" : "#B86A54",
-            fontWeight: 600,
-          }}
-        >
-          {delta}
-        </span>
+        {liveDelta !== null && liveDelta !== undefined && (
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              padding: "3px 8px",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+              color: isPositive ? "#4A6644" : "#B86A54",
+              fontWeight: 600,
+            }}
+          >
+            {isPositive ? "▲" : "▼"} {Math.abs(liveDelta).toFixed(1)}
+          </span>
+        )}
       </div>
 
       {/* Sparkline */}
       <div>
-        <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
-          <path
-            d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12"
-            fill="none"
-            stroke="#B5ADA5"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <div
+          style={{ position: "relative" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xRatio = (e.clientX - rect.left) / rect.width;
+            const idx = Math.round(xRatio * (axisLabels.length - 1));
+            setHoverIndex(Math.max(0, Math.min(axisLabels.length - 1, idx)));
+          }}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          {hoverIndex !== null && trendValues && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 4px)",
+              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
+              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "3px 7px",
+              boxShadow: "var(--shadow-card)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              zIndex: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#B5ADA5" }}>
+                {axisLabels[hoverIndex]}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
+                {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+              </span>
+            </div>
+          )}
+          <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+            {!hasData && (
+              <path d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12" fill="none" stroke="#B5ADA5" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+            )}
+            {hasData && sparkPath && (
+              <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            {sparkDots.map((pt) => (
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
+            ))}
+          </svg>
+        </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
           {axisLabels.map((label, i) => (
             <span
@@ -331,20 +407,10 @@ function ScoreCard({
 function BrandComparison() {
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
-
-  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
-
-  const allPricePerceptionData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c2_price"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  const allQualityPerceptionData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "c2_quality"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  // Filter to only show selected brands
-  const pricePerceptionData = allPricePerceptionData.filter(item => selectedBrands.includes(item.brand));
-  const qualityPerceptionData = allQualityPerceptionData.filter(item => selectedBrands.includes(item.brand));
+  const categoryBrands = (brandsByCategory[selectedCategory] ?? []).filter(b => selectedBrands.includes(b.name));
+  const allScores = useAllBrandsSubmetricScores("C2");
+  const pricePerceptionData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Price Perception"] ?? null, color: b.color }));
+  const qualityPerceptionData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Quality Perception"] ?? null, color: b.color }));
 
   const maxScore = 100;
 
@@ -398,7 +464,7 @@ function BrandComparison() {
               <div
                 style={{
                   height: "100%",
-                  width: `${(item.score / maxScore) * 100}%`,
+                  width: `${((item.score ?? 0) / maxScore) * 100}%`,
                   backgroundColor: item.color,
                   opacity: item.brand === mainBrand ? 1 : 0.5,
                   borderRadius: 7,
@@ -415,7 +481,7 @@ function BrandComparison() {
                 fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
-              {item.score}
+              {item.score ?? "—"}
             </span>
           </div>
         ))}
@@ -467,45 +533,108 @@ function BrandComparison() {
 
 function WorthItConversations() {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const { selectedBrands, mainBrand } = useBrand();
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { selectedDate, dateMode } = useDateMode();
+  const { brandsByCategory } = useAppData();
 
-  const { getAxisLabels } = useDateMode();
-  const months = getAxisLabels();
+  type ChartBrand = { name: string; color: string; values: (number | null)[] };
+  const [chartBrands, setChartBrands] = useState<ChartBrand[]>([]);
+  const [dates, setDates] = useState<string[]>([]);
 
-  const allChartBrands = [
-    { name: "Rhode", color: "#B86A54",
-      values: [26, 24, 22, 19, 16, 13, 10] },
-    { name: "Summer Fridays", color: "#374762",
-      values: [14, 14, 15, 15, 15, 16, 15] },
-    { name: "Glossier", color: "#DAC58C",
-      values: [17, 18, 19, 20, 19, 20, 22] },
-    { name: "Clinique", color: "#ACBDA7",
-      values: [16, 17, 17, 18, 19, 18, 20] },
-    { name: "Laneige", color: "#6B241E",
-      values: [15, 16, 17, 18, 19, 20, 21] },
-  ];
+  useEffect(() => {
+    setChartBrands([]);
+    setDates([]);
+    async function load() {
+      // Last 7 periods: 7 days for Daily/Rolling 30, 7 months for Monthly
+      const fromDate = computeAxisDates(dateMode, selectedDate)[0];
+      const { data: rows } = await supabase
+        .from("c2_worth_it_share")
+        .select("brand_name, date, c2_share_pct")
+        .eq("category_name", selectedCategory)
+        .in("brand_name", selectedBrands)
+        .gte("date", toISODateString(fromDate))
+        .lte("date", toISODateString(selectedDate))
+        .order("date", { ascending: true });
 
-  // Filter to only show selected brands
-  const chartBrands = allChartBrands.filter(brand => selectedBrands.includes(brand.name));
+      // Always use the 7 fixed axis positions
+      const axisDates = computeAxisDates(dateMode, selectedDate);
+      const axisKeys = axisDates.map((d) => toISODateString(d));
+      const categoryBrands = brandsByCategory[selectedCategory] ?? [];
+      const colorMap = Object.fromEntries(categoryBrands.map((b) => [b.name, b.color]));
 
-  const yMin = 5;
-  const yMax = 30;
-  const yTicks = [10, 15, 20, 25, 30];
+      // Always set dates from axis (7 labels always shown)
+      setDates(axisKeys);
+
+      if (!rows?.length) return;
+
+      const byBrand: Record<string, Record<string, number>> = {};
+      for (const row of rows) {
+        if (!byBrand[row.brand_name]) byBrand[row.brand_name] = {};
+        byBrand[row.brand_name][row.date] = row.c2_share_pct;
+      }
+
+      const brands: ChartBrand[] = selectedBrands
+        .map((b) => ({
+          name: b,
+          color: colorMap[b] ?? "#B5ADA5",
+          values: axisKeys.map((axisKey) => {
+            const brandData = byBrand[b] ?? {};
+            if (dateMode === "Monthly") {
+              const month = axisKey.substring(0, 7);
+              const matches = Object.keys(brandData).filter((d) => d.startsWith(month)).sort();
+              const hit = matches.length ? matches[matches.length - 1] : null;
+              return hit ? (brandData[hit] ?? null) : null;
+            }
+            return brandData[axisKey] ?? null;
+          }),
+        }));
+
+      setChartBrands(brands);
+    }
+    load();
+  }, [selectedBrands, selectedCategory, selectedDate, dateMode]);
+
+  // Format axis labels — month+year for Monthly, month+day for Daily/Rolling 30
+  const months = dates.map((d) => {
+    const dt = new Date(d + "T00:00:00");
+    return dateMode === "Monthly"
+      ? dt.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+      : dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  });
+
+  // Dynamic y-axis range
+  const allValues = chartBrands.flatMap((b) => b.values.filter((v): v is number => v !== null));
+  const rawMin = allValues.length ? Math.min(...allValues) : 0;
+  const rawMax = allValues.length ? Math.max(...allValues) : 30;
+  const yMin = Math.max(0, Math.floor((rawMin - 5) / 5) * 5);
+  const yMax = Math.ceil((rawMax + 5) / 5) * 5;
+  const yStep = Math.max(5, Math.ceil((yMax - yMin) / 4 / 5) * 5);
+  const yTicks: number[] = [];
+  for (let t = yMin + yStep; t <= yMax; t += yStep) yTicks.push(t);
+
   const chartHeight = 180;
+  const n = months.length;
 
-  // Percentage-based helpers for the plot area (SVG viewBox is 0 0 100 100)
-  const toXPct = (i: number) => (i / (months.length - 1)) * 100;
+  const toXPct = (i: number) => (n <= 1 ? 50 : (i / (n - 1)) * 100);
   const toYPct = (v: number) => ((yMax - v) / (yMax - yMin)) * 100;
   const toYPx = (v: number) => (toYPct(v) / 100) * chartHeight;
 
-  const buildPath = (values: number[]) =>
-    values.map((v, i) => `${i === 0 ? "M" : "L"}${toXPct(i).toFixed(2)},${toYPct(v).toFixed(2)}`).join(" ");
+  const buildPath = (values: (number | null)[]) => {
+    const parts: string[] = [];
+    for (let i = 0; i < values.length; i++) {
+      const v = values[i];
+      // Nulls draw at physical bottom (100 = bottom in SVG 0-100 percentage space)
+      const yVal = v !== null ? toYPct(v) : 100;
+      parts.push(`${i === 0 ? "M" : "L"}${toXPct(i).toFixed(2)},${yVal.toFixed(2)}`);
+    }
+    return parts.join(" ");
+  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const xRatio = (e.clientX - rect.left) / rect.width;
-    const idx = Math.round(xRatio * (months.length - 1));
-    setHoverIndex(Math.max(0, Math.min(months.length - 1, idx)));
+    const idx = Math.round(xRatio * (n - 1));
+    setHoverIndex(Math.max(0, Math.min(n - 1, idx)));
   };
 
   return (
@@ -675,24 +804,55 @@ function WorthItConversations() {
             )}
           </svg>
 
-          {/* Hover dots (HTML so they don't stretch) */}
+          {/* Always-visible dots at every non-null data point */}
+          {chartBrands.map((brand) =>
+            brand.values.map((v, i) => {
+              if (v === null || v === undefined) return null;
+              const isMain = brand.name === mainBrand;
+              const size = isMain ? 7 : 5;
+              return (
+                <div
+                  key={`static-dot-${brand.name}-${i}`}
+                  style={{
+                    position: "absolute",
+                    left: `${toXPct(i)}%`,
+                    top: toYPx(v),
+                    width: size,
+                    height: size,
+                    borderRadius: "50%",
+                    backgroundColor: brand.color,
+                    border: "1.5px solid #fff",
+                    transform: "translate(-50%, -50%)",
+                    pointerEvents: "none",
+                  }}
+                />
+              );
+            })
+          )}
+
+          {/* Hover dots (HTML so they don't stretch) — larger on hover */}
           {hoverIndex !== null &&
-            chartBrands.map((brand) => (
-              <div
-                key={`dot-${brand.name}`}
-                style={{
-                  position: "absolute",
-                  left: `${toXPct(hoverIndex)}%`,
-                  top: toYPx(brand.values[hoverIndex]),
-                  width: brand.name === mainBrand ? 8 : 6,
-                  height: brand.name === mainBrand ? 8 : 6,
-                  borderRadius: "50%",
-                  backgroundColor: brand.color,
-                  transform: "translate(-50%, -50%)",
-                  pointerEvents: "none",
-                }}
-              />
-            ))}
+            chartBrands.map((brand) => {
+              const v = brand.values[hoverIndex];
+              if (v === null || v === undefined) return null;
+              return (
+                <div
+                  key={`dot-${brand.name}`}
+                  style={{
+                    position: "absolute",
+                    left: `${toXPct(hoverIndex)}%`,
+                    top: toYPx(v),
+                    width: brand.name === mainBrand ? 10 : 8,
+                    height: brand.name === mainBrand ? 10 : 8,
+                    borderRadius: "50%",
+                    backgroundColor: brand.color,
+                    border: "2px solid #fff",
+                    transform: "translate(-50%, -50%)",
+                    pointerEvents: "none",
+                  }}
+                />
+              );
+            })}
 
           {/* Tooltip */}
           {hoverIndex !== null && (
@@ -759,7 +919,9 @@ function WorthItConversations() {
                       fontWeight: brand.name === mainBrand ? 700 : 400,
                     }}
                   >
-                    {brand.values[hoverIndex]}%
+                    {brand.values[hoverIndex] !== null && brand.values[hoverIndex] !== undefined
+                      ? `${(brand.values[hoverIndex] as number).toFixed(1)}%`
+                      : "—"}
                   </span>
                 </div>
               ))}
@@ -788,41 +950,42 @@ function WorthItConversations() {
 }
 
 function ValueDrivers() {
-  const drivers = [
-    {
-      rank: 1,
-      name: "Ingredient transparency",
-      sentiment: "positive",
-      mentions: 2840,
-      share: 24,
-    },
-    {
-      rank: 2,
-      name: "Price point vs competitors",
-      sentiment: "mixed",
-      mentions: 2210,
-      share: 19,
-    },
-    { rank: 3, name: "Packaging quality", sentiment: "positive", mentions: 1870, share: 16 },
-    {
-      rank: 4,
-      name: "Product size / quantity",
-      sentiment: "negative",
-      mentions: 1540,
-      share: 13,
-    },
-    { rank: 5, name: "Celebrity association", sentiment: "positive", mentions: 1320, share: 11 },
-    {
-      rank: 6,
-      name: "Longevity / how long it lasts",
-      sentiment: "mixed",
-      mentions: 1080,
-      share: 9,
-    },
-    { rank: 7, name: "Dupes available", sentiment: "negative", mentions: 940, share: 8 },
-  ];
+  const { mainBrand, selectedCategory } = useBrand();
+  const { selectedDate } = useDateMode();
 
-  const maxMentions = Math.max(...drivers.map((d) => d.mentions));
+  type Driver = { rank: number; name: string; sentiment: string; share: number };
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+
+  useEffect(() => {
+    setDrivers([]);
+    async function load() {
+      const { data: rows } = await supabase
+        .from("c2_value_drivers")
+        .select("c2_attribute_name, c2_sentiment, c2_share_pct, date")
+        .eq("brand_name", mainBrand)
+        .eq("category_name", selectedCategory)
+        .lte("date", toISODateString(selectedDate))
+        .order("date", { ascending: false });
+
+      if (!rows?.length) return;
+
+      const latestDate = rows[0].date;
+      const latestRows = rows.filter((r) => r.date === latestDate);
+      latestRows.sort((a, b) => b.c2_share_pct - a.c2_share_pct);
+
+      setDrivers(
+        latestRows.map((r, i) => ({
+          rank: i + 1,
+          name: r.c2_attribute_name,
+          sentiment: r.c2_sentiment,
+          share: r.c2_share_pct,
+        }))
+      );
+    }
+    load();
+  }, [mainBrand, selectedCategory, selectedDate]);
+
+  const maxShare = drivers.length ? Math.max(...drivers.map((d) => d.share)) : 1;
 
   const getSentimentStyle = (sentiment: string) => {
     switch (sentiment) {
@@ -888,6 +1051,11 @@ function ValueDrivers() {
       </div>
 
       {/* Driver rows */}
+      {drivers.length === 0 && (
+        <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-muted)", paddingBottom: 8 }}>
+          Loading…
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {drivers.map((driver, index) => {
           const style = getSentimentStyle(driver.sentiment);
@@ -963,7 +1131,7 @@ function ValueDrivers() {
                       height: 8,
                       backgroundColor: style.barColor,
                       borderRadius: 4,
-                      width: `${(driver.mentions / maxMentions) * 100}%`,
+                      width: `${(driver.share / maxShare) * 100}%`,
                     }}
                   />
                 </div>
@@ -979,7 +1147,7 @@ function ValueDrivers() {
                     flexShrink: 0,
                   }}
                 >
-                  {driver.share}%
+                  {driver.share.toFixed(1)}%
                 </span>
               </div>
               
@@ -1050,7 +1218,7 @@ function ValueDrivers() {
                         height: 6,
                         backgroundColor: style.barColor,
                         borderRadius: 3,
-                        width: `${(driver.mentions / maxMentions) * 100}%`,
+                        width: `${(driver.share / maxShare) * 100}%`,
                       }}
                     />
                   </div>
@@ -1065,7 +1233,7 @@ function ValueDrivers() {
                       width: 28,
                     }}
                   >
-                    {driver.share}%
+                    {driver.share.toFixed(1)}%
                   </span>
                 </div>
               </div>

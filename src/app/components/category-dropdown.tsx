@@ -11,7 +11,7 @@ export function CategoryDropdown() {
     <div
       className="relative"
       style={{
-        width: 280,
+        width: "100%",
         backgroundColor: "var(--bg-card)",
         backdropFilter: "blur(var(--blur-glass))",
         borderRadius: "var(--radius-md)",

@@ -26,10 +26,13 @@ export function Sidebar() {
       className="flex flex-col shrink-0 transition-all duration-300"
       style={{
         width: isExpanded ? 200 : 60,
-        height: "100%",
-        minHeight: 900,
+        height: "100vh",
         backgroundColor: "var(--bg-surface)",
         borderRight: "1px solid var(--border-subtle)",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        zIndex: 50,
       }}
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
@@ -157,7 +160,7 @@ export function Sidebar() {
             >
               Theme
             </span>
-            <div className="flex" style={{ gap: 6 }}>
+            <div className="flex flex-col" style={{ gap: 6 }}>
               {themes.map((t) => (
                 <ThemeCircle
                   key={t.name}

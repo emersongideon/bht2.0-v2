@@ -4,14 +4,19 @@ import { DimensionTabs } from "../dimension-tabs";
 import { useState } from "react";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { useBrand } from "../../contexts/brand-context";
+import { useDimension } from "../../data/use-dimensions";
+import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
-import { useDimension } from "../../data/use-dimensions";
+import { useSubmetricScores } from "../../hooks/use-submetric-scores";
+import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
+import { useI2AttributeScores } from "../../hooks/use-i2-attribute-scores";
 
 export function DeepDiveI2Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
+  const subScores = useSubmetricScores("I2");
 
   return (
     <>
@@ -37,10 +42,10 @@ export function DeepDiveI2Page() {
         </div>
 
         {/* Row 3 — Dimension Header */}
-        <DimensionHeader />
+        <DimensionHeader pageKey="I2" />
 
         {/* Row 4 — Social Performance (single full-width card) */}
-        <SocialPerformanceCard />
+        <SocialPerformanceCard liveScore={subScores["Social Performance"]?.score ?? null} liveDelta={subScores["Social Performance"]?.delta ?? null} trendValues={subScores["Social Performance"]?.trendValues} />
 
         {/* Row 5 — Brand Comparison */}
         <BrandComparison />
@@ -58,8 +63,10 @@ export function DeepDiveI2Page() {
   );
 }
 
-function DimensionHeader() {
-  const { dimension: dim } = useDimension("I2");
+function DimensionHeader({ pageKey }: { pageKey: string }) {
+  const { dimension: dim } = useDimension(pageKey);
+  const { score, delta } = useDimensionScore(pageKey);
+  const isPositive = !delta || delta >= 0;
   return (
     <div
       style={{
@@ -115,25 +122,27 @@ function DimensionHeader() {
               color: "var(--text-primary)",
             }}
           >
-            78
+            {score ?? "—"}
           </span>
         </div>
 
         {/* Delta */}
         <div>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              padding: "3px 8px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(74,102,68,0.1)",
-              color: "#4A6644",
-              fontWeight: 600,
-            }}
-          >
-            ▲ 2.3
-          </span>
+          {delta !== null && (
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                fontWeight: 600,
+              }}
+            >
+              {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+            </span>
+          )}
         </div>
 
         {/* Description */}
@@ -192,21 +201,23 @@ function DimensionHeader() {
                 color: "var(--text-primary)",
               }}
             >
-              78
+              {score ?? "—"}
             </span>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                padding: "3px 8px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor: "rgba(74,102,68,0.1)",
-                color: "#4A6644",
-                fontWeight: 600,
-              }}
-            >
-              ▲ 2.3
-            </span>
+            {delta !== null && (
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                  padding: "3px 8px",
+                  borderRadius: "var(--radius-pill)",
+                  backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                  color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                  fontWeight: 600,
+                }}
+              >
+                {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+              </span>
+            )}
           </div>
         </div>
         <p
@@ -225,9 +236,31 @@ function DimensionHeader() {
   );
 }
 
-function SocialPerformanceCard() {
+function SocialPerformanceCard({ liveScore, liveDelta, trendValues }: { liveScore?: number | null; liveDelta?: number | null; trendValues?: (number | null)[] }) {
+  const isPositive = !liveDelta || liveDelta >= 0;
   const { getAxisLabels } = useDateMode();
   const axisLabels = getAxisLabels();
+
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const W = 300; const H = 36;
+  const n = trendValues?.length ?? 0;
+  const toX = (i: number) => n > 1 ? (i / (n - 1)) * W : W / 2;
+  const toY = (v: number) => H - 1 - (v / 100) * (H - 2); // fixed 0-100 scale
+  const yBottom = H - 1;
+  let sparkPath = "";
+  if (trendValues && trendValues.length > 0) {
+    const parts: string[] = [];
+    for (let i = 0; i < trendValues.length; i++) {
+      const v = trendValues[i];
+      const y = v !== null ? toY(v) : yBottom;
+      parts.push(`${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${y.toFixed(1)}`);
+    }
+    sparkPath = parts.join(" ");
+  }
+  const sparkDots = trendValues
+    ? trendValues.map((v, i) => v !== null ? { x: toX(i), y: toY(v), i } : null).filter(Boolean) as { x: number; y: number; i: number }[]
+    : [];
+  const hasData = trendValues ? trendValues.some((v) => v !== null) : false;
 
   return (
     <div
@@ -263,34 +296,75 @@ function SocialPerformanceCard() {
             color: "var(--text-primary)",
           }}
         >
-          81
+          {liveScore !== null && liveScore !== undefined ? liveScore : "—"}
         </span>
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            padding: "3px 8px",
-            borderRadius: "var(--radius-pill)",
-            backgroundColor: "rgba(74,102,68,0.1)",
-            color: "#4A6644",
-            fontWeight: 600,
-          }}
-        >
-          ▲ 3.0
-        </span>
+        {liveDelta !== null && liveDelta !== undefined && (
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              padding: "3px 8px",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+              color: isPositive ? "#4A6644" : "#B86A54",
+              fontWeight: 600,
+            }}
+          >
+            {isPositive ? "▲" : "▼"} {Math.abs(liveDelta).toFixed(1)}
+          </span>
+        )}
       </div>
 
       {/* Sparkline */}
       <div>
-        <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
-          <path
-            d="M0,22 C50,20 100,21 150,19 C200,17 250,15 300,13"
-            fill="none"
-            stroke="#6B241E"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <div
+          style={{ position: "relative" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xRatio = (e.clientX - rect.left) / rect.width;
+            const idx = Math.round(xRatio * (axisLabels.length - 1));
+            setHoverIndex(Math.max(0, Math.min(axisLabels.length - 1, idx)));
+          }}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          {hoverIndex !== null && trendValues && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 4px)",
+              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
+              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "3px 7px",
+              boxShadow: "var(--shadow-card)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              zIndex: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#B5ADA5" }}>
+                {axisLabels[hoverIndex]}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
+                {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+              </span>
+            </div>
+          )}
+          <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+            {!hasData && (
+              <path d="M0,22 C50,20 100,21 150,19 C200,17 250,15 300,13" fill="none" stroke="#6B241E" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+            )}
+            {hasData && sparkPath && (
+              <path d={sparkPath} fill="none" stroke="#6B241E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            {sparkDots.map((pt) => (
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#6B241E" stroke="#fff" strokeWidth="1" />
+            ))}
+          </svg>
+        </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
           {axisLabels.map((label, i) => (
             <span
@@ -315,15 +389,9 @@ function SocialPerformanceCard() {
 function BrandComparison() {
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
-
-  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
-
-  const allData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "i2_social"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  // Filter to only show selected brands
-  const data = allData.filter(item => selectedBrands.includes(item.brand));
+  const categoryBrands = (brandsByCategory[selectedCategory] ?? []).filter(b => selectedBrands.includes(b.name));
+  const allScores = useAllBrandsSubmetricScores("I2");
+  const data = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Social Performance"] ?? null, color: b.color }));
 
   const maxScore = 100;
 
@@ -396,7 +464,7 @@ function BrandComparison() {
               <div
                 style={{
                   height: "100%",
-                  width: `${(item.score / maxScore) * 100}%`,
+                  width: `${((item.score ?? 0) / maxScore) * 100}%`,
                   backgroundColor: item.color,
                   opacity: item.brand === mainBrand ? 1 : 0.5,
                   borderRadius: 7,
@@ -413,7 +481,7 @@ function BrandComparison() {
                 fontWeight: item.brand === mainBrand ? 700 : 400,
               }}
             >
-              {item.score}
+              {item.score ?? "—"}
             </span>
           </div>
         ))}
@@ -462,64 +530,19 @@ function ValueAssociations() {
 }
 
 function AttributeComparison() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const attributes = [
-    {
-      name: "Clean / Ingredients",
-      scores: { Rhode: 88, "Summer Fridays": 82, Glossier: 76, Clinique: 71, Laneige: 68 },
-      territory: "Owned",
-    },
-    {
-      name: "Minimalist",
-      scores: { Rhode: 85, "Summer Fridays": 64, Glossier: 83, Clinique: 48, Laneige: 52 },
-      territory: "Owned",
-    },
-    {
-      name: "Accessible Luxury",
-      scores: { Rhode: 82, "Summer Fridays": 71, Glossier: 69, Clinique: 58, Laneige: 74 },
-      territory: "Owned",
-    },
-    {
-      name: "Gen Z / Youth",
-      scores: { Rhode: 79, "Summer Fridays": 72, Glossier: 81, Clinique: 35, Laneige: 66 },
-      territory: "Contested",
-    },
-    {
-      name: "Skincare-First",
-      scores: { Rhode: 76, "Summer Fridays": 78, Glossier: 62, Clinique: 84, Laneige: 72 },
-      territory: "Contested",
-    },
-    {
-      name: "Hydration",
-      scores: { Rhode: 58, "Summer Fridays": 61, Glossier: 54, Clinique: 52, Laneige: 89 },
-      territory: "Gap",
-    },
-    {
-      name: "Self-Care Ritual",
-      scores: { Rhode: 55, "Summer Fridays": 86, Glossier: 71, Clinique: 44, Laneige: 63 },
-      territory: "Gap",
-    },
-    {
-      name: "Science-Backed",
-      scores: { Rhode: 42, "Summer Fridays": 38, Glossier: 34, Clinique: 91, Laneige: 45 },
-      territory: "Open",
-    },
-  ];
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { brandsByCategory } = useAppData();
+  const attributes = useI2AttributeScores();
 
-  // Filter to only show selected brands
-  const allBrandColumns = ["Rhode", "Summer Fridays", "Glossier", "Clinique", "Laneige"];
-  const brandColumns = allBrandColumns.filter(brand => selectedBrands.includes(brand));
-  
-  const brandColorMap: Record<string, string> = {
-    "Rhode": "#B86A54",
-    "Summer Fridays": "#374762",
-    "Glossier": "#DAC58C",
-    "Clinique": "#ACBDA7",
-    "Laneige": "#6B241E",
-  };
-  
-  const brandColors = brandColumns.map(brand => brandColorMap[brand]);
+  const categoryBrands = brandsByCategory[selectedCategory] ?? [];
+  // Ordered brand columns matching category order, filtered to selected
+  const brandColumns = categoryBrands
+    .filter((b) => selectedBrands.includes(b.name))
+    .map((b) => b.name);
+  const brandColorMap: Record<string, string> = Object.fromEntries(
+    categoryBrands.map((b) => [b.name, b.color])
+  );
+  const brandColors = brandColumns.map((b) => brandColorMap[b] ?? "#B5ADA5");
 
   const territoryConfig = {
     Owned: { bg: "rgba(74,102,68,0.08)", color: "#4A6644" },
@@ -647,10 +670,20 @@ function AttributeComparison() {
             </div>
           </div>
 
+          {/* Loading state */}
+          {attributes.length === 0 && (
+            <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-muted)", paddingTop: 8 }}>
+              Loading…
+            </div>
+          )}
+
           {/* Attribute rows */}
           {attributes.map((attr, attrIndex) => {
-            const maxScore = Math.max(...Object.values(attr.scores));
-            const minScore = Math.min(...Object.values(attr.scores));
+            const visibleScores = brandColumns
+              .map((b) => attr.scores[b])
+              .filter((s): s is number => s !== undefined);
+            const maxScore = visibleScores.length ? Math.max(...visibleScores) : 0;
+            const minScore = visibleScores.length ? Math.min(...visibleScores) : 0;
 
             return (
               <div key={attr.name}>
@@ -680,10 +713,11 @@ function AttributeComparison() {
 
                   {/* Score cells */}
                   {brandColumns.map((brand, i) => {
-                    const score = attr.scores[brand as keyof typeof attr.scores];
-                    const isMax = score === maxScore;
-                    const isMin = score === minScore;
+                    const score = attr.scores[brand];
+                    const isMax = score !== undefined && score === maxScore;
+                    const isMin = score !== undefined && score === minScore;
                     const isMainBrand = brand === mainBrand;
+                    const displayScore = score !== undefined ? score.toFixed(1) : null;
 
                     return (
                       <div
@@ -694,9 +728,11 @@ function AttributeComparison() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          backgroundColor: isMainBrand
-                            ? `${brandColorMap[brand]}${Math.round(getOpacity(score) * 255).toString(16).padStart(2, '0')}`
-                            : `rgba(213,206,199,${getOpacity(score)})`,
+                          backgroundColor: score !== undefined
+                            ? isMainBrand
+                              ? `${brandColorMap[brand]}${Math.round(getOpacity(score) * 255).toString(16).padStart(2, '0')}`
+                              : `rgba(213,206,199,${getOpacity(score)})`
+                            : "transparent",
                           borderRadius: 4,
                         }}
                       >
@@ -708,7 +744,7 @@ function AttributeComparison() {
                             color: isMin ? "#B5ADA5" : "var(--text-primary)",
                           }}
                         >
-                          {score}
+                          {displayScore ?? "—"}
                         </span>
                       </div>
                     );

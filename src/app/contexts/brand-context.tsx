@@ -33,16 +33,12 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const toggleBrand = (brand: string) => {
     setSelectedBrands(prev => {
       if (prev.includes(brand)) {
-        // Don't allow deselecting if it's the only brand
         if (prev.length === 1) return prev;
-
-        // If deselecting the main brand, set a new main brand
         if (brand === mainBrand) {
           const newBrands = prev.filter(b => b !== brand);
           setMainBrand(newBrands[0]);
           return newBrands;
         }
-
         return prev.filter(b => b !== brand);
       } else {
         return [...prev, brand];

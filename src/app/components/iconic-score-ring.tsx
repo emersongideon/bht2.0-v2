@@ -1,21 +1,112 @@
+import { useState, useEffect } from "react";
+import { supabase } from "../../lib/supabase";
+import { useBrand } from "../contexts/brand-context";
+import { useDateMode } from "../contexts/date-mode-context";
+
+type ScoreRow = { date: string; daily_iconic_score: number };
+
+function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function shiftDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function avgRows(rows: ScoreRow[], from: string, to: string): number | null {
+  const filtered = rows.filter((r) => r.date >= from && r.date <= to);
+  if (!filtered.length) return null;
+  return filtered.reduce((s, r) => s + r.daily_iconic_score, 0) / filtered.length;
+}
+
+function round1(n: number) {
+  return Math.round(n * 10) / 10;
+}
+
 export function IconicScoreRing({ height }: { height?: number }) {
-  const score = 76;
-  const circumference = 2 * Math.PI * 52; // radius 52
-  const progress = (score / 100) * circumference;
+  const { mainBrand, selectedCategory } = useBrand();
+  const { dateMode, selectedDate } = useDateMode();
+  const [score, setScore] = useState<number | null>(null);
+  const [delta, setDelta] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      const todayISO = isoDate(selectedDate);
+      let fetchFrom: string;
+      let fetchTo: string = todayISO;
+
+      if (dateMode === "Daily") {
+        fetchFrom = isoDate(shiftDays(selectedDate, -1)); // today + yesterday
+      } else if (dateMode === "Rolling 30") {
+        fetchFrom = isoDate(shiftDays(selectedDate, -59)); // 60 days for delta
+      } else {
+        // Monthly: current month + previous month
+        fetchFrom = isoDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1));
+        fetchTo = isoDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0));
+      }
+
+      const { data } = await supabase
+        .from("iconic_scores")
+        .select("date, daily_iconic_score")
+        .eq("brand_name", mainBrand)
+        .eq("category_name", selectedCategory)
+        .gte("date", fetchFrom)
+        .lte("date", fetchTo)
+        .order("date", { ascending: true });
+
+      if (!data?.length) {
+        setScore(null);
+        setDelta(null);
+        return;
+      }
+
+      let cur: number | null = null;
+      let prev: number | null = null;
+
+      if (dateMode === "Daily") {
+        const todayRow = data.find((r) => r.date === todayISO);
+        const yestRow = data.find((r) => r.date === isoDate(shiftDays(selectedDate, -1)));
+        cur = todayRow?.daily_iconic_score ?? null;
+        prev = yestRow?.daily_iconic_score ?? null;
+      } else if (dateMode === "Rolling 30") {
+        cur = avgRows(data, isoDate(shiftDays(selectedDate, -29)), todayISO);
+        prev = avgRows(data, isoDate(shiftDays(selectedDate, -59)), isoDate(shiftDays(selectedDate, -30)));
+      } else {
+        // Monthly
+        const currStart = isoDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+        const currEnd = isoDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0));
+        const prevStart = isoDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1));
+        const prevEnd = isoDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 0));
+        cur = avgRows(data, currStart, currEnd);
+        prev = avgRows(data, prevStart, prevEnd);
+      }
+
+      setScore(cur !== null ? round1(cur) : null);
+      setDelta(cur !== null && prev !== null ? round1(cur - prev) : null);
+    }
+
+    load();
+  }, [mainBrand, selectedCategory, dateMode, selectedDate]);
+
+  const displayScore = score ?? 0;
+  const circumference = 2 * Math.PI * 52;
+  const progress = (displayScore / 100) * circumference;
+  const isPositive = delta === null || delta >= 0;
 
   return (
     <div
-      className="flex flex-col items-center justify-center relative"
+      className="flex flex-col items-center justify-center relative w-full md:w-[180px]"
       style={{
-        width: 180,
         height: height ?? "auto",
         backgroundColor: "var(--bg-card)",
         backdropFilter: "blur(var(--blur-glass))",
         borderRadius: "var(--radius-md)",
         boxShadow: "var(--shadow-card)",
-        padding: 20,
+        padding: height ? "16px 12px" : "12px",
         border: "1px solid var(--border-subtle)",
-        gap: 8,
+        gap: 6,
       }}
     >
       {/* "HOW ICONIC IS YOUR BRAND?" label */}
@@ -25,8 +116,10 @@ export function IconicScoreRing({ height }: { height?: number }) {
           fontSize: 10,
           color: "var(--text-muted)",
           textTransform: "uppercase",
-          letterSpacing: 2,
+          letterSpacing: 1.5,
           textAlign: "center",
+          maxWidth: "90%",
+          lineHeight: 1.3,
         }}
       >
         HOW ICONIC IS YOUR BRAND?
@@ -79,13 +172,13 @@ export function IconicScoreRing({ height }: { height?: number }) {
           className="absolute inset-0 flex items-center justify-center"
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 48,
+            fontSize: 30,
             fontWeight: 700,
             color: "var(--text-primary)",
             zIndex: 2,
           }}
         >
-          {score}
+          {score !== null ? displayScore : "—"}
         </div>
       </div>
 
@@ -114,22 +207,24 @@ export function IconicScoreRing({ height }: { height?: number }) {
       </span>
 
       {/* Delta pill */}
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 4,
-          padding: "3px 10px",
-          borderRadius: "var(--radius-pill)",
-          backgroundColor: "rgba(74, 102, 68, 0.10)",
-          color: "var(--color-positive)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 12,
-          fontWeight: 600,
-        }}
-      >
-        ▲ 2.1
-      </span>
+      {delta !== null && (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            padding: "3px 10px",
+            borderRadius: "var(--radius-pill)",
+            backgroundColor: isPositive ? "rgba(74, 102, 68, 0.10)" : "rgba(180, 60, 60, 0.10)",
+            color: isPositive ? "var(--color-positive)" : "var(--color-negative, #B43C3C)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+        >
+          {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+        </span>
+      )}
     </div>
   );
 }

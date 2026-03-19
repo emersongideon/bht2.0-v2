@@ -38,7 +38,7 @@ export function RootLayout() {
             height: "100%",
           }}
         >
-          <Outlet context={{ openMobileMenu: () => setMobileMenuOpen(true) }} />
+          <Outlet context={{ openMobileMenu: () => setMobileMenuOpen(true), scrollContainerRef }} />
         </div>
       </div>
     </ThemeProvider>

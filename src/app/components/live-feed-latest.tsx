@@ -1,41 +1,71 @@
+import { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { useBrand } from "../contexts/brand-context";
 
-const newsItems = [
-  {
-    category: "Press",
-    categoryBg: "var(--accent-primary)",
-    headline: "Rhode Skin named in TIME's Most Influential Brands of 2026",
-    source: "TIME",
-    time: "2 hours ago",
-  },
-  {
-    category: "Industry",
-    categoryBg: "#ACBDA7",
-    headline: "Clean beauty market projected to reach $22B by 2027",
-    source: "Business of Fashion",
-    time: "5 hours ago",
-  },
-  {
-    category: "Social",
-    categoryBg: "#DAC58C",
-    headline: "Hailey Bieber shares new Rhode peptide lip tint on Instagram",
-    source: "Instagram",
-    time: "8 hours ago",
-  },
-  {
-    category: "Press",
-    categoryBg: "var(--accent-primary)",
-    headline: "Rhode expands into Southeast Asian markets with Sephora partnership",
-    source: "WWD",
-    time: "1 day ago",
-  },
-];
+interface NewsItem {
+  id: number;
+  category: string;
+  headline: string;
+  source: string;
+  time: string;
+}
+
+const tagColorMap: Record<string, string> = {
+  Press:    "var(--accent-primary)",
+  Industry: "#ACBDA7",
+  Social:   "#DAC58C",
+};
+
+function formatRelativeTime(iso: string): string {
+  const now = Date.now();
+  const then = new Date(iso).getTime();
+  const diffMs = now - then;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 60)  return diffMins <= 1 ? "Just now" : `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7)   return `${diffDays} days ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 export function LiveFeedLatest() {
+  const { mainBrand, selectedCategory } = useBrand();
+  const [items, setItems] = useState<NewsItem[]>([]);
+
+  useEffect(() => {
+    setItems([]);
+    async function load() {
+      const { data } = await supabase
+        .from("iconic_news_feed")
+        .select("id, news_source_tag, news_headline, news_source_name, news_created_at")
+        .eq("brand_name", mainBrand)
+        .eq("category_name", selectedCategory)
+        .order("news_created_at", { ascending: false })
+        .limit(6);
+
+      if (!data?.length) return;
+
+      setItems(
+        data.map((row) => ({
+          id:       row.id,
+          category: row.news_source_tag,
+          headline: row.news_headline,
+          source:   row.news_source_name,
+          time:     formatRelativeTime(row.news_created_at),
+        }))
+      );
+    }
+    load();
+  }, [mainBrand, selectedCategory]);
+
   return (
     <div
       style={{
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "var(--bg-card)",
         borderRadius: "var(--radius-md)",
         boxShadow: "var(--shadow-card)",
         padding: 20,
@@ -67,73 +97,87 @@ export function LiveFeedLatest() {
       </div>
 
       {/* News items */}
-      <div>
-        {newsItems.map((item, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "12px 0",
-              borderBottom: index < newsItems.length - 1 ? "1px solid var(--border-subtle)" : "none",
-              cursor: "pointer",
-              transition: "opacity 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = "0.7";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = "1";
-            }}
-          >
-            {/* Category tag */}
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 10,
-                padding: "4px 8px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor: `color-mix(in srgb, ${item.categoryBg} 10%, transparent)`,
-                color: "var(--text-primary)",
-                flexShrink: 0,
-              }}
-            >
-              {item.category}
-            </span>
-
-            {/* Content */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+      {items.length === 0 ? (
+        <div
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: 12,
+            color: "var(--text-muted)",
+            paddingTop: 8,
+          }}
+        >
+          No recent news.
+        </div>
+      ) : (
+        <div>
+          {items.map((item, index) => {
+            const tagColor = tagColorMap[item.category] ?? "var(--text-muted)";
+            return (
               <div
+                key={item.id}
                 style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "var(--text-primary)",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  marginBottom: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "12px 0",
+                  borderBottom: index < items.length - 1 ? "1px solid var(--border-subtle)" : "none",
+                  cursor: "pointer",
+                  transition: "opacity 0.2s",
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.7"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
               >
-                {item.headline}
-              </div>
-              <div
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 11,
-                  color: "var(--text-muted)",
-                }}
-              >
-                {item.source} · {item.time}
-              </div>
-            </div>
+                {/* Category tag */}
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: 10,
+                    padding: "4px 8px",
+                    borderRadius: "var(--radius-pill)",
+                    backgroundColor: `color-mix(in srgb, ${tagColor} 10%, transparent)`,
+                    color: "var(--text-primary)",
+                    flexShrink: 0,
+                    width: 80,
+                    textAlign: "center",
+                  }}
+                >
+                  {item.category}
+                </span>
 
-            {/* Arrow */}
-            <ArrowRight size={14} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-          </div>
-        ))}
-      </div>
+                {/* Content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: "var(--text-primary)",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      marginBottom: 2,
+                    }}
+                  >
+                    {item.headline}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: 11,
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    {item.source} · {item.time}
+                  </div>
+                </div>
+
+                {/* Arrow */}
+                <ArrowRight size={14} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

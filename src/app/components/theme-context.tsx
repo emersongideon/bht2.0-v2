@@ -26,5 +26,5 @@ export function useTheme() {
 export const themes: { name: ThemeName; label: string; bg: string; accent: string }[] = [
   { name: "dusk", label: "Dusk", bg: "#FAF7F4", accent: "#B86A54" },
   { name: "linen", label: "Linen", bg: "#FDFBF9", accent: "#DD9F86" },
-  { name: "blush", label: "Blush", bg: "#13151A", accent: "#E07A4A" },
+  // { name: "blush", label: "Blush", bg: "#13151A", accent: "#E07A4A" }, // Disabled for now
 ];

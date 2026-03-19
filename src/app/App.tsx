@@ -1,8 +1,8 @@
 import { RouterProvider } from "react-router";
 import { router } from "./routes";
 import { DateModeProvider } from "./contexts/date-mode-context";
-import { AppDataProvider } from "./data/app-data-context";
 import { BrandProvider } from "./contexts/brand-context";
+import { AppDataProvider } from "./data/app-data-context";
 
 export default function App() {
   return (

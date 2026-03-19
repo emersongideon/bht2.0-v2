@@ -1,18 +1,23 @@
 import { Calendar } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useDateMode } from "../contexts/date-mode-context";
-import { formatDisplayDate } from "../utils/date-utils";
+import { formatDisplayDate, toISODateString, parseISODateString } from "../utils/date-utils";
 import { CustomDatePicker } from "./custom-date-picker";
 
 const modes = ["Daily", "Rolling 30", "Monthly"] as const;
 
 export function DateModeSelector() {
   const { dateMode, setDateMode, selectedDate, setSelectedDate } = useDateMode();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
     setIsPickerOpen(false);
+  };
+
+  const togglePicker = () => {
+    setIsPickerOpen(!isPickerOpen);
   };
 
   return (
@@ -51,9 +56,9 @@ export function DateModeSelector() {
       </div>
 
       {/* Date display with custom picker */}
-      <div style={{ position: "relative" }} className="w-full md:w-auto">
+      <div style={{ position: "relative", width: "100%" }} className="md:w-auto">
         <button
-          onClick={() => setIsPickerOpen(!isPickerOpen)}
+          onClick={togglePicker}
           className="flex items-center gap-2 w-full md:w-auto"
           style={{
             cursor: "pointer",

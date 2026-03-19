@@ -1,18 +1,23 @@
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "../../../lib/supabase";
+import { toISODateString } from "../../utils/date-utils";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
 import { useBrand } from "../../contexts/brand-context";
+import { useDimension } from "../../data/use-dimensions";
+import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
-import { useDimension, useSubmetrics } from "../../data/use-dimensions";
+import { useSubmetricScores } from "../../hooks/use-submetric-scores";
+import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 
 export function DeepDiveI1Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
-  const { submetrics } = useSubmetrics("I1");
+  const subScores = useSubmetricScores("I1");
 
   return (
     <>
@@ -38,21 +43,23 @@ export function DeepDiveI1Page() {
         </div>
 
         {/* Row 3 — Dimension Header */}
-        <DimensionHeader />
+        <DimensionHeader pageKey="I1" />
 
         {/* Row 4 — Sub-metric cards (stacks on mobile) */}
         <div className="flex flex-col md:flex-row" style={{ gap: 32 }}>
           <ScoreCard
-            title={submetrics[0]?.submetric_name ?? "LLM Consistency"}
+            title="LLM Consistency"
             badge="LLM"
-            score="85"
-            delta="▲ 3.1"
+            liveScore={subScores["LLM Consistency"]?.score ?? null}
+            liveDelta={subScores["LLM Consistency"]?.delta ?? null}
+            trendValues={subScores["LLM Consistency"]?.trendValues}
           />
           <ScoreCard
-            title={submetrics[1]?.submetric_name ?? "LLM Distinctiveness"}
+            title="LLM Distinctiveness"
             badge="LLM"
-            score="64"
-            delta="▼ 1.2"
+            liveScore={subScores["LLM Distinctiveness"]?.score ?? null}
+            liveDelta={subScores["LLM Distinctiveness"]?.delta ?? null}
+            trendValues={subScores["LLM Distinctiveness"]?.trendValues}
           />
         </div>
 
@@ -75,8 +82,10 @@ export function DeepDiveI1Page() {
   );
 }
 
-function DimensionHeader() {
-  const { dimension: dim } = useDimension("I1");
+function DimensionHeader({ pageKey }: { pageKey: string }) {
+  const { dimension: dim } = useDimension(pageKey);
+  const { score, delta } = useDimensionScore(pageKey);
+  const isPositive = !delta || delta >= 0;
   return (
     <div
       style={{
@@ -132,25 +141,27 @@ function DimensionHeader() {
               color: "var(--text-primary)",
             }}
           >
-            74
+            {score ?? "—"}
           </span>
         </div>
 
         {/* Delta */}
         <div>
-          <span
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: 11,
-              padding: "3px 8px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: "rgba(74,102,68,0.1)",
-              color: "#4A6644",
-              fontWeight: 600,
-            }}
-          >
-            ▲ 2.8
-          </span>
+          {delta !== null && (
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: 11,
+                padding: "3px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                fontWeight: 600,
+              }}
+            >
+              {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+            </span>
+          )}
         </div>
 
         {/* Description */}
@@ -209,21 +220,23 @@ function DimensionHeader() {
                 color: "var(--text-primary)",
               }}
             >
-              74
+              {score ?? "—"}
             </span>
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                padding: "3px 8px",
-                borderRadius: "var(--radius-pill)",
-                backgroundColor: "rgba(74,102,68,0.1)",
-                color: "#4A6644",
-                fontWeight: 600,
-              }}
-            >
-              ▲ 2.8
-            </span>
+            {delta !== null && (
+              <span
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                  padding: "3px 8px",
+                  borderRadius: "var(--radius-pill)",
+                  backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+                  color: isPositive ? "#4A6644" : "var(--color-negative, #B43C3C)",
+                  fontWeight: 600,
+                }}
+              >
+                {isPositive ? "▲" : "▼"} {Math.abs(delta)}
+              </span>
+            )}
           </div>
         </div>
         <p
@@ -245,18 +258,41 @@ function DimensionHeader() {
 function ScoreCard({
   title,
   badge,
-  score,
-  delta,
+  liveScore,
+  liveDelta,
+  trendValues,
 }: {
   title: string;
   badge: string;
-  score: string;
-  delta: string;
+  liveScore?: number | null;
+  liveDelta?: number | null;
+  trendValues?: (number | null)[];
 }) {
-  const isPositive = delta.includes("▲");
+  const isPositive = !liveDelta || liveDelta >= 0;
   const { getAxisLabels } = useDateMode();
   const axisLabels = getAxisLabels();
-  
+
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const W = 300; const H = 36;
+  const n = trendValues?.length ?? 0;
+  const toX = (i: number) => n > 1 ? (i / (n - 1)) * W : W / 2;
+  const toY = (v: number) => H - 1 - (v / 100) * (H - 2); // fixed 0-100 scale
+  const yBottom = H - 1;
+  let sparkPath = "";
+  if (trendValues && trendValues.length > 0) {
+    const parts: string[] = [];
+    for (let i = 0; i < trendValues.length; i++) {
+      const v = trendValues[i];
+      const y = v !== null ? toY(v) : yBottom;
+      parts.push(`${i === 0 ? "M" : "L"}${toX(i).toFixed(1)},${y.toFixed(1)}`);
+    }
+    sparkPath = parts.join(" ");
+  }
+  const sparkDots = trendValues
+    ? trendValues.map((v, i) => v !== null ? { x: toX(i), y: toY(v), i } : null).filter(Boolean) as { x: number; y: number; i: number }[]
+    : [];
+  const hasData = trendValues ? trendValues.some((v) => v !== null) : false;
+
   return (
     <div
       style={{
@@ -280,7 +316,7 @@ function ScoreCard({
         >
           {title}
         </h3>
-        
+
       </div>
 
       {/* Score row */}
@@ -293,34 +329,75 @@ function ScoreCard({
             color: "var(--text-primary)",
           }}
         >
-          {score}
+          {liveScore !== null && liveScore !== undefined ? liveScore : "—"}
         </span>
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            padding: "3px 8px",
-            borderRadius: "var(--radius-pill)",
-            backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
-            color: isPositive ? "#4A6644" : "#B86A54",
-            fontWeight: 600,
-          }}
-        >
-          {delta}
-        </span>
+        {liveDelta !== null && liveDelta !== undefined && (
+          <span
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 11,
+              padding: "3px 8px",
+              borderRadius: "var(--radius-pill)",
+              backgroundColor: isPositive ? "rgba(74,102,68,0.1)" : "rgba(184,106,84,0.1)",
+              color: isPositive ? "#4A6644" : "#B86A54",
+              fontWeight: 600,
+            }}
+          >
+            {isPositive ? "▲" : "▼"} {Math.abs(liveDelta).toFixed(1)}
+          </span>
+        )}
       </div>
 
       {/* Sparkline */}
       <div>
-        <svg width="100%" height="36" viewBox="0 0 300 36" preserveAspectRatio="none">
-          <path
-            d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12"
-            fill="none"
-            stroke="#B5ADA5"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <div
+          style={{ position: "relative" }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const xRatio = (e.clientX - rect.left) / rect.width;
+            const idx = Math.round(xRatio * (axisLabels.length - 1));
+            setHoverIndex(Math.max(0, Math.min(axisLabels.length - 1, idx)));
+          }}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          {hoverIndex !== null && trendValues && (
+            <div style={{
+              position: "absolute",
+              bottom: "calc(100% + 4px)",
+              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
+              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: "var(--radius-sm)",
+              padding: "3px 7px",
+              boxShadow: "var(--shadow-card)",
+              pointerEvents: "none",
+              whiteSpace: "nowrap",
+              zIndex: 20,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#B5ADA5" }}>
+                {axisLabels[hoverIndex]}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
+                {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+              </span>
+            </div>
+          )}
+          <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+            {!hasData && (
+              <path d="M0,22 C50,24 100,20 150,18 C200,16 250,14 300,12" fill="none" stroke="#B5ADA5" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+            )}
+            {hasData && sparkPath && (
+              <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            {sparkDots.map((pt) => (
+              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
+            ))}
+          </svg>
+        </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
           {axisLabels.map((label, i) => (
             <span
@@ -345,20 +422,10 @@ function ScoreCard({
 function BrandComparison() {
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
-
-  const allCategoryBrands = brandsByCategory[selectedCategory] ?? [];
-
-  const allConsistencyData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "i1_consistency"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  const allDistinctivenessData = [...allCategoryBrands]
-    .map(b => ({ brand: b.name, score: getBrandSubScore(b.name, "i1_distinctiveness"), color: b.color }))
-    .sort((a, b) => b.score - a.score);
-
-  // Filter to only show selected brands
-  const consistencyData = allConsistencyData.filter(item => selectedBrands.includes(item.brand));
-  const distinctivenessData = allDistinctivenessData.filter(item => selectedBrands.includes(item.brand));
+  const allScores = useAllBrandsSubmetricScores("I1");
+  const categoryBrands = (brandsByCategory[selectedCategory] ?? []).filter(b => selectedBrands.includes(b.name));
+  const consistencyData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["LLM Consistency"] ?? null, color: b.color }));
+  const distinctivenessData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["LLM Distinctiveness"] ?? null, color: b.color }));
 
   const maxScore = 100;
 
@@ -447,7 +514,7 @@ function BrandComparison() {
                   <div
                     style={{
                       height: "100%",
-                      width: `${(item.score / maxScore) * 100}%`,
+                      width: `${((item.score ?? 0) / maxScore) * 100}%`,
                       backgroundColor: item.color,
                       opacity: item.brand === mainBrand ? 1 : 0.5,
                       borderRadius: 7,
@@ -464,7 +531,7 @@ function BrandComparison() {
                     fontWeight: item.brand === mainBrand ? 700 : 400,
                   }}
                 >
-                  {item.score}
+                  {item.score ?? "—"}
                 </span>
               </div>
             ))}
@@ -521,7 +588,7 @@ function BrandComparison() {
                   <div
                     style={{
                       height: "100%",
-                      width: `${(item.score / maxScore) * 100}%`,
+                      width: `${((item.score ?? 0) / maxScore) * 100}%`,
                       backgroundColor: item.color,
                       opacity: item.brand === mainBrand ? 1 : 0.5,
                       borderRadius: 7,
@@ -538,7 +605,7 @@ function BrandComparison() {
                     fontWeight: item.brand === mainBrand ? 700 : 400,
                   }}
                 >
-                  {item.score}
+                  {item.score ?? "—"}
                 </span>
               </div>
             ))}
@@ -550,39 +617,57 @@ function BrandComparison() {
 }
 
 function ValueAssociations() {
-  const { selectedBrands, mainBrand } = useBrand();
-  
-  const brandValues = [
-    {
-      brand: "Rhode",
-      color: "#B86A54",
-      isRhode: true,
-      values: ["Clean Beauty", "Minimalist", "Luxury Accessible", "Gen Z", "Skincare-First"],
-    },
-    {
-      brand: "Summer Fridays",
-      color: "#374762",
-      values: ["Clean Beauty", "Self-Care", "Instagram-Native", "Gentle", "Vegan"],
-    },
-    {
-      brand: "Glossier",
-      color: "#DAC58C",
-      values: ["Millennial", "Minimalist", "Community-Driven", "Everyday Beauty", "Direct-to-Consumer"],
-    },
-    {
-      brand: "Clinique",
-      color: "#ACBDA7",
-      values: ["Dermatologist-Tested", "Sensitive Skin", "Science-Backed", "Classic", "Department Store"],
-    },
-    {
-      brand: "Laneige",
-      color: "#6B241E",
-      values: ["K-Beauty", "Hydration", "Lip Care", "Overnight", "Affordable Luxury"],
-    },
-  ];
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { selectedDate } = useDateMode();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
 
-  // Filter to only show selected brands
-  const filteredBrandValues = brandValues.filter(item => selectedBrands.includes(item.brand));
+  // brand -> top attributes (sorted by strength desc, latest date)
+  const [valuesByBrand, setValuesByBrand] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    setValuesByBrand({});
+    async function load() {
+      const { data } = await supabase
+        .from("i1_value_associations")
+        .select("brand_name, date, i1_attribute_name, i1_strength")
+        .eq("category_name", selectedCategory)
+        .in("brand_name", selectedBrands)
+        .lte("date", toISODateString(selectedDate))
+        .order("date", { ascending: false });
+
+      if (!data?.length) return;
+
+      // For each brand, keep only the most recent date's rows
+      const latestDateByBrand: Record<string, string> = {};
+      for (const row of data) {
+        if (!latestDateByBrand[row.brand_name]) {
+          latestDateByBrand[row.brand_name] = row.date;
+        }
+      }
+
+      const grouped: Record<string, { name: string; strength: number }[]> = {};
+      for (const row of data) {
+        if (row.date !== latestDateByBrand[row.brand_name]) continue;
+        if (!grouped[row.brand_name]) grouped[row.brand_name] = [];
+        grouped[row.brand_name].push({ name: row.i1_attribute_name, strength: row.i1_strength });
+      }
+
+      const result: Record<string, string[]> = {};
+      for (const brand of Object.keys(grouped)) {
+        grouped[brand].sort((a, b) => b.strength - a.strength);
+        result[brand] = grouped[brand].slice(0, 5).map(a => a.name);
+      }
+
+      setValuesByBrand(result);
+    }
+    load();
+  }, [selectedBrands, selectedCategory, selectedDate]);
+
+  const filteredBrandValues = categoryBrandList
+    .filter(b => selectedBrands.includes(b.name))
+    .map(b => ({ brand: b.name, color: b.color, values: valuesByBrand[b.name] ?? [] }))
+    .filter(b => b.values.length > 0);
 
   return (
     <div
@@ -695,86 +780,66 @@ function ValueAssociations() {
 }
 
 function DomainSources() {
-  const [selectedBrand, setSelectedBrand] = useState("Rhode");
-  const { selectedBrands, mainBrand } = useBrand();
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { selectedDate } = useDateMode();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
 
-  // All brands' domain data
-  const allBrandDomainData = {
-    "Rhode": [
-      { domain: "sephora.com", percentage: 18 },
-      { domain: "vogue.com", percentage: 14 },
-      { domain: "reddit.com", percentage: 12 },
-      { domain: "allure.com", percentage: 11 },
-      { domain: "instagram.com", percentage: 9 },
-      { domain: "byrdie.com", percentage: 8 },
-      { domain: "youtube.com", percentage: 7 },
-      { domain: "tiktok.com", percentage: 6 },
-      { domain: "glamour.com", percentage: 5 },
-      { domain: "rhode.com", percentage: 4 },
-    ],
-    "Summer Fridays": [
-      { domain: "sephora.com", percentage: 22 },
-      { domain: "byrdie.com", percentage: 16 },
-      { domain: "youtube.com", percentage: 14 },
-      { domain: "instagram.com", percentage: 11 },
-      { domain: "allure.com", percentage: 9 },
-      { domain: "reddit.com", percentage: 8 },
-      { domain: "summerfridays.com", percentage: 7 },
-      { domain: "vogue.com", percentage: 5 },
-      { domain: "tiktok.com", percentage: 4 },
-      { domain: "harpersbazaar.com", percentage: 3 },
-    ],
-    "Glossier": [
-      { domain: "glossier.com", percentage: 24 },
-      { domain: "reddit.com", percentage: 18 },
-      { domain: "instagram.com", percentage: 15 },
-      { domain: "youtube.com", percentage: 12 },
-      { domain: "intotheg loss.com", percentage: 9 },
-      { domain: "vogue.com", percentage: 7 },
-      { domain: "tiktok.com", percentage: 6 },
-      { domain: "allure.com", percentage: 4 },
-      { domain: "nytimes.com", percentage: 3 },
-      { domain: "sephora.com", percentage: 2 },
-    ],
-    "Clinique": [
-      { domain: "sephora.com", percentage: 20 },
-      { domain: "webmd.com", percentage: 17 },
-      { domain: "nordstrom.com", percentage: 14 },
-      { domain: "clinique.com", percentage: 12 },
-      { domain: "allure.com", percentage: 10 },
-      { domain: "ulta.com", percentage: 8 },
-      { domain: "dermstore.com", percentage: 7 },
-      { domain: "reddit.com", percentage: 5 },
-      { domain: "vogue.com", percentage: 4 },
-      { domain: "youtube.com", percentage: 3 },
-    ],
-    "Laneige": [
-      { domain: "sephora.com", percentage: 25 },
-      { domain: "reddit.com", percentage: 19 },
-      { domain: "allure.com", percentage: 15 },
-      { domain: "youtube.com", percentage: 12 },
-      { domain: "laneige.com", percentage: 10 },
-      { domain: "tiktok.com", percentage: 8 },
-      { domain: "byrdie.com", percentage: 5 },
-      { domain: "instagram.com", percentage: 3 },
-      { domain: "vogue.com", percentage: 2 },
-      { domain: "ulta.com", percentage: 1 },
-    ],
-  };
+  // brand -> domain rows (sorted by percentage desc)
+  const [domainsByBrand, setDomainsByBrand] = useState<Record<string, { domain: string; percentage: number }[]>>({});
 
-  const brandTopDomains = [
-    { brand: "Rhode", color: "#B86A54", domains: ["sephora.com", "vogue.com", "reddit.com"] },
-    { brand: "Summer Fridays", color: "#374762", domains: ["sephora.com", "byrdie.com", "youtube.com"] },
-    { brand: "Glossier", color: "#DAC58C", domains: ["glossier.com", "reddit.com", "instagram.com"] },
-    { brand: "Clinique", color: "#ACBDA7", domains: ["sephora.com", "webmd.com", "nordstrom.com"] },
-    { brand: "Laneige", color: "#6B241E", domains: ["sephora.com", "reddit.com", "allure.com"] },
-  ];
+  // Default selected brand to mainBrand when it changes
+  const activeBrand = selectedBrand ?? mainBrand;
 
-  const selectedBrandData = allBrandDomainData[selectedBrand as keyof typeof allBrandDomainData];
-  const { selectedCategory: _cat } = useBrand();
-    const { brandsByCategory: _bbc } = useAppData();
-    const selectedBrandColor = _bbc[_cat]?.find(b => b.name === selectedBrand)?.color ?? "#B86A54";
-  const maxPercentage = Math.max(...selectedBrandData.map((d) => d.percentage));
+  useEffect(() => {
+    setDomainsByBrand({});
+    async function load() {
+      const { data } = await supabase
+        .from("i1_domain_sources")
+        .select("brand_name, date, i1_domain, i1_domain_percentage")
+        .eq("category_name", selectedCategory)
+        .in("brand_name", selectedBrands)
+        .lte("date", toISODateString(selectedDate))
+        .order("date", { ascending: false });
+
+      if (!data?.length) return;
+
+      // For each brand, keep only the rows from the most recent date
+      const latestDateByBrand: Record<string, string> = {};
+      for (const row of data) {
+        if (!latestDateByBrand[row.brand_name]) {
+          latestDateByBrand[row.brand_name] = row.date;
+        }
+      }
+
+      const grouped: Record<string, { domain: string; percentage: number }[]> = {};
+      for (const row of data) {
+        if (row.date !== latestDateByBrand[row.brand_name]) continue;
+        if (!grouped[row.brand_name]) grouped[row.brand_name] = [];
+        grouped[row.brand_name].push({ domain: row.i1_domain, percentage: row.i1_domain_percentage });
+      }
+      for (const brand of Object.keys(grouped)) {
+        grouped[brand].sort((a, b) => b.percentage - a.percentage);
+      }
+
+      setDomainsByBrand(grouped);
+    }
+    load();
+  }, [selectedBrands, selectedCategory, selectedDate]);
+
+  const selectedBrandData = domainsByBrand[activeBrand] ?? [];
+  const selectedBrandColor = categoryBrandList.find(b => b.name === activeBrand)?.color ?? "#B86A54";
+  const maxPercentage = selectedBrandData.length ? Math.max(...selectedBrandData.map((d) => d.percentage)) : 1;
+
+  // Right panel: top 3 domains per selected brand
+  const brandTopDomains = categoryBrandList
+    .filter(b => selectedBrands.includes(b.name))
+    .map(b => ({
+      brand: b.name,
+      color: b.color,
+      domains: (domainsByBrand[b.name] ?? []).slice(0, 3).map(d => d.domain),
+    }));
 
   return (
     <div
@@ -811,7 +876,7 @@ function DomainSources() {
               padding: "3px",
               minWidth: "max-content",
             }}>
-              {(_bbc[_cat] ?? []).filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
+              {categoryBrandList.filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
                 <button
                   key={brand.name}
                   onClick={() => setSelectedBrand(brand.name)}
@@ -821,9 +886,9 @@ function DomainSources() {
                     fontSize: 10,
                     padding: "4px 10px",
                     borderRadius: "var(--radius-pill)",
-                    backgroundColor: selectedBrand === brand.name ? "#FFFFFF" : "transparent",
-                    color: selectedBrand === brand.name ? "var(--text-primary)" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 700 : selectedBrand === brand.name ? 600 : 400,
+                    backgroundColor: activeBrand === brand.name ? "#FFFFFF" : "transparent",
+                    color: activeBrand === brand.name ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 700 : activeBrand === brand.name ? 600 : 400,
                     border: "none",
                     cursor: "pointer",
                     transition: "all 0.15s ease",
@@ -895,7 +960,7 @@ function DomainSources() {
                     flexShrink: 0,
                   }}
                 >
-                  {item.percentage}%
+                  {Math.round(item.percentage)}%
                 </span>
               </div>
             ))}
@@ -904,6 +969,19 @@ function DomainSources() {
 
         {/* Right column: Brand comparison */}
         <div style={{ flex: 1, minWidth: 0 }}>
+          <h4
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: 10,
+              fontWeight: 600,
+              color: "#B5ADA5",
+              textTransform: "uppercase",
+              letterSpacing: "0.8px",
+              marginBottom: 10,
+            }}
+          >
+            Top 3 Domains per Brand
+          </h4>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {brandTopDomains.filter(item => selectedBrands.includes(item.brand)).map((item) => (
               <div key={item.brand} className="flex items-start gap-2" style={{ minWidth: 0 }}>
@@ -959,61 +1037,59 @@ function DomainSources() {
 }
 
 function AudiencePerception() {
-  const [selectedBrand, setSelectedBrand] = useState("Rhode");
-  const { selectedBrands, mainBrand } = useBrand();
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const { selectedDate } = useDateMode();
+  const { brandsByCategory } = useAppData();
+  const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
+  const [selectedBrand, setSelectedBrand] = useState(mainBrand);
 
-  // All brands' age distribution data
-  const allBrandAgeData = {
-    "Rhode": [
-      { age: "16–24", percentage: 35 },
-      { age: "25–34", percentage: 42, isPrimary: true },
-      { age: "35–44", percentage: 15 },
-      { age: "45–54", percentage: 6 },
-      { age: "55+", percentage: 2 },
-    ],
-    "Summer Fridays": [
-      { age: "16–24", percentage: 28 },
-      { age: "25–34", percentage: 38, isPrimary: true },
-      { age: "35–44", percentage: 22 },
-      { age: "45–54", percentage: 9 },
-      { age: "55+", percentage: 3 },
-    ],
-    "Glossier": [
-      { age: "16–24", percentage: 42 },
-      { age: "25–34", percentage: 45, isPrimary: true },
-      { age: "35–44", percentage: 10 },
-      { age: "45–54", percentage: 2 },
-      { age: "55+", percentage: 1 },
-    ],
-    "Clinique": [
-      { age: "16–24", percentage: 8 },
-      { age: "25–34", percentage: 18 },
-      { age: "35–44", percentage: 32 },
-      { age: "45–54", percentage: 28, isPrimary: true },
-      { age: "55+", percentage: 14 },
-    ],
-    "Laneige": [
-      { age: "16–24", percentage: 32 },
-      { age: "25–34", percentage: 40, isPrimary: true },
-      { age: "35–44", percentage: 19 },
-      { age: "45–54", percentage: 7 },
-      { age: "55+", percentage: 2 },
-    ],
-  };
+  useEffect(() => { setSelectedBrand(mainBrand); }, [mainBrand]);
 
-  const brandAudienceData = [
-    { brand: "Rhode", color: "#B86A54", primaryAudience: "25–34", confidence: 42 },
-    { brand: "Summer Fridays", color: "#374762", primaryAudience: "25–34", confidence: 38 },
-    { brand: "Glossier", color: "#DAC58C", primaryAudience: "18–27", confidence: 45 },
-    { brand: "Clinique", color: "#ACBDA7", primaryAudience: "35–49", confidence: 51 },
-    { brand: "Laneige", color: "#6B241E", primaryAudience: "22–32", confidence: 40 },
-  ];
+  type AgeRow = { age: string; percentage: number };
+  const [ageDataByBrand, setAgeDataByBrand] = useState<Record<string, AgeRow[]>>({});
 
-  const selectedBrandAgeData = allBrandAgeData[selectedBrand as keyof typeof allBrandAgeData];
-  const { selectedCategory: _cat } = useBrand();
-    const { brandsByCategory: _bbc } = useAppData();
-    const selectedBrandColor = _bbc[_cat]?.find(b => b.name === selectedBrand)?.color ?? "#B86A54";
-  const maxPercentage = Math.max(...selectedBrandAgeData.map((d) => d.percentage));
+  useEffect(() => {
+    setAgeDataByBrand({});
+    async function load() {
+      const { data } = await supabase
+        .from("i1_audience_perception")
+        .select("brand_name, date, i1_audience_age_group, i1_audience_percentage")
+        .eq("category_name", selectedCategory)
+        .in("brand_name", selectedBrands)
+        .lte("date", toISODateString(selectedDate))
+        .order("date", { ascending: false });
+
+      if (!data?.length) return;
+
+      const latestByBrand: Record<string, string> = {};
+      for (const row of data) {
+        if (!latestByBrand[row.brand_name]) latestByBrand[row.brand_name] = row.date;
+      }
+
+      const result: Record<string, AgeRow[]> = {};
+      for (const row of data) {
+        if (row.date !== latestByBrand[row.brand_name]) continue;
+        if (!result[row.brand_name]) result[row.brand_name] = [];
+        result[row.brand_name].push({ age: row.i1_audience_age_group, percentage: row.i1_audience_percentage });
+      }
+
+      setAgeDataByBrand(result);
+    }
+    load();
+  }, [selectedBrands, selectedCategory, selectedDate]);
+
+  const selectedBrandAgeData = ageDataByBrand[selectedBrand] ?? [];
+  const selectedBrandColor = categoryBrandList.find(b => b.name === selectedBrand)?.color ?? "#B86A54";
+  const maxPercentage = selectedBrandAgeData.length > 0 ? Math.max(...selectedBrandAgeData.map((d) => d.percentage)) : 1;
+
+  const brandSummaryData = selectedBrands
+    .filter(b => (ageDataByBrand[b]?.length ?? 0) > 0)
+    .map(b => {
+      const rows = ageDataByBrand[b];
+      const top = rows.reduce((a, c) => c.percentage > a.percentage ? c : a, rows[0]);
+      const color = categoryBrandList.find(br => br.name === b)?.color ?? "#B86A54";
+      return { brand: b, color, primaryAudience: top.age, audienceSize: top.percentage };
+    });
 
   return (
     <div
@@ -1050,7 +1126,7 @@ function AudiencePerception() {
               padding: "3px",
               minWidth: "max-content",
             }}>
-              {(_bbc[_cat] ?? []).filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
+              {categoryBrandList.filter(brand => selectedBrands.includes(brand.name)).map((brand) => (
                 <button
                   key={brand.name}
                   onClick={() => setSelectedBrand(brand.name)}
@@ -1099,7 +1175,9 @@ function AudiencePerception() {
         {/* Left column: Selected brand age distribution */}
         <div style={{ flex: "0 0 45%", minWidth: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {selectedBrandAgeData.map((item) => (
+            {selectedBrandAgeData.map((item) => {
+              const isPrimary = item.percentage === maxPercentage;
+              return (
               <div key={item.age} className="flex items-center" style={{ gap: 8, minWidth: 0 }}>
                 <span
                   style={{
@@ -1123,7 +1201,7 @@ function AudiencePerception() {
                       backgroundColor: selectedBrandColor,
                       borderRadius: 4,
                       width: `${(item.percentage / maxPercentage) * 100}%`,
-                      opacity: item.isPrimary ? 1 : item.percentage / maxPercentage,
+                      opacity: isPrimary ? 1 : item.percentage / maxPercentage,
                     }}
                   />
                 </div>
@@ -1132,7 +1210,7 @@ function AudiencePerception() {
                     fontFamily: "var(--font-mono)",
                     fontSize: 11,
                     color: "var(--text-primary)",
-                    fontWeight: item.isPrimary ? 700 : 400,
+                    fontWeight: isPrimary ? 700 : 400,
                     width: 35,
                     textAlign: "left",
                     flexShrink: 0,
@@ -1141,7 +1219,8 @@ function AudiencePerception() {
                   {item.percentage}%
                 </span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -1200,7 +1279,7 @@ function AudiencePerception() {
                 </tr>
               </thead>
               <tbody>
-                {brandAudienceData.filter(row => selectedBrands.includes(row.brand)).map((row) => (
+                {brandSummaryData.map((row) => (
                   <tr
                     key={row.brand}
                     style={{
@@ -1258,7 +1337,7 @@ function AudiencePerception() {
                         color: "var(--text-primary)",
                       }}
                     >
-                      {row.confidence}%
+                      {row.audienceSize}%
                     </td>
                   </tr>
                 ))}

@@ -73,29 +73,29 @@
 
 /* Blush theme (Palette 5) — dark sleek mode, cool gradients + glassmorphic cards */
 [data-theme="blush"] {
-  --bg-primary: #13151A;
-  --bg-card: rgba(255, 255, 255, 0.06);
-  --bg-card-hover: rgba(255, 255, 255, 0.10);
-  --bg-surface: rgba(255, 255, 255, 0.04);
-  --bg-input: rgba(255, 255, 255, 0.08);
-  --text-primary: #F0ECE8;
-  --text-secondary: #9B95A0;
-  --text-muted: #5E586A;
-  --border-color: rgba(255, 255, 255, 0.08);
+  --bg-primary: #0F1116;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --bg-surface: rgba(255, 255, 255, 0.03);
+  --bg-input: rgba(255, 255, 255, 0.06);
+  --text-primary: #E8E4DF;
+  --text-secondary: #A39B93;
+  --text-muted: #6B6560;
+  --border-color: rgba(255, 255, 255, 0.10);
   --border-subtle: rgba(255, 255, 255, 0.06);
-  --accent-primary: #E07A4A;
-  --accent-secondary: #8B9EE8;
-  --color-positive: #6ECB8B;
-  --color-negative: #E07A4A;
-  --color-neutral: #D0A86E;
-  --dim-I1: #8B9EE8;
-  --dim-C1: #E07A4A;
-  --dim-O: #E8A09A;
-  --dim-N: #7EC9A0;
-  --dim-I2: #D0A86E;
-  --dim-C2: #B8C26E;
+  --accent-primary: #D9826A;
+  --accent-secondary: #9BAED6;
+  --color-positive: #7ABD8F;
+  --color-negative: #D97B6A;
+  --color-neutral: #C9A576;
+  --dim-I1: #9BAED6;
+  --dim-C1: #D9826A;
+  --dim-O: #E0938A;
+  --dim-N: #8BC49D;
+  --dim-I2: #C9A576;
+  --dim-C2: #B5BC7A;
 
-  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 /* Dusk gradient mesh — very subtle warm cream shifts */
@@ -150,9 +150,15 @@ body::before {
   background-color: var(--bg-surface) !important;
 }
 
-/* Inactive bar / track backgrounds */
+/* Additional grey backgrounds that need overriding */
 [data-theme="blush"] [style*="background-color: #E8E2DC"],
-[data-theme="blush"] [style*="background-color: rgb(232, 226, 220)"] {
+[data-theme="blush"] [style*="background-color: rgb(232, 226, 220)"],
+[data-theme="blush"] [style*="background-color: #D5CEC7"],
+[data-theme="blush"] [style*="background-color: rgb(213, 206, 199)"],
+[data-theme="blush"] [style*="background-color: #C9C3BC"],
+[data-theme="blush"] [style*="background-color: rgb(201, 195, 188)"],
+[data-theme="blush"] [style*="background-color: #DDD8D3"],
+[data-theme="blush"] [style*="background-color: rgb(221, 216, 211)"] {
   background-color: var(--bg-surface) !important;
 }
 
@@ -199,3 +205,16 @@ body::before {
 [data-theme="blush"] [fill="#B5ADA5"] { fill: var(--text-muted) !important; }
 [data-theme="blush"] [fill="#7A6F65"] { fill: var(--text-secondary) !important; }
 [data-theme="blush"] [stroke="#7A6F65"] { stroke: var(--text-secondary) !important; }
+
+/* Blush theme: make buttons more visible with increased opacity */
+[data-theme="blush"] button {
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+}
+
+/* Ensure interactive elements have stronger backgrounds in Blush theme */
+[data-theme="blush"] button[style*="background: var(--bg-surface)"],
+[data-theme="blush"] button[style*="backgroundColor: var(--bg-surface)"] {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}

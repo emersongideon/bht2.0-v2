@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useDateMode } from "../contexts/date-mode-context";
 
 export interface DimensionData {
   letter: string;
   name: string;
-  score: number;
-  delta: number;
+  score?: number;
+  delta?: number;
   color: string;
   dimKey: string;
   selected?: boolean;
@@ -12,9 +13,15 @@ export interface DimensionData {
   fixedHeight?: number;
   onClick?: () => void;
   showConnector?: boolean;
+  /** Live 7-point trend values (actual scores 0-100). When provided, overrides hardcoded sparklineData. */
+  trendValues?: (number | null)[];
+  /** Live score from Supabase. When provided, overrides the static score. */
+  liveScore?: number | null;
+  /** Live delta from Supabase. When provided, overrides the static delta. */
+  liveDelta?: number | null;
 }
 
-// 7 data points per sparkline [values 0-36 range]
+// Fallback 7 data points per sparkline [inverted: lower value = visually higher = better trend]
 const sparklineData: Record<string, number[]> = {
   I1: [28, 20, 18, 14, 10, 8, 10],
   C1: [30, 22, 18, 12, 8, 6, 8],
@@ -24,28 +31,38 @@ const sparklineData: Record<string, number[]> = {
   C2: [12, 16, 14, 20, 22, 24, 26],
 };
 
-// X-axis labels based on date mode
-const dailyLabels = ["1", "2", "3", "4", "5", "6", "7"];
-const rolling30Labels = ["Feb 5", "Feb 9", "Feb 13", "Feb 17", "Feb 21", "Feb 25", "Mar 1"];
-const monthlyLabels = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"];
-
+/** Fallback path using old inverted-value data (0-36 scale, lower=higher on screen) */
 function buildSparklinePath(data: number[], width: number, height: number): string {
   if (data.length < 2) return "";
   const stepX = width / (data.length - 1);
   const maxVal = 36;
-  const points = data.map((v, i) => ({
-    x: i * stepX,
-    y: (v / maxVal) * height,
-  }));
+  const points = data.map((v, i) => ({ x: i * stepX, y: (v / maxVal) * height }));
   let d = `M${points[0].x},${points[0].y}`;
   for (let i = 1; i < points.length; i++) {
     const prev = points[i - 1];
     const curr = points[i];
-    const cpx1 = prev.x + stepX * 0.4;
-    const cpx2 = curr.x - stepX * 0.4;
-    d += ` C${cpx1},${prev.y} ${cpx2},${curr.y} ${curr.x},${curr.y}`;
+    d += ` C${prev.x + stepX * 0.4},${prev.y} ${curr.x - stepX * 0.4},${curr.y} ${curr.x},${curr.y}`;
   }
   return d;
+}
+
+/** Live path using actual scores (fixed 0-100 scale, higher=higher on screen). Nulls draw at physical bottom. */
+function buildLiveSparklinePath(data: (number | null)[], width: number, height: number): string {
+  if (data.length < 1) return "";
+  const validVals = data.filter((v): v is number => v !== null);
+  if (validVals.length === 0) return "";
+  const stepX = data.length > 1 ? width / (data.length - 1) : 0;
+  // Fixed 0-100 scale so scores render at their true proportional height
+  const yBottom = height - 1;
+  const toX = (i: number) => data.length > 1 ? i * stepX : width / 2;
+  const toY = (v: number) => height - 1 - (v / 100) * (height - 2);
+  const parts: string[] = [];
+  for (let i = 0; i < data.length; i++) {
+    const v = data[i];
+    const y = v !== null ? toY(v) : yBottom;
+    parts.push(`${i === 0 ? "M" : "L"}${toX(i).toFixed(2)},${y.toFixed(2)}`);
+  }
+  return parts.join(" ");
 }
 
 export function DimensionScoreCard({
@@ -60,19 +77,46 @@ export function DimensionScoreCard({
   fixedHeight,
   onClick,
   showConnector = false,
+  trendValues,
+  liveScore,
+  liveDelta,
 }: DimensionData) {
-  const { dateMode } = useDateMode();
-  const isPositive = delta >= 0;
-  const data = sparklineData[dimKey] || sparklineData.I1;
+  const { getAxisLabels } = useDateMode();
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  // Use live data only — show "—" while loading
+  const displayScore: number | null = liveScore ?? null;
+  const displayDelta: number | null = liveDelta ?? null;
+  const isPositive = displayDelta === null || displayDelta >= 0;
   const svgW = 120;
   const svgH = 36;
-  const sparkPath = buildSparklinePath(data, svgW, svgH);
+  // Use live sparkline if provided, otherwise fall back to hardcoded
+  const sparkPath = trendValues && trendValues.filter((v) => v !== null).length >= 1
+    ? buildLiveSparklinePath(trendValues, svgW, svgH)
+    : buildSparklinePath(sparklineData[dimKey] || sparklineData.I1, svgW, svgH);
 
-  // Get appropriate labels based on date mode
-  const axisLabels = 
-    dateMode === "Daily" ? dailyLabels :
-    dateMode === "Rolling 30" ? rolling30Labels :
-    monthlyLabels;
+  // Compute dot positions for live sparkline data (only non-null values get dots)
+  // Uses same fixed 0-100 scale as buildLiveSparklinePath
+  const sparkDots: { x: number; y: number; i: number }[] = (() => {
+    if (!trendValues || trendValues.length < 1) return [];
+    const validVals = trendValues.filter((v): v is number => v !== null);
+    if (validVals.length === 0) return [];
+    const stepX = trendValues.length > 1 ? svgW / (trendValues.length - 1) : 0;
+    const toX = (i: number) => trendValues.length > 1 ? i * stepX : svgW / 2;
+    const toY = (v: number) => svgH - 1 - (v / 100) * (svgH - 2);
+    return trendValues
+      .map((v, i) => v !== null ? { x: toX(i), y: toY(v), i } : null)
+      .filter((pt): pt is { x: number; y: number; i: number } => pt !== null);
+  })();
+
+  const axisLabels = getAxisLabels();
+  const n = trendValues?.length ?? axisLabels.length;
+
+  const handleSparklineMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const xRatio = (e.clientX - rect.left) / rect.width;
+    const idx = Math.round(xRatio * (axisLabels.length - 1));
+    setHoverIndex(Math.max(0, Math.min(axisLabels.length - 1, idx)));
+  };
 
   return (
     <div style={{ position: "relative", flex: flex ? 1 : undefined, minWidth: flex ? 0 : undefined }}>
@@ -88,8 +132,18 @@ export function DimensionScoreCard({
           borderRadius: "var(--radius-sm)",
           boxShadow: "var(--shadow-card)",
           padding: 16,
-          borderLeft: selected ? `3px solid ${color}` : undefined,
-          border: selected ? undefined : "1px solid var(--border-subtle)",
+          borderLeftWidth: selected ? 3 : 1,
+          borderLeftStyle: "solid",
+          borderLeftColor: selected ? "var(--text-secondary)" : "var(--border-subtle)",
+          borderRightWidth: 1,
+          borderRightStyle: "solid",
+          borderRightColor: "var(--border-subtle)",
+          borderTopWidth: 1,
+          borderTopStyle: "solid",
+          borderTopColor: "var(--border-subtle)",
+          borderBottomWidth: 1,
+          borderBottomStyle: "solid",
+          borderBottomColor: "var(--border-subtle)",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
@@ -107,7 +161,7 @@ export function DimensionScoreCard({
             left: 0,
             right: 0,
             height: 60,
-            background: `linear-gradient(to bottom, ${color}10, transparent)`,
+            background: `linear-gradient(to bottom, var(--text-muted)08, transparent)`,
             pointerEvents: "none",
             borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
           }}
@@ -120,7 +174,7 @@ export function DimensionScoreCard({
               width: 8,
               height: 8,
               borderRadius: "50%",
-              backgroundColor: color,
+              backgroundColor: "var(--text-secondary)",
               flexShrink: 0,
             }}
           />
@@ -150,32 +204,65 @@ export function DimensionScoreCard({
               color: "var(--text-primary)",
             }}
           >
-            {score}
+            {displayScore ?? "—"}
           </span>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 2,
-              padding: "2px 8px",
-              borderRadius: "var(--radius-pill)",
-              backgroundColor: isPositive
-                ? "rgba(74, 102, 68, 0.10)"
-                : "rgba(184, 106, 84, 0.10)",
-              color: isPositive ? "var(--color-positive)" : "var(--color-negative)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            {isPositive ? "▲" : "▼"} {Math.abs(delta).toFixed(1)}
-          </span>
+          {displayDelta !== null && (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 2,
+                padding: "2px 8px",
+                borderRadius: "var(--radius-pill)",
+                backgroundColor: isPositive
+                  ? "rgba(74, 102, 68, 0.10)"
+                  : "rgba(184, 106, 84, 0.10)",
+                color: isPositive ? "var(--color-positive)" : "var(--color-negative)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              {isPositive ? "▲" : "▼"} {Math.abs(displayDelta).toFixed(1)}
+            </span>
+          )}
         </div>
 
         {/* Bottom: sparkline with x-axis */}
         <div className="relative z-10" style={{ marginTop: "auto" }}>
           {/* Sparkline area */}
-          <div style={{ height: 36, position: "relative" }}>
+          <div
+            style={{ height: 36, position: "relative" }}
+            onMouseMove={handleSparklineMouseMove}
+            onMouseLeave={() => setHoverIndex(null)}
+          >
+            {/* Hover tooltip */}
+            {hoverIndex !== null && trendValues && (
+              <div style={{
+                position: "absolute",
+                bottom: "calc(100% + 4px)",
+                left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
+                transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+                backgroundColor: "var(--bg-card)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "var(--radius-sm)",
+                padding: "3px 7px",
+                boxShadow: "var(--shadow-card)",
+                pointerEvents: "none",
+                whiteSpace: "nowrap",
+                zIndex: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--text-muted)" }}>
+                  {axisLabels[hoverIndex]}
+                </span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
+                  {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+                </span>
+              </div>
+            )}
             {/* Main sparkline - clean line only, no dots */}
             <svg
               width="100%"
@@ -184,14 +271,25 @@ export function DimensionScoreCard({
               preserveAspectRatio="none"
               style={{ display: "block", position: "relative", zIndex: 1 }}
             >
-              <path 
-                d={sparkPath} 
-                fill="none" 
-                stroke="var(--text-secondary)" 
-                strokeWidth="1.5" 
+              <path
+                d={sparkPath}
+                fill="none"
+                stroke="var(--text-secondary)"
+                strokeWidth="1.5"
                 strokeLinecap="round"
                 opacity="0.6"
               />
+              {/* Dots at each data point (only for live data, non-null) */}
+              {sparkDots.map((pt) => (
+                <circle
+                  key={pt.i}
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={hoverIndex === pt.i ? "3" : "2"}
+                  fill="var(--text-secondary)"
+                  opacity={hoverIndex === pt.i ? "1" : "0.7"}
+                />
+              ))}
             </svg>
           </div>
           {/* X-axis ticks & labels */}
@@ -208,10 +306,12 @@ export function DimensionScoreCard({
                 />
                 <span
                   style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 8,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 7,
                     color: "var(--text-muted)",
                     marginTop: 1,
+                    textAlign: "center",
+                    lineHeight: 1.2,
                   }}
                 >
                   {label}
@@ -226,10 +326,10 @@ export function DimensionScoreCard({
 }
 
 export const dimensionVariants: DimensionData[] = [
-  { letter: "I", name: "Imprinted in AI", score: 74, delta: 2.8, color: "var(--dim-I1)", dimKey: "I1" },
-  { letter: "C", name: "Capturing Attention", score: 82, delta: 3.1, color: "var(--dim-C1)", dimKey: "C1" },
-  { letter: "O", name: "Openly Adored", score: 85, delta: 1.6, color: "var(--dim-O)", dimKey: "O" },
-  { letter: "N", name: "Never Lost in Translation", score: 71, delta: 0.9, color: "var(--dim-N)", dimKey: "N" },
-  { letter: "I", name: "Ingrained in Culture", score: 78, delta: 2.3, color: "var(--dim-I2)", dimKey: "I2" },
-  { letter: "C", name: "Chosen for a Reason", score: 66, delta: -1.2, color: "var(--dim-C2)", dimKey: "C2" },
+  { letter: "I", name: "Imprinted in AI",        color: "var(--dim-I1)", dimKey: "I1" },
+  { letter: "C", name: "Capturing Attention",     color: "var(--dim-C1)", dimKey: "C1" },
+  { letter: "O", name: "Openly Adored",           color: "var(--dim-O)",  dimKey: "O"  },
+  { letter: "N", name: "Never Lost in Translation", color: "var(--dim-N)", dimKey: "N" },
+  { letter: "I", name: "Ingrained in Culture",    color: "var(--dim-I2)", dimKey: "I2" },
+  { letter: "C", name: "Chosen for a Reason",     color: "var(--dim-C2)", dimKey: "C2" },
 ];
