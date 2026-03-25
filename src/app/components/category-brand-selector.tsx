@@ -67,42 +67,58 @@ export function CategoryBrandSelector() {
           )}
           <ChevronDown size={14} />
         </button>
-        {showBrandDropdown && (
-          <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, backgroundColor: "var(--bg-primary)", backdropFilter: "blur(var(--blur-glass))", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-card)", minWidth: 240, zIndex: 1000, overflow: "hidden" }}>
-            <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
-              <div style={{ fontSize: 11, fontFamily: "var(--font-body)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                Select brands to analyze
-                <span style={{ marginLeft: 8, color: selectedBrands.length >= 10 ? "var(--accent-primary)" : "var(--text-muted)" }}>
-                  ({selectedBrands.length}/10)
-                </span>
+        {showBrandDropdown && (() => {
+          const ROWS_PER_COL = 10;
+          const columns: typeof categoryBrands[] = [];
+          for (let i = 0; i < categoryBrands.length; i += ROWS_PER_COL) {
+            columns.push(categoryBrands.slice(i, i + ROWS_PER_COL));
+          }
+          return (
+            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, backgroundColor: "var(--bg-primary)", backdropFilter: "blur(var(--blur-glass))", border: "1px solid var(--border-color)", borderRadius: "var(--radius-md)", boxShadow: "var(--shadow-card)", zIndex: 1000, maxWidth: "calc(100vw - 32px)", overflow: "hidden" }}>
+              {/* Header */}
+              <div style={{ padding: "8px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div style={{ fontSize: 11, fontFamily: "var(--font-body)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Select brands to analyze
+                  <span style={{ marginLeft: 8, color: selectedBrands.length >= 10 ? "var(--accent-primary)" : "var(--text-muted)" }}>
+                    ({selectedBrands.length}/10)
+                  </span>
+                </div>
+              </div>
+              {/* Multi-column body */}
+              <div style={{ display: "flex", flexDirection: "row", overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                {columns.map((col, colIdx) => (
+                  <div key={colIdx} style={{ minWidth: 240, flexShrink: 0, borderRight: colIdx < columns.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                    {col.map((brand, rowIdx) => {
+                      const isSelected = selectedBrands.includes(brand.name);
+                      const isMain = mainBrand === brand.name;
+                      const atMax = selectedBrands.length >= 10;
+                      const isDisabled = !isSelected && atMax;
+                      return (
+                        <div key={brand.name} style={{ borderBottom: rowIdx < col.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
+                          <label style={{ display: "flex", alignItems: "center", padding: "10px 16px", cursor: isDisabled ? "not-allowed" : "pointer", backgroundColor: isMain ? "var(--bg-surface)" : "transparent", transition: "background-color 0.15s", opacity: isDisabled ? 0.4 : 1 }}
+                            onMouseEnter={(e) => { if (!isMain && !isDisabled) e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+                            onMouseLeave={(e) => { if (!isMain) e.currentTarget.style.backgroundColor = "transparent"; }}
+                          >
+                            <input type="checkbox" checked={isSelected} disabled={isDisabled} onChange={() => toggleBrand(brand.name)} style={{ width: 16, height: 16, marginRight: 12, cursor: isDisabled ? "not-allowed" : "pointer", accentColor: "var(--accent-primary)" }} />
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: brand.color, flexShrink: 0 }} />
+                              <span style={{ fontWeight: isMain ? 700 : 400, fontFamily: "var(--font-body)", fontSize: 14, color: "var(--text-primary)", flex: 1 }}>{brand.name}</span>
+                            </div>
+                            <input type="radio" name="mainBrand" checked={isMain} onChange={() => setMainBrand(brand.name)} disabled={!isSelected} title="Set as main brand" style={{ width: 16, height: 16, marginLeft: 12, cursor: isSelected ? "pointer" : "not-allowed", accentColor: "var(--accent-primary)", opacity: isSelected ? 1 : 0.3 }} />
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+              {/* Footer */}
+              <div style={{ padding: "8px 12px", borderTop: "1px solid var(--border-subtle)", fontSize: 11, fontFamily: "var(--font-body)", color: "var(--text-muted)" }}>
+                {selectedBrands.length >= 10 ? "Max 10 brands reached — deselect one to add another" : "✓ Include in analysis • ⦿ Main brand"}
               </div>
             </div>
-            {categoryBrands.map((brand, index) => {
-              const isSelected = selectedBrands.includes(brand.name);
-              const isMain = mainBrand === brand.name;
-              const atMax = selectedBrands.length >= 10;
-              const isDisabled = !isSelected && atMax;
-              return (
-                <div key={brand.name} style={{ borderBottom: index < categoryBrands.length - 1 ? "1px solid var(--border-subtle)" : "none" }}>
-                  <label style={{ display: "flex", alignItems: "center", padding: "10px 16px", cursor: isDisabled ? "not-allowed" : "pointer", backgroundColor: isMain ? "var(--bg-surface)" : "transparent", transition: "background-color 0.15s", opacity: isDisabled ? 0.4 : 1 }}
-                    onMouseEnter={(e) => { if (!isMain && !isDisabled) e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
-                    onMouseLeave={(e) => { if (!isMain) e.currentTarget.style.backgroundColor = "transparent"; }}
-                  >
-                    <input type="checkbox" checked={isSelected} disabled={isDisabled} onChange={() => toggleBrand(brand.name)} style={{ width: 16, height: 16, marginRight: 12, cursor: isDisabled ? "not-allowed" : "pointer", accentColor: "var(--accent-primary)" }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: brand.color, flexShrink: 0 }} />
-                      <span style={{ fontWeight: isMain ? 700 : 400, fontFamily: "var(--font-body)", fontSize: 14, color: "var(--text-primary)", flex: 1 }}>{brand.name}</span>
-                    </div>
-                    <input type="radio" name="mainBrand" checked={isMain} onChange={() => setMainBrand(brand.name)} disabled={!isSelected} title="Set as main brand" style={{ width: 16, height: 16, marginLeft: 12, cursor: isSelected ? "pointer" : "not-allowed", accentColor: "var(--accent-primary)", opacity: isSelected ? 1 : 0.3 }} />
-                  </label>
-                </div>
-              );
-            })}
-            <div style={{ padding: "8px 12px", borderTop: "1px solid var(--border-subtle)", fontSize: 11, fontFamily: "var(--font-body)", color: "var(--text-muted)" }}>
-              {selectedBrands.length >= 10 ? "Max 10 brands reached — deselect one to add another" : "✓ Include in analysis • ⦿ Main brand"}
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );
