@@ -1,3 +1,4 @@
+import { SortableBarChart } from "../sortable-bar-chart";
 import { useState, useEffect } from "react";
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
@@ -410,83 +411,6 @@ function BrandComparison() {
   const pricePerceptionData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Price Perception"] ?? null, color: b.color }));
   const qualityPerceptionData = categoryBrands.map(b => ({ brand: b.name, score: allScores[b.name]?.["Quality Perception"] ?? null, color: b.color }));
 
-  const maxScore = 100;
-
-  const renderColumn = (title: string, data: typeof pricePerceptionData) => (
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <h4
-        style={{
-          fontFamily: "var(--font-body)",
-          fontSize: 12,
-          fontWeight: 600,
-          color: "#7A6F65",
-          textTransform: "uppercase",
-          letterSpacing: "1px",
-          marginBottom: 12,
-        }}
-      >
-        {title}
-      </h4>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {data.map((item) => (
-          <div key={item.brand} className="flex items-center gap-2">
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                backgroundColor: item.color,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: "var(--font-body)",
-                fontSize: 11,
-                color: "var(--text-primary)",
-                width: 100,
-                fontWeight: item.brand === mainBrand ? 700 : 400,
-              }}
-            >
-              {item.brand}
-            </span>
-            <div
-              style={{
-                position: "relative",
-                flex: 1,
-                height: 14,
-                backgroundColor: "#F0EBE6",
-                borderRadius: 7,
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  width: `${((item.score ?? 0) / maxScore) * 100}%`,
-                  backgroundColor: item.color,
-                  opacity: item.brand === mainBrand ? 1 : 0.5,
-                  borderRadius: 7,
-                }}
-              />
-            </div>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                color: "var(--text-secondary)",
-                width: 24,
-                textAlign: "right",
-                fontWeight: item.brand === mainBrand ? 700 : 400,
-              }}
-            >
-              {item.score ?? "—"}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
   return (
     <div
       style={{
@@ -497,33 +421,17 @@ function BrandComparison() {
         padding: 20,
       }}
     >
-      {/* Header */}
       <div style={{ marginBottom: 16 }}>
-        <h3
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 15,
-            fontWeight: 600,
-            color: "var(--text-primary)",
-          }}
-        >
+        <h3 style={{ fontFamily: "var(--font-body)", fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>
           Brand Comparison
         </h3>
-        <p
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 11,
-            color: "#B5ADA5",
-          }}
-        >
+        <p style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "#B5ADA5" }}>
           Price & Quality across brands
         </p>
       </div>
-
-      {/* Two-column layout */}
       <div className="flex" style={{ gap: 32 }}>
-        {renderColumn("PRICE PERCEPTION", pricePerceptionData)}
-        {renderColumn("QUALITY PERCEPTION", qualityPerceptionData)}
+        <SortableBarChart title="PRICE PERCEPTION" data={pricePerceptionData} mainBrand={mainBrand} />
+        <SortableBarChart title="QUALITY PERCEPTION" data={qualityPerceptionData} mainBrand={mainBrand} />
       </div>
     </div>
   );
