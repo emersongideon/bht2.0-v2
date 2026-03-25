@@ -690,8 +690,8 @@ function AttributeComparison() {
                         fontSize: 10,
                         padding: "3px 8px",
                         borderRadius: "var(--radius-pill)",
-                        backgroundColor: territoryConfig[attr.territory as keyof typeof territoryConfig].bg,
-                        color: territoryConfig[attr.territory as keyof typeof territoryConfig].color,
+                        backgroundColor: (territoryConfig[attr.territory as keyof typeof territoryConfig] ?? territoryConfig.Open).bg,
+                        color: (territoryConfig[attr.territory as keyof typeof territoryConfig] ?? territoryConfig.Open).color,
                         fontWeight: 600,
                       }}
                     >
