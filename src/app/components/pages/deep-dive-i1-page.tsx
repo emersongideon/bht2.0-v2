@@ -393,9 +393,7 @@ function ScoreCard({
             {hasData && sparkPath && (
               <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             )}
-            {sparkDots.map((pt) => (
-              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
-            ))}
+            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#B5ADA5" strokeWidth="1" opacity="0.35" strokeDasharray="2 2" /> : null; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
@@ -1078,7 +1076,11 @@ function AudiencePerception() {
     load();
   }, [selectedBrands, selectedCategory, selectedDate]);
 
-  const selectedBrandAgeData = ageDataByBrand[selectedBrand] ?? [];
+  const AGE_ORDER = ["16-24", "25-34", "35-44", "45-54", "55+"];
+  const sortByAge = (a: { age: string }, b: { age: string }) =>
+    AGE_ORDER.indexOf(a.age) - AGE_ORDER.indexOf(b.age);
+
+  const selectedBrandAgeData = [...(ageDataByBrand[selectedBrand] ?? [])].sort(sortByAge);
   const selectedBrandColor = categoryBrandList.find(b => b.name === selectedBrand)?.color ?? "#B86A54";
   const maxPercentage = selectedBrandAgeData.length > 0 ? Math.max(...selectedBrandAgeData.map((d) => d.percentage)) : 1;
 

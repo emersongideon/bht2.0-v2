@@ -511,9 +511,7 @@ function ScoreCard({ title, badge, liveScore, liveDelta, trendValues }: { title:
             {hasData && sparkPath && (
               <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             )}
-            {sparkDots.map((pt) => (
-              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
-            ))}
+            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#B5ADA5" strokeWidth="1" opacity="0.35" strokeDasharray="2 2" /> : null; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
@@ -660,9 +658,7 @@ function AlignmentScoreCard({ liveScore, liveDelta, trendValues }: { liveScore?:
           <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
             {!hasData && <path d="M0,24 C50,22 100,23 150,21 C200,19 250,17 300,15" fill="none" stroke="#B5ADA5" strokeWidth="2" strokeLinecap="round" opacity="0.4" />}
             {hasData && sparkPath && <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />}
-            {sparkDots.map((pt) => (
-              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#B5ADA5" stroke="#fff" strokeWidth="1" />
-            ))}
+            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#B5ADA5" strokeWidth="1" opacity="0.35" strokeDasharray="2 2" /> : null; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>

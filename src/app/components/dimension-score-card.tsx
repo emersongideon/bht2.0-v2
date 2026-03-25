@@ -126,24 +126,15 @@ export function DimensionScoreCard({
         style={{
           width: flex ? "100%" : 200,
           height: fixedHeight,
-          backgroundColor: "var(--bg-card)",
+          backgroundColor: selected ? `${color}12` : "var(--bg-card)",
           backdropFilter: `blur(var(--blur-glass))`,
           WebkitBackdropFilter: `blur(var(--blur-glass))`,
           borderRadius: "var(--radius-sm)",
-          boxShadow: "var(--shadow-card)",
+          boxShadow: selected ? `0 0 0 2px ${color}` : "var(--shadow-card)",
           padding: 16,
-          borderLeftWidth: selected ? 3 : 1,
-          borderLeftStyle: "solid",
-          borderLeftColor: selected ? "var(--text-secondary)" : "var(--border-subtle)",
-          borderRightWidth: 1,
-          borderRightStyle: "solid",
-          borderRightColor: "var(--border-subtle)",
-          borderTopWidth: 1,
-          borderTopStyle: "solid",
-          borderTopColor: "var(--border-subtle)",
-          borderBottomWidth: 1,
-          borderBottomStyle: "solid",
-          borderBottomColor: "var(--border-subtle)",
+          borderWidth: selected ? 2 : 1,
+          borderStyle: "solid",
+          borderColor: selected ? color : "var(--border-subtle)",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
@@ -279,17 +270,11 @@ export function DimensionScoreCard({
                 strokeLinecap="round"
                 opacity="0.6"
               />
-              {/* Dots at each data point (only for live data, non-null) */}
-              {sparkDots.map((pt) => (
-                <circle
-                  key={pt.i}
-                  cx={pt.x}
-                  cy={pt.y}
-                  r={hoverIndex === pt.i ? "3" : "2"}
-                  fill="var(--text-secondary)"
-                  opacity={hoverIndex === pt.i ? "1" : "0.7"}
-                />
-              ))}
+              {/* Hover indicator - subtle vertical line */}
+              {hoverIndex !== null && sparkDots.find(pt => pt.i === hoverIndex) && (() => {
+                const pt = sparkDots.find(pt => pt.i === hoverIndex)!;
+                return <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={svgH} stroke="var(--text-secondary)" strokeWidth="1" opacity="0.3" strokeDasharray="2 2" />;
+              })()}
             </svg>
           </div>
           {/* X-axis ticks & labels */}

@@ -360,9 +360,7 @@ function SocialPerformanceCard({ liveScore, liveDelta, trendValues }: { liveScor
             {hasData && sparkPath && (
               <path d={sparkPath} fill="none" stroke="#6B241E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             )}
-            {sparkDots.map((pt) => (
-              <circle key={pt.i} cx={pt.x} cy={pt.y} r={hoverIndex === pt.i ? "3.5" : "2.5"} fill="#6B241E" stroke="#fff" strokeWidth="1" />
-            ))}
+            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#6B241E" strokeWidth="1" opacity="0.35" strokeDasharray="2 2" /> : null; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
