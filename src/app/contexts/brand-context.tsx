@@ -17,7 +17,8 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const { categories, brandsByCategory } = useAppData();
 
   const defaultCategory = categories[0] ?? "Beauty";
-  const defaultBrandNames = brandsByCategory[defaultCategory]?.map(b => b.name) ?? [];
+  const MAX_BRANDS = 10;
+  const defaultBrandNames = (brandsByCategory[defaultCategory]?.map(b => b.name) ?? []).slice(0, MAX_BRANDS);
 
   const [selectedCategory, setSelectedCategoryRaw] = useState(defaultCategory);
   const [selectedBrands, setSelectedBrands] = useState(defaultBrandNames);
@@ -25,7 +26,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
 
   const setSelectedCategory = (category: string) => {
     setSelectedCategoryRaw(category);
-    const newBrandNames = brandsByCategory[category]?.map(b => b.name) ?? [];
+    const newBrandNames = (brandsByCategory[category]?.map(b => b.name) ?? []).slice(0, MAX_BRANDS);
     setSelectedBrands(newBrandNames);
     setMainBrand(newBrandNames[0] ?? "");
   };
@@ -41,6 +42,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
         }
         return prev.filter(b => b !== brand);
       } else {
+        if (prev.length >= MAX_BRANDS) return prev; // block adding an 11th brand
         return [...prev, brand];
       }
     });
