@@ -273,7 +273,7 @@ export function DimensionScoreCard({
               {/* Hover indicator - subtle vertical line */}
               {hoverIndex !== null && sparkDots.find(pt => pt.i === hoverIndex) && (() => {
                 const pt = sparkDots.find(pt => pt.i === hoverIndex)!;
-                return <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={svgH} stroke="var(--text-secondary)" strokeWidth="1" opacity="0.3" strokeDasharray="2 2" />;
+                return <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={svgH} stroke="var(--text-secondary)" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />;
               })()}
             </svg>
           </div>

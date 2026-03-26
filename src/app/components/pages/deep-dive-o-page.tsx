@@ -390,7 +390,7 @@ function ScoreCard({
             {hasData && sparkPath && (
               <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             )}
-            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#B5ADA5" strokeWidth="1" opacity="0.35" strokeDasharray="2 2" /> : null; })()}
+            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#9A9089" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" /> : null; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
@@ -776,6 +776,7 @@ function SentimentTrend() {
                 strokeWidth="1"
                 strokeDasharray="3 3"
                 opacity="0.7"
+                vectorEffect="non-scaling-stroke"
               />
             )}
 

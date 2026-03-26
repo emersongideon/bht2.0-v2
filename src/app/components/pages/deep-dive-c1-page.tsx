@@ -400,7 +400,7 @@ function ScoreCard({
                 strokeLinejoin="round"
               />
             )}
-            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#B5ADA5" strokeWidth="1" opacity="0.35" strokeDasharray="2 2" /> : null; })()}
+            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#9A9089" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" /> : null; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
@@ -1315,7 +1315,7 @@ function HistoricalView() {
             {/* Vertical hover line — dotted */}
             {hoveredIndex !== null && (() => {
               const x = labels.length > 1 ? (hoveredIndex / (labels.length - 1)) * 360 : 180;
-              return <line x1={x} y1={10} x2={x} y2={130} stroke="#9A9089" strokeWidth="1" opacity="0.7" strokeDasharray="3 3" />;
+              return <line x1={x} y1={10} x2={x} y2={130} stroke="#9A9089" strokeWidth="1" opacity="0.7" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />;
             })()}
 
             {/* Invisible hover zones for each label */}
