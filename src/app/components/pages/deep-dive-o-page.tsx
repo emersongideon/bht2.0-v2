@@ -61,11 +61,11 @@ export function DeepDiveOPage() {
         <BrandComparison />
 
         {/* Row 6 — Sentiment Over Time + Sentiment Breakdown - stacks on mobile */}
-        <div className="flex flex-col md:flex-row" style={{ gap: 12, alignItems: "stretch", minWidth: 0 }}>
-          <div style={{ flex: 2, display: "flex", minWidth: 0, maxWidth: "100%" }}>
+        <div className="flex flex-col md:flex-row" style={{ gap: 12, alignItems: "stretch", minWidth: 0, height: "45vh" }}>
+          <div style={{ flex: 2, display: "flex", minWidth: 0, maxWidth: "100%", minHeight: 0 }}>
             <SentimentTrend />
           </div>
-          <div style={{ flex: 1, display: "flex", minWidth: 0, maxWidth: "100%" }}>
+          <div style={{ flex: 1, display: "flex", minWidth: 0, maxWidth: "100%", minHeight: 0 }}>
             <SentimentSplit />
           </div>
         </div>
@@ -601,6 +601,7 @@ function SentimentTrend() {
         width: "100%",
         maxWidth: "100%",
         minWidth: 0,
+        minHeight: 0,
         overflow: "hidden",
         boxSizing: "border-box",
       }}
@@ -769,7 +770,6 @@ function SentimentTrend() {
                 strokeWidth={brand.name === mainBrand ? 1.5 : 1}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeDasharray={brand.name === mainBrand ? undefined : "4 3"}
               />
             ))}
 
@@ -954,7 +954,7 @@ function SentimentSplit() {
       </div>
 
       {/* Stacked bars */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, justifyContent: "center" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, overflowY: "auto", minHeight: 0 }}>
         {data.map((item) => (
           <div key={item.brand}>
             {/* Brand name */}
