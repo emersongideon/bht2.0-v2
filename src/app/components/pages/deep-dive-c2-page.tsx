@@ -501,15 +501,11 @@ function WorthItConversations() {
       : dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   });
 
-  // Dynamic y-axis range
-  const allValues = chartBrands.flatMap((b) => b.values.filter((v): v is number => v !== null));
-  const rawMin = allValues.length ? Math.min(...allValues) : 0;
-  const rawMax = allValues.length ? Math.max(...allValues) : 30;
-  const yMin = Math.max(0, Math.floor((rawMin - 5) / 5) * 5);
-  const yMax = Math.ceil((rawMax + 5) / 5) * 5;
-  const yStep = Math.max(5, Math.ceil((yMax - yMin) / 4 / 5) * 5);
-  const yTicks: number[] = [];
-  for (let t = yMin + yStep; t <= yMax; t += yStep) yTicks.push(t);
+  // Fixed y-axis range 0–100%
+  const yMin = 0;
+  const yMax = 100;
+  const yStep = 25;
+  const yTicks: number[] = [25, 50, 75, 100];
 
   const chartHeight = 180;
   const n = months.length;
