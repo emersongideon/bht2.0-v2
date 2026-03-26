@@ -250,7 +250,7 @@ export function DimensionScoreCard({
                   {axisLabels[hoverIndex]}
                 </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
-                  {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+                  {trendValues?.[hoverIndex] != null ? Number(trendValues?.[hoverIndex]).toFixed(1) : "—"}
                 </span>
               </div>
             )}
@@ -271,10 +271,7 @@ export function DimensionScoreCard({
                 opacity="0.6"
               />
               {/* Hover indicator - subtle vertical line */}
-              {hoverIndex !== null && sparkDots.find(pt => pt.i === hoverIndex) && (() => {
-                const pt = sparkDots.find(pt => pt.i === hoverIndex)!;
-                return <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={svgH} stroke="var(--text-secondary)" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />;
-              })()}
+              {hoverIndex !== null && (() => { const x = (hoverIndex / Math.max(n - 1, 1)) * svgW; return <line x1={x} y1={0} x2={x} y2={svgH} stroke="var(--text-secondary)" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />; })()}
             </svg>
           </div>
           {/* X-axis ticks & labels */}

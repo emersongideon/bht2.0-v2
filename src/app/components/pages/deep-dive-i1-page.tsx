@@ -354,7 +354,7 @@ function ScoreCard({
           }}
           onMouseLeave={() => setHoverIndex(null)}
         >
-          {hoverIndex !== null && trendValues && (
+          {hoverIndex !== null && (
             <div style={{
               position: "absolute",
               bottom: "calc(100% + 4px)",
@@ -376,7 +376,7 @@ function ScoreCard({
                 {axisLabels[hoverIndex]}
               </span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--text-primary)" }}>
-                {trendValues[hoverIndex] != null ? Number(trendValues[hoverIndex]).toFixed(1) : "—"}
+                {trendValues?.[hoverIndex] != null ? Number(trendValues?.[hoverIndex]).toFixed(1) : "—"}
               </span>
             </div>
           )}
@@ -387,7 +387,7 @@ function ScoreCard({
             {hasData && sparkPath && (
               <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             )}
-            {hoverIndex !== null && (() => { const pt = sparkDots.find(p => p.i === hoverIndex); return pt ? <line key={pt.i} x1={pt.x} y1={0} x2={pt.x} y2={H} stroke="#9A9089" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" /> : null; })()}
+            {hoverIndex !== null && (() => { const x = (hoverIndex / Math.max(n - 1, 1)) * W; return <line x1={x} y1={0} x2={x} y2={H} stroke="#9A9089" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
