@@ -468,7 +468,7 @@ function ScaleVelocityPanel() {
   const fmtPct = (v: number | null | undefined, digits = 1) =>
     v != null ? `${v.toFixed(digits)}%` : "—";
   const fmtPosPct = (v: number | null | undefined) =>
-    v != null ? `+${v.toFixed(1)}%` : "—";
+    v != null ? `${v > 0 ? "+" : ""}${v.toFixed(1)}%` : "—";
   const fmtM = (v: number | null | undefined) =>
     v != null ? `${(v / 1_000_000).toFixed(1)}M` : "—";
   const fmtK = (v: number | null | undefined) =>
@@ -476,7 +476,7 @@ function ScaleVelocityPanel() {
   const fmtRank = (v: number | null | undefined) =>
     v != null ? `#${Math.round(Number(v))}` : "—";
   const fmtPp = (v: number | null | undefined) =>
-    v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}pp` : "—";
+    v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}` : "—";
   const fmtRankChange = (v: number | null | undefined) =>
     v != null ? (v === 0 ? "±0" : `${v > 0 ? "+" : ""}${Math.round(Number(v))}`) : "—";
 
