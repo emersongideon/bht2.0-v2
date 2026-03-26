@@ -101,7 +101,6 @@ export function CategoryBrandSelector() {
                           >
                             <input type="checkbox" checked={isSelected} disabled={isDisabled} onChange={() => toggleBrand(brand.name)} style={{ width: 16, height: 16, marginRight: 12, cursor: isDisabled ? "not-allowed" : "pointer", accentColor: "var(--accent-primary)" }} />
                             <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
-                              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: brand.color, flexShrink: 0 }} />
                               <span style={{ fontWeight: isMain ? 700 : 400, fontFamily: "var(--font-body)", fontSize: 14, color: "var(--text-primary)", flex: 1 }}>{brand.name}</span>
                             </div>
                             <input type="radio" name="mainBrand" checked={isMain} onChange={() => setMainBrand(brand.name)} disabled={!isSelected} title="Set as main brand" style={{ width: 16, height: 16, marginLeft: 12, cursor: isSelected ? "pointer" : "not-allowed", accentColor: "var(--accent-primary)", opacity: isSelected ? 1 : 0.3 }} />
