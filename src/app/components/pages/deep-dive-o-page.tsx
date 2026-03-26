@@ -766,9 +766,10 @@ function SentimentTrend() {
                 d={buildPath(brand.values)}
                 fill="none"
                 stroke={getBrandLineColor(brand.name, mainBrand)}
-                strokeWidth={brand.name === mainBrand ? 2.5 : 2}
+                strokeWidth={brand.name === mainBrand ? 1.5 : 1}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                strokeDasharray={brand.name === mainBrand ? undefined : "4 3"}
               />
             ))}
 
@@ -802,31 +803,7 @@ function SentimentTrend() {
             })}
           </svg>
 
-          {/* Always-visible dots at every non-null data point */}
-          {brandLines.map((brand) =>
-            brand.values.map((v, i) => {
-              if (v === null || v === undefined) return null;
-              const isMain = brand.name === mainBrand;
-              const size = isMain ? 7 : 5;
-              return (
-                <div
-                  key={`dot-${brand.name}-${i}`}
-                  style={{
-                    position: "absolute",
-                    left: `${(indexToX(i) / VB_W) * 100}%`,
-                    top: `${(valueToY(v) / VB_H) * 100}%`,
-                    width: size,
-                    height: size,
-                    borderRadius: "50%",
-                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
-                    border: "1.5px solid #fff",
-                    transform: "translate(-50%, -50%)",
-                    pointerEvents: "none",
-                  }}
-                />
-              );
-            })
-          )}
+          {/* No always-visible dots — clean line-only rendering */}
 
           {/* Tooltip */}
           {hoveredIndex !== null && tooltipPos && (
