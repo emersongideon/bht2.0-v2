@@ -825,7 +825,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           borderRadius: 10,
           padding: "20px 20px 20px 8px",
           position: "relative",
-          height: 420,
+          height: 280,
         }}
       >
         {/* Zoom buttons */}
@@ -878,7 +878,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          style={{ cursor: isDragging.current ? "grabbing" : "pointer", display: "block" }}
+          style={{ cursor: isDragging.current ? "grabbing" : "grab", display: "block" }}
         >
           {/* Plot area constants — all chart content lives within this rect */}
           {(() => {
@@ -933,7 +933,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                   key={brand.name}
                   onMouseEnter={() => setHoveredBrand(brand.name)}
                   onMouseLeave={() => setHoveredBrand(null)}
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: "default" }}
                   opacity={isDimmed ? 0.15 : 1}
                 >
                   <circle cx={cx} cy={cy} r={isMainBrand ? 14 : 11} fill={isMainBrand ? "#4A7CC7" : "#C8C2BB"} opacity={0.9} />
