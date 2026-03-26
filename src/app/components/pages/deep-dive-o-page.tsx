@@ -773,16 +773,17 @@ function SentimentTrend() {
               />
             ))}
 
-            {/* Hover vertical indicator line */}
+            {/* Hover vertical indicator line — dotted */}
             {hoveredIndex !== null && (
               <line
                 x1={indexToX(hoveredIndex)}
                 y1={PAD_TOP}
                 x2={indexToX(hoveredIndex)}
                 y2={VB_H - PAD_BOT}
-                stroke="#B5ADA5"
+                stroke="#9A9089"
                 strokeWidth="1"
-                opacity="0.4"
+                strokeDasharray="3 3"
+                opacity="0.7"
               />
             )}
 
@@ -805,14 +806,16 @@ function SentimentTrend() {
 
           {/* No always-visible dots — clean line-only rendering */}
 
-          {/* Tooltip */}
+          {/* Tooltip — appears right of line, flips left past midpoint */}
           {hoveredIndex !== null && tooltipPos && (
             <div
               style={{
                 position: "absolute",
-                left: `clamp(80px, ${tooltipPos.x}px, calc(100% - 80px))`,
+                left: tooltipPos.x,
                 top: 0,
-                transform: "translateX(-50%)",
+                transform: hoveredIndex > (sortedDates.length - 1) / 2
+                  ? "translateX(calc(-100% - 10px))"
+                  : "translateX(10px)",
                 backgroundColor: "rgba(255, 255, 255, 0.98)",
                 border: "1px solid #E8E2DC",
                 borderRadius: 8,
