@@ -637,19 +637,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Use native (non-passive) wheel listener so preventDefault works and
-  // page scroll is blocked only when the mouse is inside the chart SVG.
-  useEffect(() => {
-    const el = svgRef.current;
-    if (!el) return;
-    const handler = (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const delta = e.deltaY < 0 ? 0.1 : -0.1;
-      setZoom(z => Math.min(4, Math.max(0.5, +(z + delta).toFixed(2))));
-    };
-    el.addEventListener("wheel", handler, { passive: false });
-    return () => el.removeEventListener("wheel", handler);
-  }, []);
+  // No scroll-to-zoom — user uses +/- buttons only
 
   const brandPositions = selectedBrands
     .filter(b => latestByBrand[b])
@@ -828,8 +816,8 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           height: 280,
         }}
       >
-        {/* Zoom buttons */}
-        <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4, zIndex: 10 }}>
+        {/* Zoom buttons — positioned at bottom-right of white plot area */}
+        <div style={{ position: "absolute", bottom: 28, right: 28, display: "flex", gap: 4, zIndex: 10 }}>
           <button
             onClick={() => setZoom(z => Math.min(4, +(z + 0.1).toFixed(2)))}
             style={{
@@ -878,11 +866,11 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
-          style={{ cursor: isDragging.current ? "grabbing" : "grab", display: "block" }}
+          style={{ cursor: isDragging.current ? "grabbing" : "pointer", display: "block" }}
         >
           {/* Plot area constants — all chart content lives within this rect */}
           {(() => {
-            const PL = 36, PR = 588, PT = 12, PB = 224;
+            const PL = 20, PR = 596, PT = 12, PB = 224;
             const PW = PR - PL, PH = PB - PT;
             const midX = PL + PW / 2, midY = PT + PH / 2;
             return (
