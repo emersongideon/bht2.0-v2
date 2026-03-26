@@ -15,7 +15,7 @@ export function RootLayout() {
     <ThemeProvider>
       <ScrollToTop scrollContainerRef={scrollContainerRef} />
       <div
-        className="flex w-full h-screen md:w-auto md:h-auto"
+        className="flex w-full h-screen"
         style={{
           backgroundColor: "var(--bg-primary)",
           overflow: "hidden",
@@ -30,7 +30,7 @@ export function RootLayout() {
         <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
         {/* Main Content Area */}
-        <div className="md:ml-[60px]" style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+        <div className="md:ml-[60px]" style={{ flex: 1, minWidth: 0, minHeight: 0, display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
           {/* Desktop Sticky Top Bar — hidden on mobile */}
           <div
             className="hidden md:flex items-center justify-between"
