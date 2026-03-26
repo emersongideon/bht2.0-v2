@@ -467,18 +467,29 @@ function ScaleVelocityPanel() {
 
   const fmtPct = (v: number | null | undefined, digits = 1) =>
     v != null ? `${v.toFixed(digits)}%` : "—";
-  const fmtPosPct = (v: number | null | undefined) =>
-    v != null ? `${v > 0 ? "+" : ""}${v.toFixed(1)}%` : "—";
+  const fmtPosPct = (v: number | null | undefined) => {
+    if (v == null) return "—";
+    const fixed = v.toFixed(1);
+    const num = parseFloat(fixed);
+    return num === 0 ? `0.0%` : `${num > 0 ? "+" : ""}${fixed}%`;
+  };
   const fmtM = (v: number | null | undefined) =>
     v != null ? `${(v / 1_000_000).toFixed(1)}M` : "—";
   const fmtK = (v: number | null | undefined) =>
     v != null ? `${(v / 1000).toFixed(1)}K` : "—";
   const fmtRank = (v: number | null | undefined) =>
     v != null ? `#${Math.round(Number(v))}` : "—";
-  const fmtPp = (v: number | null | undefined) =>
-    v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}` : "—";
-  const fmtRankChange = (v: number | null | undefined) =>
-    v != null ? (v === 0 ? "±0" : `${v > 0 ? "+" : ""}${Math.round(Number(v))}`) : "—";
+  const fmtPp = (v: number | null | undefined) => {
+    if (v == null) return "—";
+    const fixed = (v * 100).toFixed(1);
+    const num = parseFloat(fixed);
+    return num === 0 ? `0.0` : `${num > 0 ? "+" : ""}${fixed}`;
+  };
+  const fmtRankChange = (v: number | null | undefined) => {
+    if (v == null) return "—";
+    const rounded = Math.round(Number(v));
+    return rounded === 0 ? "0" : `${rounded > 0 ? "+" : ""}${rounded}`;
+  };
 
   return (
     <div
