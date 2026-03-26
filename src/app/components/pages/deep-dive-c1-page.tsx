@@ -1312,10 +1312,10 @@ function HistoricalView() {
               );
             })}
 
-            {/* Vertical hover line */}
+            {/* Vertical hover line — dotted */}
             {hoveredIndex !== null && (() => {
               const x = labels.length > 1 ? (hoveredIndex / (labels.length - 1)) * 360 : 180;
-              return <line x1={x} y1={10} x2={x} y2={130} stroke="#B5ADA5" strokeWidth="1" opacity="0.5" strokeDasharray="3 3" />;
+              return <line x1={x} y1={10} x2={x} y2={130} stroke="#9A9089" strokeWidth="1" opacity="0.7" strokeDasharray="3 3" />;
             })()}
 
             {/* Invisible hover zones for each label */}
@@ -1354,14 +1354,16 @@ function HistoricalView() {
             })}
           </svg>
 
-          {/* Tooltip */}
+          {/* Tooltip — appears right of line, flips left past midpoint */}
           {hoveredIndex !== null && tooltipPosition && (
             <div
               style={{
                 position: "absolute",
-                left: `clamp(80px, ${tooltipPosition.x}px, calc(100% - 80px))`,
+                left: tooltipPosition.x,
                 top: 0,
-                transform: "translateX(-50%)",
+                transform: hoveredIndex > (labels.length - 1) / 2
+                  ? "translateX(calc(-100% - 10px))"
+                  : "translateX(10px)",
                 backgroundColor: "rgba(255, 255, 255, 0.98)",
                 border: "1px solid #E8E2DC",
                 borderRadius: 8,
