@@ -383,8 +383,8 @@ function ScoreCard({ title, badge, liveScore, liveDelta, trendValues }: { title:
             <div style={{
               position: "absolute",
               bottom: "calc(100% + 4px)",
-              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
-              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              left: `${(hoverIndex / Math.max(axisLabels.length - 1, 1)) * 100}%`,
+              transform: hoverIndex > (axisLabels.length - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
               backgroundColor: "#FFFFFF",
               border: "1px solid var(--border-subtle)",
               borderRadius: "var(--radius-sm)",
@@ -412,7 +412,7 @@ function ScoreCard({ title, badge, liveScore, liveDelta, trendValues }: { title:
             {hasData && sparkPath && (
               <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             )}
-            {hoverIndex !== null && (() => { const x = (hoverIndex / Math.max(n - 1, 1)) * W; return <line x1={x} y1={0} x2={x} y2={H} stroke="#9A9089" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />; })()}
+            {hoverIndex !== null && (() => { const x = (hoverIndex / Math.max(axisLabels.length - 1, 1)) * W; return <line x1={x} y1={0} x2={x} y2={H} stroke="#9A9089" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
@@ -534,8 +534,8 @@ function AlignmentScoreCard({ liveScore, liveDelta, trendValues }: { liveScore?:
             <div style={{
               position: "absolute",
               bottom: "calc(100% + 4px)",
-              left: `${(hoverIndex / Math.max(n - 1, 1)) * 100}%`,
-              transform: hoverIndex > (n - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
+              left: `${(hoverIndex / Math.max(axisLabels.length - 1, 1)) * 100}%`,
+              transform: hoverIndex > (axisLabels.length - 1) / 2 ? "translateX(-100%)" : "translateX(0%)",
               backgroundColor: "#FFFFFF",
               border: "1px solid var(--border-subtle)",
               borderRadius: "var(--radius-sm)",
@@ -559,7 +559,7 @@ function AlignmentScoreCard({ liveScore, liveDelta, trendValues }: { liveScore?:
           <svg width="100%" height="36" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
             {!hasData && <path d="M0,24 C50,22 100,23 150,21 C200,19 250,17 300,15" fill="none" stroke="#B5ADA5" strokeWidth="2" strokeLinecap="round" opacity="0.4" />}
             {hasData && sparkPath && <path d={sparkPath} fill="none" stroke="#B5ADA5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />}
-            {hoverIndex !== null && (() => { const x = (hoverIndex / Math.max(n - 1, 1)) * W; return <line x1={x} y1={0} x2={x} y2={H} stroke="#9A9089" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />; })()}
+            {hoverIndex !== null && (() => { const x = (hoverIndex / Math.max(axisLabels.length - 1, 1)) * W; return <line x1={x} y1={0} x2={x} y2={H} stroke="#9A9089" strokeWidth="1" opacity="0.6" strokeDasharray="3 3" vectorEffect="non-scaling-stroke" />; })()}
           </svg>
         </div>
         <div className="flex items-center justify-between" style={{ marginTop: 4 }}>
