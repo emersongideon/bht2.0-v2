@@ -817,7 +817,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         }}
       >
         {/* Zoom buttons — positioned at bottom-right of white plot area */}
-        <div style={{ position: "absolute", bottom: 28, right: 28, display: "flex", gap: 4, zIndex: 10 }}>
+        <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 4, zIndex: 10 }}>
           <button
             onClick={() => setZoom(z => Math.min(4, +(z + 0.1).toFixed(2)))}
             style={{
@@ -859,8 +859,8 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         <svg
           width="100%"
           height="100%"
-          viewBox="0 0 600 240"
-          preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 1000 240"
+          preserveAspectRatio="none"
           ref={svgRef}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -870,7 +870,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         >
           {/* Plot area constants — all chart content lives within this rect */}
           {(() => {
-            const PL = 20, PR = 596, PT = 12, PB = 224;
+            const PL = 20, PR = 980, PT = 12, PB = 224;
             const PW = PR - PL, PH = PB - PT;
             const midX = PL + PW / 2, midY = PT + PH / 2;
             return (
