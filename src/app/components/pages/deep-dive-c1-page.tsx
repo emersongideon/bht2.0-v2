@@ -634,6 +634,22 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
   const [hoveredBrand, setHoveredBrand] = useState<string | null>(null);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  // Use native (non-passive) wheel listener so preventDefault works and
+  // page scroll is blocked only when the mouse is inside the chart SVG.
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.deltaY < 0 ? 0.1 : -0.1;
+      setZoom(z => Math.min(4, Math.max(0.5, +(z + delta).toFixed(2))));
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []);
 
   const brandPositions = selectedBrands
     .filter(b => latestByBrand[b])
@@ -647,12 +663,6 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         y: row.c1_velocity_score ?? 50,
       };
     });
-
-  function handleWheel(e: React.WheelEvent<SVGSVGElement>) {
-    e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.1 : -0.1;
-    setZoom(z => Math.min(4, Math.max(0.5, +(z + delta).toFixed(2))));
-  }
 
   function handleMouseDown(e: React.MouseEvent<SVGSVGElement>) {
     isDragging.current = true;
@@ -863,7 +873,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           height="100%"
           viewBox="0 0 600 240"
           preserveAspectRatio="xMidYMid meet"
-          onWheel={handleWheel}
+          ref={svgRef}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
