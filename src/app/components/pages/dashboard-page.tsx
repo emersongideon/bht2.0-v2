@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useOutletContext } from "react-router";
 import { ArrowRight } from "lucide-react";
-import { CategoryBrandSelector } from "../category-brand-selector";
-import { DateModeSelector } from "../date-mode-selector";
 import { getBrandLineColor } from "../../utils/chart-colors";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { useBrand } from "../../contexts/brand-context";
@@ -182,12 +180,6 @@ export function DashboardPage() {
           gap: GAP,
         }}
       >
-        {/* Row 1 — Top bar (Desktop only) */}
-        <div className="hidden md:flex items-center justify-between" style={{ flexShrink: 0 }}>
-          <CategoryBrandSelector />
-          <DateModeSelector />
-        </div>
-
         {/* Rows 2-3: ICONIC Ring + 6 Dimension Cards */}
         <div className="flex flex-col md:flex-row" style={{ gap: GAP, flexShrink: 0 }}>
           {/* ICONIC Ring — spans both rows on desktop, full width on mobile */}

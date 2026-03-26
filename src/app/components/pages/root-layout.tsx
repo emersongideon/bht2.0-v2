@@ -3,6 +3,8 @@ import { Sidebar } from "../sidebar";
 import { ThemeProvider } from "../theme-context";
 import { MobileMenu } from "../mobile-menu";
 import { ScrollToTop } from "../scroll-to-top";
+import { CategoryBrandSelector } from "../category-brand-selector";
+import { DateModeSelector } from "../date-mode-selector";
 import { useState, useRef } from "react";
 
 export function RootLayout() {
@@ -27,18 +29,34 @@ export function RootLayout() {
         {/* Mobile Menu */}
         <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
 
-        {/* Main Content */}
-        <div 
-          ref={scrollContainerRef}
-          className="md:ml-[60px]"
-          style={{ 
-            flex: 1, 
-            minWidth: 0, 
-            overflow: "auto",
-            height: "100%",
-          }}
-        >
-          <Outlet context={{ openMobileMenu: () => setMobileMenuOpen(true), scrollContainerRef }} />
+        {/* Main Content Area */}
+        <div className="md:ml-[60px]" style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+          {/* Desktop Sticky Top Bar — hidden on mobile */}
+          <div
+            className="hidden md:flex items-center justify-between"
+            style={{
+              flexShrink: 0,
+              padding: "10px 16px",
+              backgroundColor: "var(--bg-primary)",
+              borderBottom: "1px solid var(--border-subtle)",
+              zIndex: 50,
+            }}
+          >
+            <CategoryBrandSelector />
+            <DateModeSelector />
+          </div>
+
+          {/* Scrollable page content */}
+          <div
+            ref={scrollContainerRef}
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflow: "auto",
+            }}
+          >
+            <Outlet context={{ openMobileMenu: () => setMobileMenuOpen(true), scrollContainerRef }} />
+          </div>
         </div>
       </div>
     </ThemeProvider>

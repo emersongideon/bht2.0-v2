@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useOutletContext } from "react-router";
 import { ChevronDown } from "lucide-react";
-import { CategoryBrandSelector } from "../category-brand-selector";
-import { DateModeSelector } from "../date-mode-selector";
 import { MobileHeader } from "../mobile-header";
 import { supabase } from "../../../lib/supabase";
 import { useBrand } from "../../contexts/brand-context";
@@ -109,15 +107,6 @@ export function AlertsPage() {
           gap: 12,
         }}
       >
-        {/* Row 1 — Top bar (Desktop only) */}
-        <div
-          className="hidden md:flex items-center justify-between"
-          style={{ flexShrink: 0 }}
-        >
-          <CategoryBrandSelector />
-          <DateModeSelector />
-        </div>
-
         {/* Row 2 — Filter Bar + Legend */}
         <div
           className="flex items-center justify-between flex-wrap gap-3"

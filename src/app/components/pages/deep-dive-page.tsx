@@ -1,6 +1,4 @@
 import { useParams, Navigate } from "react-router";
-import { CategoryBrandSelector } from "../category-brand-selector";
-import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
 import { SubMetricCard } from "../sub-metric-card";
 import { InsightCard } from "../insight-card";
@@ -63,12 +61,6 @@ function DeepDiveContent({ config }: { config: DimensionConfig }) {
         overflow: "hidden",
       }}
     >
-      {/* Row 1 — Top bar */}
-      <div className="flex items-center justify-between" style={{ flexShrink: 0 }}>
-        <CategoryBrandSelector />
-        <DateModeSelector />
-      </div>
-
       {/* Row 2 — Dimension Tabs */}
       <div style={{ flexShrink: 0 }}>
         <DimensionTabs activeKey={config.key} />

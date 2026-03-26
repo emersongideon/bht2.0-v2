@@ -1,7 +1,5 @@
 import { SortableBarChart } from "../sortable-bar-chart";
 import { useState, useEffect, useRef } from "react";
-import { CategoryBrandSelector } from "../category-brand-selector";
-import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
 import { supabase } from "../../../lib/supabase";
 import { toISODateString, computeAxisDates } from "../../utils/date-utils";
@@ -34,12 +32,6 @@ export function DeepDiveC1Page() {
           gap: 12,
         }}
       >
-        {/* Row 1 — Top bar (Desktop only) */}
-        <div className="hidden md:flex items-center justify-between" style={{ flexShrink: 0 }}>
-          <CategoryBrandSelector />
-          <DateModeSelector />
-        </div>
-
         {/* Row 2 — Dimension Tabs (Desktop only) */}
         <div className="hidden md:block" style={{ flexShrink: 0 }}>
           <DimensionTabs activeKey="C1" />

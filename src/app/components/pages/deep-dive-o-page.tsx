@@ -1,6 +1,4 @@
 import { SortableBarChart } from "../sortable-bar-chart";
-import { CategoryBrandSelector } from "../category-brand-selector";
-import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
 import { useState, useEffect } from "react";
 import { useDateMode } from "../../contexts/date-mode-context";
@@ -38,12 +36,6 @@ export function DeepDiveOPage() {
           boxSizing: "border-box",
         }}
       >
-        {/* Row 1 — Top bar (Desktop only) */}
-        <div className="hidden md:flex items-center justify-between" style={{ flexShrink: 0 }}>
-          <CategoryBrandSelector />
-          <DateModeSelector />
-        </div>
-
         {/* Row 2 — Dimension Tabs (Desktop only) */}
         <div className="hidden md:block" style={{ flexShrink: 0 }}>
           <DimensionTabs activeKey="O" />
