@@ -86,14 +86,17 @@ export function SortableBarChart({ title, data, mainBrand }: SortableBarChartPro
           transition: `opacity ${visible ? "0.2s" : "0.15s"} ease`,
         }}
       >
-        {sortedData.map((item) => (
+        {sortedData.map((item) => {
+          const isMain = item.brand === mainBrand;
+          const barColor = isMain ? "#4A7CC7" : "#C8C2BB";
+          return (
           <div key={item.brand} className="flex items-center gap-2">
             <span
               style={{
                 width: 6,
                 height: 6,
                 borderRadius: "50%",
-                backgroundColor: item.color,
+                backgroundColor: barColor,
                 flexShrink: 0,
               }}
             />
@@ -101,10 +104,10 @@ export function SortableBarChart({ title, data, mainBrand }: SortableBarChartPro
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 11,
-                color: "var(--text-primary)",
+                color: isMain ? "#4A7CC7" : "var(--text-primary)",
                 width: 100,
                 flexShrink: 0,
-                fontWeight: item.brand === mainBrand ? 700 : 400,
+                fontWeight: isMain ? 700 : 400,
               }}
             >
               {item.brand}
@@ -123,8 +126,7 @@ export function SortableBarChart({ title, data, mainBrand }: SortableBarChartPro
                 style={{
                   height: "100%",
                   width: `${((item.score ?? 0) / 100) * 100}%`,
-                  backgroundColor: item.color,
-                  opacity: item.brand === mainBrand ? 1 : 0.5,
+                  backgroundColor: barColor,
                   borderRadius: 7,
                   transition: "width 0.3s ease",
                 }}
@@ -134,17 +136,18 @@ export function SortableBarChart({ title, data, mainBrand }: SortableBarChartPro
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: 11,
-                color: "var(--text-secondary)",
+                color: isMain ? "#4A7CC7" : "var(--text-secondary)",
                 width: 28,
                 textAlign: "right",
                 flexShrink: 0,
-                fontWeight: item.brand === mainBrand ? 700 : 400,
+                fontWeight: isMain ? 700 : 400,
               }}
             >
               {item.score !== null ? item.score : "—"}
             </span>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

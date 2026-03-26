@@ -604,7 +604,7 @@ function WorthItConversations() {
                     borderRadius: "var(--radius-pill)",
                     backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
                     color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 600 : 400,
+                    fontWeight: brand.name === mainBrand ? 700 : 400,
                     whiteSpace: "nowrap",
                   }}
                 >

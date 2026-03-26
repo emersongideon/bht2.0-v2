@@ -690,7 +690,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                   borderRadius: "var(--radius-pill)",
                   backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
                   color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                  fontWeight: brand.name === mainBrand ? 600 : 400,
+                  fontWeight: brand.name === mainBrand ? 700 : 400,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -722,13 +722,13 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           >
             Brand Positioning
           </h3>
-          
+
           {/* Brand legend - top right on desktop */}
-          <div style={{ 
+          <div style={{
             overflowX: "auto",
             WebkitOverflowScrolling: "touch",
           }}>
-            <div className="flex items-center gap-1.5" style={{ 
+            <div className="flex items-center gap-1.5" style={{
               backgroundColor: "#F5F0EB",
               borderRadius: "var(--radius-pill)",
               padding: "3px",
@@ -746,7 +746,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                     borderRadius: "var(--radius-pill)",
                     backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
                     color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 600 : 400,
+                    fontWeight: brand.name === mainBrand ? 700 : 400,
                     whiteSpace: "nowrap",
                   }}
                 >
@@ -1352,7 +1352,7 @@ function HistoricalView() {
                   borderRadius: "var(--radius-pill)",
                   backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
                   color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                  fontWeight: brand.name === mainBrand ? 600 : 400,
+                  fontWeight: brand.name === mainBrand ? 700 : 400,
                   whiteSpace: "nowrap",
                 }}
               >
@@ -1396,11 +1396,11 @@ function HistoricalView() {
           </h3>
 
           {/* Brand legend - top right on desktop */}
-          <div style={{ 
+          <div style={{
             overflowX: "auto",
             WebkitOverflowScrolling: "touch",
           }}>
-            <div className="flex items-center gap-1.5" style={{ 
+            <div className="flex items-center gap-1.5" style={{
               backgroundColor: "#F5F0EB",
               borderRadius: "var(--radius-pill)",
               padding: "3px",
@@ -1418,7 +1418,7 @@ function HistoricalView() {
                     borderRadius: "var(--radius-pill)",
                     backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
                     color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 600 : 400,
+                    fontWeight: brand.name === mainBrand ? 700 : 400,
                     whiteSpace: "nowrap",
                   }}
                 >

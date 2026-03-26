@@ -701,9 +701,9 @@ function SenderReceiverAlignment() {
                     fontSize: 10,
                     padding: "4px 10px",
                     borderRadius: "var(--radius-pill)",
-                    backgroundColor: brand.name === mainBrand ? brand.color : "transparent",
+                    backgroundColor: brand.name === mainBrand ? "#4A7CC7" : "transparent",
                     color: brand.name === mainBrand ? "#FFFFFF" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 600 : 400,
+                    fontWeight: brand.name === mainBrand ? 700 : 400,
                     whiteSpace: "nowrap",
                   }}
                 >
