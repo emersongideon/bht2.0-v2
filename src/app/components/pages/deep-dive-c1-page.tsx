@@ -909,11 +909,12 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                 <text x={midX} y={PB - 5} fontSize="10" fill="#7A6F65" textAnchor="middle">Scale →</text>
                 <text x={PL + 10} y={midY} fontSize="10" fill="#7A6F65" textAnchor="middle" transform={`rotate(-90 ${PL + 10} ${midY})`}>Velocity →</text>
 
-                {/* Zoomable/pannable group clipped to plot area */}
-                <g clipPath="url(#scatterClip)" transform={`scale(${zoom}) translate(${panOffset.x / zoom}, ${panOffset.y / zoom})`}>
+                {/* Clip outer group (fixed coords), transform inner group (zoom/pan) */}
+                <g clipPath="url(#scatterClip)">
+                <g transform={`translate(${midX + panOffset.x}, ${midY + panOffset.y}) scale(${zoom}) translate(${-midX}, ${-midY})`}>
                   {/* Grid lines */}
-                  <line x1={midX / zoom} y1={PT / zoom} x2={midX / zoom} y2={PB / zoom} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
-                  <line x1={PL / zoom} y1={midY / zoom} x2={PR / zoom} y2={midY / zoom} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
+                  <line x1={midX} y1={PT} x2={midX} y2={PB} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
+                  <line x1={PL} y1={midY} x2={PR} y2={midY} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
 
                   {/* Brand dots */}
                   {brandPositions.map((brand) => {
@@ -994,7 +995,8 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                 </g>
               );
             })}
-                </g>
+                </g>{/* end transform group */}
+                </g>{/* end clipPath group */}
               </>
             );
           })()}
