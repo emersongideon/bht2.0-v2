@@ -1304,32 +1304,26 @@ function HistoricalView() {
 
               return (
                 <g key={brand.name}>
-                  {/* Line */}
+                  {/* Line only — no dots */}
                   {pathData && (
                     <path
                       d={pathData}
                       fill="none"
                       stroke={brand.color}
-                      strokeWidth={brand.name === mainBrand ? "2.5" : "1.5"}
+                      strokeWidth={brand.name === mainBrand ? "1.5" : "1"}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   )}
-                  {/* Dots at every non-null data point */}
-                  {points.map(({ x, y, i: di }) => (
-                    <circle
-                      key={di}
-                      cx={x}
-                      cy={y}
-                      r={hoveredIndex === di ? r + 1.5 : r}
-                      fill={brand.color}
-                      stroke="#fff"
-                      strokeWidth={brand.name === mainBrand ? "1.5" : "1"}
-                    />
-                  ))}
                 </g>
               );
             })}
+
+            {/* Vertical hover line */}
+            {hoveredIndex !== null && (() => {
+              const x = labels.length > 1 ? (hoveredIndex / (labels.length - 1)) * 360 : 180;
+              return <line x1={x} y1={10} x2={x} y2={130} stroke="#B5ADA5" strokeWidth="1" opacity="0.5" strokeDasharray="3 3" />;
+            })()}
 
             {/* Invisible hover zones for each label */}
             {labels.map((_, index) => {
