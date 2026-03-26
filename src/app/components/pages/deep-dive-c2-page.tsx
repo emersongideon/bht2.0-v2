@@ -688,70 +688,23 @@ function WorthItConversations() {
               />
             ))}
 
-            {/* Hover vertical line */}
+            {/* Hover vertical line — dotted */}
             {hoverIndex !== null && (
               <line
                 x1={toXPct(hoverIndex)}
                 y1="0"
                 x2={toXPct(hoverIndex)}
                 y2="100"
-                stroke="#B5ADA5"
-                strokeWidth="1"
+                stroke="#9A9089"
+                strokeWidth="0.5"
                 strokeDasharray="3,3"
+                opacity="0.8"
                 vectorEffect="non-scaling-stroke"
               />
             )}
           </svg>
 
-          {/* Always-visible dots at every non-null data point */}
-          {chartBrands.map((brand) =>
-            brand.values.map((v, i) => {
-              if (v === null || v === undefined) return null;
-              const isMain = brand.name === mainBrand;
-              const size = isMain ? 7 : 5;
-              return (
-                <div
-                  key={`static-dot-${brand.name}-${i}`}
-                  style={{
-                    position: "absolute",
-                    left: `${toXPct(i)}%`,
-                    top: toYPx(v),
-                    width: size,
-                    height: size,
-                    borderRadius: "50%",
-                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
-                    border: "1.5px solid #fff",
-                    transform: "translate(-50%, -50%)",
-                    pointerEvents: "none",
-                  }}
-                />
-              );
-            })
-          )}
-
-          {/* Hover dots (HTML so they don't stretch) — larger on hover */}
-          {hoverIndex !== null &&
-            chartBrands.map((brand) => {
-              const v = brand.values[hoverIndex];
-              if (v === null || v === undefined) return null;
-              return (
-                <div
-                  key={`dot-${brand.name}`}
-                  style={{
-                    position: "absolute",
-                    left: `${toXPct(hoverIndex)}%`,
-                    top: toYPx(v),
-                    width: brand.name === mainBrand ? 10 : 8,
-                    height: brand.name === mainBrand ? 10 : 8,
-                    borderRadius: "50%",
-                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
-                    border: "2px solid #fff",
-                    transform: "translate(-50%, -50%)",
-                    pointerEvents: "none",
-                  }}
-                />
-              );
-            })}
+          {/* No always-visible dots — clean line-only rendering */}
 
           {/* Tooltip */}
           {hoverIndex !== null && (
