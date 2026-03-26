@@ -935,12 +935,12 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                   style={{ cursor: "default" }}
                   opacity={isDimmed ? 0.15 : 1}
                 >
-                  <circle cx={cx} cy={cy} r={isMainBrand ? 14 : 11} fill={brand.color} opacity={0.9} />
+                  <circle cx={cx} cy={cy} r={isMainBrand ? 14 : 11} fill={isMainBrand ? "#4A7CC7" : "#C8C2BB"} opacity={0.9} />
                   <text
                     x={cx + (isMainBrand ? 18 : 15)}
                     y={cy + 4}
                     fontSize="11"
-                    fill={isMainBrand ? brand.color : "var(--text-primary)"}
+                    fill={isMainBrand ? "#4A7CC7" : "var(--text-primary)"}
                     fontWeight={isMainBrand ? 700 : 400}
                     fontFamily="var(--font-body)"
                   >
