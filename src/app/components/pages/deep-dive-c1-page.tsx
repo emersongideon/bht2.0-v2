@@ -482,11 +482,11 @@ function ScaleVelocityPanel() {
   const fmtK = (v: number | null | undefined) =>
     v != null ? `${(v / 1000).toFixed(1)}K` : "—";
   const fmtRank = (v: number | null | undefined) =>
-    v != null ? `#${Number(v).toFixed(1)}` : "—";
+    v != null ? `#${Math.round(Number(v))}` : "—";
   const fmtPp = (v: number | null | undefined) =>
     v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}pp` : "—";
   const fmtRankChange = (v: number | null | undefined) =>
-    v != null ? (v === 0 ? "±0" : `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}`) : "—";
+    v != null ? (v === 0 ? "±0" : `${v > 0 ? "+" : ""}${Math.round(Number(v))}`) : "—";
 
   return (
     <div
@@ -1613,7 +1613,7 @@ function HistoricalView() {
         <MetricChart title="Share of Search" data={shareOfSearchData} format={v => `${v.toFixed(1)}%`} />
         <MetricChart title="Total Followers" data={totalFollowersData} format={v => `${(v / 1_000_000).toFixed(2)}M`} />
         <MetricChart title="Interactions" data={interactionsData} format={v => `${(v / 1000).toFixed(1)}K`} />
-        <MetricChart title="LLM Rank" data={llmRankData} format={v => `#${v}`} />
+        <MetricChart title="LLM Rank" data={llmRankData} format={v => `#${Math.round(v)}`} />
       </div>
     </div>
   );
