@@ -821,9 +821,9 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
       {/* Scatter Chart */}
       <div
         style={{
-          backgroundColor: "rgba(245,240,235,0.4)",
+          backgroundColor: "#F0EBE6",
           borderRadius: 10,
-          padding: 20,
+          padding: "20px 20px 20px 8px",
           position: "relative",
           height: 280,
         }}
@@ -880,45 +880,45 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           onMouseLeave={handleMouseLeave}
           style={{ cursor: isDragging.current ? "grabbing" : "grab", display: "block" }}
         >
-          {/* Fixed: Quadrant labels (outside zoom/pan group) */}
-          <text x="8" y="16" fontSize="11" fill="#B5ADA5" textAnchor="start">
-            Rising Star
-          </text>
-          <text x="592" y="16" fontSize="11" fill="#B5ADA5" textAnchor="end">
-            Dominant
-          </text>
-          <text x="8" y="236" fontSize="11" fill="#B5ADA5" textAnchor="start">
-            Stalling
-          </text>
-          <text x="592" y="236" fontSize="11" fill="#B5ADA5" textAnchor="end">
-            Coasting
-          </text>
+          {/* Plot area constants — all chart content lives within this rect */}
+          {(() => {
+            const PL = 36, PR = 588, PT = 12, PB = 224;
+            const PW = PR - PL, PH = PB - PT;
+            const midX = PL + PW / 2, midY = PT + PH / 2;
+            return (
+              <>
+                <defs>
+                  <clipPath id="scatterClip">
+                    <rect x={PL} y={PT} width={PW} height={PH} />
+                  </clipPath>
+                  <filter id="tooltip-shadow" x="-10%" y="-10%" width="120%" height="120%">
+                    <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#00000020" />
+                  </filter>
+                </defs>
 
-          {/* Fixed: Axis labels (outside zoom/pan group) */}
-          <text x="300" y="235" fontSize="11" fill="#7A6F65" textAnchor="middle">
-            Scale →
-          </text>
-          <text
-            x="10"
-            y="120"
-            fontSize="11"
-            fill="#7A6F65"
-            textAnchor="middle"
-            transform="rotate(-90 10 120)"
-          >
-            Velocity →
-          </text>
+                {/* White plot area background */}
+                <rect x={PL} y={PT} width={PW} height={PH} fill="white" rx={4} />
 
-          {/* Zoomable/pannable group */}
-          <g transform={`scale(${zoom}) translate(${panOffset.x / zoom}, ${panOffset.y / zoom})`}>
-            {/* Grid lines */}
-            <line x1="300" y1="0" x2="300" y2="240" stroke="#E8E2DC" strokeWidth="1" strokeDasharray="4 4" />
-            <line x1="0" y1="120" x2="600" y2="120" stroke="#E8E2DC" strokeWidth="1" strokeDasharray="4 4" />
+                {/* Fixed quadrant labels at plot area corners */}
+                <text x={PL + 6} y={PT + 13} fontSize="10" fill="#B5ADA5" textAnchor="start">Rising Star</text>
+                <text x={PR - 6} y={PT + 13} fontSize="10" fill="#B5ADA5" textAnchor="end">Dominant</text>
+                <text x={PL + 6} y={PB - 5} fontSize="10" fill="#B5ADA5" textAnchor="start">Stalling</text>
+                <text x={PR - 6} y={PB - 5} fontSize="10" fill="#B5ADA5" textAnchor="end">Coasting</text>
 
-            {/* Brand dots */}
-            {brandPositions.map((brand) => {
-              const cx = (brand.x / 100) * 600;
-              const cy = 240 - (brand.y / 100) * 240;
+                {/* Fixed axis labels */}
+                <text x={midX} y={PB - 5} fontSize="10" fill="#7A6F65" textAnchor="middle">Scale →</text>
+                <text x={PL + 10} y={midY} fontSize="10" fill="#7A6F65" textAnchor="middle" transform={`rotate(-90 ${PL + 10} ${midY})`}>Velocity →</text>
+
+                {/* Zoomable/pannable group clipped to plot area */}
+                <g clipPath="url(#scatterClip)" transform={`scale(${zoom}) translate(${panOffset.x / zoom}, ${panOffset.y / zoom})`}>
+                  {/* Grid lines */}
+                  <line x1={midX / zoom} y1={PT / zoom} x2={midX / zoom} y2={PB / zoom} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
+                  <line x1={PL / zoom} y1={midY / zoom} x2={PR / zoom} y2={midY / zoom} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
+
+                  {/* Brand dots */}
+                  {brandPositions.map((brand) => {
+                    const cx = PL + (brand.x / 100) * PW;
+                    const cy = PB - (brand.y / 100) * PH;
               const isMainBrand = brand.name === mainBrand;
               const isHovered = hoveredBrand === brand.name;
               const isDimmed = hoveredBrand !== null && !isHovered;
@@ -994,14 +994,10 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                 </g>
               );
             })}
-          </g>
-
-          {/* Drop shadow filter for tooltip */}
-          <defs>
-            <filter id="tooltip-shadow" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#00000020" />
-            </filter>
-          </defs>
+                </g>
+              </>
+            );
+          })()}
         </svg>
       </div>
     </div>
