@@ -1,5 +1,5 @@
 import { SortableBarChart } from "../sortable-bar-chart";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
 import { DimensionTabs } from "../dimension-tabs";
@@ -479,13 +479,13 @@ function ScaleVelocityPanel() {
   const fmtM = (v: number | null | undefined) =>
     v != null ? `${(v / 1_000_000).toFixed(1)}M` : "—";
   const fmtK = (v: number | null | undefined) =>
-    v != null ? `${(v / 1000).toFixed(0)}K` : "—";
+    v != null ? `${(v / 1000).toFixed(1)}K` : "—";
   const fmtRank = (v: number | null | undefined) =>
-    v != null ? `#${v}` : "—";
+    v != null ? `#${Number(v).toFixed(1)}` : "—";
   const fmtPp = (v: number | null | undefined) =>
     v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}pp` : "—";
   const fmtRankChange = (v: number | null | undefined) =>
-    v != null ? (v === 0 ? "±0" : `${v > 0 ? "+" : ""}${v}`) : "—";
+    v != null ? (v === 0 ? "±0" : `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}`) : "—";
 
   return (
     <div
@@ -629,6 +629,12 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
   const { brandsByCategory } = useAppData();
   const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
 
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [hoveredBrand, setHoveredBrand] = useState<string | null>(null);
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+
   const brandPositions = selectedBrands
     .filter(b => latestByBrand[b])
     .map(b => {
@@ -641,6 +647,32 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         y: row.c1_velocity_score ?? 50,
       };
     });
+
+  function handleWheel(e: React.WheelEvent<SVGSVGElement>) {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.1 : -0.1;
+    setZoom(z => Math.min(4, Math.max(0.5, +(z + delta).toFixed(2))));
+  }
+
+  function handleMouseDown(e: React.MouseEvent<SVGSVGElement>) {
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX, y: e.clientY, panX: panOffset.x, panY: panOffset.y };
+  }
+
+  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    if (!isDragging.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setPanOffset({ x: dragStart.current.panX + dx, y: dragStart.current.panY + dy });
+  }
+
+  function handleMouseUp() {
+    isDragging.current = false;
+  }
+
+  function handleMouseLeave() {
+    isDragging.current = false;
+  }
 
   return (
     <div>
@@ -668,11 +700,11 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           Scale (size) vs Velocity (momentum) for Capturing Attention
         </p>
         {/* Brand legend */}
-        <div style={{ 
+        <div style={{
           overflowX: "auto",
           WebkitOverflowScrolling: "touch",
         }}>
-          <div className="flex items-center gap-1.5" style={{ 
+          <div className="flex items-center gap-1.5" style={{
             backgroundColor: "#F5F0EB",
             borderRadius: "var(--radius-pill)",
             padding: "3px",
@@ -764,7 +796,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
             </div>
           </div>
         </div>
-        
+
         <p
           style={{
             fontFamily: "var(--font-body)",
@@ -786,12 +818,59 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           height: 280,
         }}
       >
-        <svg width="100%" height="100%" viewBox="0 0 600 240" preserveAspectRatio="xMidYMid meet">
-          {/* Grid lines */}
-          <line x1="300" y1="0" x2="300" y2="240" stroke="#E8E2DC" strokeWidth="1" strokeDasharray="4 4" />
-          <line x1="0" y1="120" x2="600" y2="120" stroke="#E8E2DC" strokeWidth="1" strokeDasharray="4 4" />
+        {/* Zoom buttons */}
+        <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 4, zIndex: 10 }}>
+          <button
+            onClick={() => setZoom(z => Math.min(4, +(z + 0.1).toFixed(2)))}
+            style={{
+              fontSize: 14,
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              backgroundColor: "white",
+              border: "1px solid #E8E2DC",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+            }}
+          >
+            +
+          </button>
+          <button
+            onClick={() => setZoom(z => Math.max(0.5, +(z - 0.1).toFixed(2)))}
+            style={{
+              fontSize: 14,
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              backgroundColor: "white",
+              border: "1px solid #E8E2DC",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+            }}
+          >
+            −
+          </button>
+        </div>
 
-          {/* Quadrant labels */}
+        <svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 600 240"
+          preserveAspectRatio="xMidYMid meet"
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          style={{ cursor: isDragging.current ? "grabbing" : "grab", display: "block" }}
+        >
+          {/* Fixed: Quadrant labels (outside zoom/pan group) */}
           <text x="8" y="16" fontSize="11" fill="#B5ADA5" textAnchor="start">
             Rising Star
           </text>
@@ -805,7 +884,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
             Coasting
           </text>
 
-          {/* Axis labels */}
+          {/* Fixed: Axis labels (outside zoom/pan group) */}
           <text x="300" y="235" fontSize="11" fill="#7A6F65" textAnchor="middle">
             Scale →
           </text>
@@ -820,27 +899,99 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
             Velocity →
           </text>
 
-          {/* Brand dots */}
-          {brandPositions.map((brand) => {
-            const cx = (brand.x / 100) * 600;
-            const cy = 240 - (brand.y / 100) * 240;
-            const isMainBrand = brand.name === mainBrand;
-            return (
-              <g key={brand.name}>
-                <circle cx={cx} cy={cy} r={isMainBrand ? 14 : 11} fill={brand.color} opacity={0.9} />
-                <text
-                  x={cx + 20}
-                  y={cy + 4}
-                  fontSize="11"
-                  fill={isMainBrand ? brand.color : "var(--text-primary)"}
-                  fontWeight={isMainBrand ? 700 : 400}
-                  fontFamily="var(--font-body)"
+          {/* Zoomable/pannable group */}
+          <g transform={`scale(${zoom}) translate(${panOffset.x / zoom}, ${panOffset.y / zoom})`}>
+            {/* Grid lines */}
+            <line x1="300" y1="0" x2="300" y2="240" stroke="#E8E2DC" strokeWidth="1" strokeDasharray="4 4" />
+            <line x1="0" y1="120" x2="600" y2="120" stroke="#E8E2DC" strokeWidth="1" strokeDasharray="4 4" />
+
+            {/* Brand dots */}
+            {brandPositions.map((brand) => {
+              const cx = (brand.x / 100) * 600;
+              const cy = 240 - (brand.y / 100) * 240;
+              const isMainBrand = brand.name === mainBrand;
+              const isHovered = hoveredBrand === brand.name;
+              const isDimmed = hoveredBrand !== null && !isHovered;
+
+              // Tooltip positioning: flip if near right or top edge
+              const tooltipX = brand.x > 75 ? cx - 110 : cx + 18;
+              const tooltipY = brand.y > 75 ? cy + 10 : cy - 62;
+
+              return (
+                <g
+                  key={brand.name}
+                  onMouseEnter={() => setHoveredBrand(brand.name)}
+                  onMouseLeave={() => setHoveredBrand(null)}
+                  style={{ cursor: "default" }}
+                  opacity={isDimmed ? 0.15 : 1}
                 >
-                  {brand.name}
-                </text>
-              </g>
-            );
-          })}
+                  <circle cx={cx} cy={cy} r={isMainBrand ? 14 : 11} fill={brand.color} opacity={0.9} />
+                  <text
+                    x={cx + (isMainBrand ? 18 : 15)}
+                    y={cy + 4}
+                    fontSize="11"
+                    fill={isMainBrand ? brand.color : "var(--text-primary)"}
+                    fontWeight={isMainBrand ? 700 : 400}
+                    fontFamily="var(--font-body)"
+                  >
+                    {brand.name}
+                  </text>
+
+                  {/* Hover tooltip */}
+                  {isHovered && (
+                    <g>
+                      <rect
+                        x={tooltipX}
+                        y={tooltipY}
+                        width={108}
+                        height={56}
+                        rx={6}
+                        fill="white"
+                        stroke="#E8E2DC"
+                        strokeWidth={1}
+                        filter="url(#tooltip-shadow)"
+                      />
+                      <text
+                        x={tooltipX + 8}
+                        y={tooltipY + 16}
+                        fontSize="11"
+                        fontWeight={700}
+                        fill="var(--text-primary)"
+                        fontFamily="var(--font-body)"
+                      >
+                        {brand.name}
+                      </text>
+                      <text
+                        x={tooltipX + 8}
+                        y={tooltipY + 31}
+                        fontSize="10"
+                        fill="#7A6F65"
+                        fontFamily="var(--font-body)"
+                      >
+                        Scale: {brand.x.toFixed(1)}
+                      </text>
+                      <text
+                        x={tooltipX + 8}
+                        y={tooltipY + 46}
+                        fontSize="10"
+                        fill="#7A6F65"
+                        fontFamily="var(--font-body)"
+                      >
+                        Velocity: {brand.y.toFixed(1)}
+                      </text>
+                    </g>
+                  )}
+                </g>
+              );
+            })}
+          </g>
+
+          {/* Drop shadow filter for tooltip */}
+          <defs>
+            <filter id="tooltip-shadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#00000020" />
+            </filter>
+          </defs>
         </svg>
       </div>
     </div>
@@ -1452,7 +1603,7 @@ function HistoricalView() {
       <div className="flex flex-col md:grid md:grid-cols-2" style={{ gap: 16 }}>
         <MetricChart title="Share of Search" data={shareOfSearchData} format={v => `${v.toFixed(1)}%`} />
         <MetricChart title="Total Followers" data={totalFollowersData} format={v => `${(v / 1_000_000).toFixed(2)}M`} />
-        <MetricChart title="Interactions" data={interactionsData} format={v => `${(v / 1000).toFixed(0)}K`} />
+        <MetricChart title="Interactions" data={interactionsData} format={v => `${(v / 1000).toFixed(1)}K`} />
         <MetricChart title="LLM Rank" data={llmRankData} format={v => `#${v}`} />
       </div>
     </div>
