@@ -13,6 +13,7 @@ import { useDimension } from "../../data/use-dimensions";
 import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
+import { getBrandLineColor } from "../../utils/chart-colors";
 import { useSubmetricScores } from "../../hooks/use-submetric-scores";
 import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 import { useNAlignmentLatest } from "../../hooks/use-n-alignment";
@@ -712,7 +713,7 @@ function SenderReceiverAlignment() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: brand.color,
+                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     }}
                   />
                   {brand.name}

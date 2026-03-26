@@ -13,6 +13,7 @@ import { useDimension } from "../../data/use-dimensions";
 import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
+import { getBrandLineColor } from "../../utils/chart-colors";
 import { useSubmetricScores } from "../../hooks/use-submetric-scores";
 import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 
@@ -561,7 +562,7 @@ function ValueAssociations() {
                     width: 6,
                     height: 6,
                     borderRadius: "50%",
-                    backgroundColor: item.color,
+                    backgroundColor: getBrandLineColor(item.brand, mainBrand),
                   }}
                 />
                 <span
@@ -736,7 +737,7 @@ function DomainSources() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: brand.color,
+                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     }}
                   />
                   {brand.name}
@@ -827,7 +828,7 @@ function DomainSources() {
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      backgroundColor: item.color,
+                      backgroundColor: getBrandLineColor(item.brand, mainBrand),
                       flexShrink: 0,
                     }}
                   />
@@ -990,7 +991,7 @@ function AudiencePerception() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: brand.color,
+                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     }}
                   />
                   {brand.name}
@@ -1138,7 +1139,7 @@ function AudiencePerception() {
                             width: 6,
                             height: 6,
                             borderRadius: "50%",
-                            backgroundColor: row.color,
+                            backgroundColor: getBrandLineColor(row.brand, mainBrand),
                             flexShrink: 0,
                           }}
                         />

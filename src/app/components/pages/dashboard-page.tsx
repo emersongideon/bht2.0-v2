@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from "react-router";
 import { ArrowRight } from "lucide-react";
 import { CategoryBrandSelector } from "../category-brand-selector";
 import { DateModeSelector } from "../date-mode-selector";
+import { getBrandLineColor } from "../../utils/chart-colors";
 import { useDateMode } from "../../contexts/date-mode-context";
 import { useBrand } from "../../contexts/brand-context";
 import { useAppData } from "../../data/app-data-context";
@@ -451,7 +452,7 @@ function TrendChartFull({ selectedDim }: { selectedDim: { name: string; color: s
         <div className="flex items-center gap-2 md:gap-3 flex-wrap">
           {lines.map((line) => (
             <div key={line.name} className="flex items-center gap-1 md:gap-2" style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "var(--text-secondary)" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: line.color }} />
+              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: getBrandLineColor(line.name, mainBrand) }} />
               <span style={{ fontWeight: line.isMainBrand ? 700 : 400, whiteSpace: "nowrap" }}>{line.name}</span>
             </div>
           ))}
@@ -573,7 +574,7 @@ function TrendChartFull({ selectedDim }: { selectedDim: { name: string; color: s
                 key={line.name}
                 d={buildPath(line.values)}
                 fill="none"
-                stroke={line.color}
+                stroke={getBrandLineColor(line.name, mainBrand)}
                 strokeWidth={line.isMainBrand ? 2.5 : line.width}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -612,7 +613,7 @@ function TrendChartFull({ selectedDim }: { selectedDim: { name: string; color: s
                     width: line.isMainBrand ? 8 : 6,
                     height: line.isMainBrand ? 8 : 6,
                     borderRadius: "50%",
-                    backgroundColor: line.color,
+                    backgroundColor: getBrandLineColor(line.name, mainBrand),
                     transform: "translate(-50%, -50%)",
                     pointerEvents: "none",
                   }}
@@ -663,7 +664,7 @@ function TrendChartFull({ selectedDim }: { selectedDim: { name: string; color: s
                         width: 6,
                         height: 6,
                         borderRadius: "50%",
-                        backgroundColor: line.color,
+                        backgroundColor: getBrandLineColor(line.name, mainBrand),
                       }}
                     />
                     <span

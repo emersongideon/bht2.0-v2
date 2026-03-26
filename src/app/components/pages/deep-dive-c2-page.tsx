@@ -13,6 +13,7 @@ import { useSubmetricScores } from "../../hooks/use-submetric-scores";
 import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
+import { getBrandLineColor } from "../../utils/chart-colors";
 import { supabase } from "../../../lib/supabase";
 import { toISODateString, computeAxisDates } from "../../utils/date-utils";
 
@@ -613,7 +614,7 @@ function WorthItConversations() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: brand.color,
+                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     }}
                   />
                   {brand.name}
@@ -687,7 +688,7 @@ function WorthItConversations() {
                 key={brand.name}
                 d={buildPath(brand.values)}
                 fill="none"
-                stroke={brand.color}
+                stroke={getBrandLineColor(brand.name, mainBrand)}
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -726,7 +727,7 @@ function WorthItConversations() {
                     width: size,
                     height: size,
                     borderRadius: "50%",
-                    backgroundColor: brand.color,
+                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     border: "1.5px solid #fff",
                     transform: "translate(-50%, -50%)",
                     pointerEvents: "none",
@@ -751,7 +752,7 @@ function WorthItConversations() {
                     width: brand.name === mainBrand ? 10 : 8,
                     height: brand.name === mainBrand ? 10 : 8,
                     borderRadius: "50%",
-                    backgroundColor: brand.color,
+                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     border: "2px solid #fff",
                     transform: "translate(-50%, -50%)",
                     pointerEvents: "none",
@@ -803,7 +804,7 @@ function WorthItConversations() {
                         width: 6,
                         height: 6,
                         borderRadius: "50%",
-                        backgroundColor: brand.color,
+                        backgroundColor: getBrandLineColor(brand.name, mainBrand),
                       }}
                     />
                     <span

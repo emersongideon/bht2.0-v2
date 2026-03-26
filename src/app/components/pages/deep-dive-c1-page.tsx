@@ -13,6 +13,7 @@ import { useDimension } from "../../data/use-dimensions";
 import { useDimensionScore } from "../../hooks/use-dimension-score";
 import { useAppData } from "../../data/app-data-context";
 import { getBrandSubScore } from "../../utils/brand-utils";
+import { getBrandLineColor } from "../../utils/chart-colors";
 import { useSubmetricScores } from "../../hooks/use-submetric-scores";
 import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 import { useC1LatestMetrics, type C1LatestRow } from "../../hooks/use-c1-latest-metrics";
@@ -729,7 +730,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                     width: 5,
                     height: 5,
                     borderRadius: "50%",
-                    backgroundColor: brand.color,
+                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
                   }}
                 />
                 {brand.name}
@@ -785,7 +786,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: brand.color,
+                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     }}
                   />
                   {brand.name}
@@ -1309,7 +1310,7 @@ function HistoricalView() {
                     <path
                       d={pathData}
                       fill="none"
-                      stroke={brand.color}
+                      stroke={getBrandLineColor(brand.name, mainBrand)}
                       strokeWidth={brand.name === mainBrand ? "1.5" : "1"}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -1405,7 +1406,7 @@ function HistoricalView() {
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      backgroundColor: brand.color,
+                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
                       flexShrink: 0,
                     }}
                   />
@@ -1520,7 +1521,7 @@ function HistoricalView() {
                     width: 5,
                     height: 5,
                     borderRadius: "50%",
-                    backgroundColor: brand.color,
+                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
                   }}
                 />
                 {brand.name}
@@ -1586,7 +1587,7 @@ function HistoricalView() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: brand.color,
+                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     }}
                   />
                   {brand.name}

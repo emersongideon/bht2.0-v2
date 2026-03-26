@@ -13,6 +13,7 @@ import { useSubmetricScores } from "../../hooks/use-submetric-scores";
 import { useAllBrandsSubmetricScores } from "../../hooks/use-all-brands-submetric-scores";
 import { MobileHeader } from "../mobile-header";
 import { useOutletContext } from "react-router";
+import { getBrandLineColor } from "../../utils/chart-colors";
 import { supabase } from "../../../lib/supabase";
 import { toISODateString, computeAxisDates } from "../../utils/date-utils";
 import { useOSentimentLatest } from "../../hooks/use-o-sentiment";
@@ -674,7 +675,7 @@ function SentimentTrend() {
                   width: 5,
                   height: 5,
                   borderRadius: "50%",
-                  backgroundColor: brand.color,
+                  backgroundColor: getBrandLineColor(brand.name, mainBrand),
                 }}
               />
               {brand.name}
@@ -764,7 +765,7 @@ function SentimentTrend() {
                 key={brand.name}
                 d={buildPath(brand.values)}
                 fill="none"
-                stroke={brand.color}
+                stroke={getBrandLineColor(brand.name, mainBrand)}
                 strokeWidth={brand.name === mainBrand ? 2.5 : 2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -817,7 +818,7 @@ function SentimentTrend() {
                     width: size,
                     height: size,
                     borderRadius: "50%",
-                    backgroundColor: brand.color,
+                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
                     border: "1.5px solid #fff",
                     transform: "translate(-50%, -50%)",
                     pointerEvents: "none",
@@ -871,7 +872,7 @@ function SentimentTrend() {
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      backgroundColor: brand.color,
+                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
                       flexShrink: 0,
                     }}
                   />
@@ -986,7 +987,7 @@ function SentimentSplit() {
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  backgroundColor: item.color,
+                  backgroundColor: getBrandLineColor(item.brand, mainBrand),
                 }}
               />
               <span
@@ -1196,7 +1197,7 @@ function PassionScore() {
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  backgroundColor: item.color,
+                  backgroundColor: getBrandLineColor(item.brand, mainBrand),
                 }}
               />
               <span
