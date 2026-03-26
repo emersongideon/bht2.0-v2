@@ -859,8 +859,8 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         <svg
           width="100%"
           height="100%"
-          viewBox="0 0 1000 240"
-          preserveAspectRatio="none"
+          viewBox="0 0 900 240"
+          preserveAspectRatio="xMidYMid meet"
           ref={svgRef}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -870,9 +870,27 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         >
           {/* Plot area constants — all chart content lives within this rect */}
           {(() => {
-            const PL = 20, PR = 980, PT = 12, PB = 224;
+            const PL = 20, PR = 880, PT = 12, PB = 224;
             const PW = PR - PL, PH = PB - PT;
+
+            // Dynamic data bounds — auto-zoom axes to actual data spread
+            const xVals = brandPositions.map(b => b.x);
+            const yVals = brandPositions.map(b => b.y);
+            const pad = 8;
+            const xMin = brandPositions.length ? Math.max(0, Math.min(...xVals) - pad) : 0;
+            const xMax = brandPositions.length ? Math.min(100, Math.max(...xVals) + pad) : 100;
+            const yMin = brandPositions.length ? Math.max(0, Math.min(...yVals) - pad) : 0;
+            const yMax = brandPositions.length ? Math.min(100, Math.max(...yVals) + pad) : 100;
+
+            // Data-to-pixel helpers
+            const toX = (v: number) => PL + ((v - xMin) / (xMax - xMin)) * PW;
+            const toY = (v: number) => PB - ((v - yMin) / (yMax - yMin)) * PH;
+
+            // Center lines at data value 50
+            const xCenterPx = toX(50);
+            const yCenterPx = toY(50);
             const midX = PL + PW / 2, midY = PT + PH / 2;
+
             return (
               <>
                 <defs>
@@ -900,14 +918,14 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                 {/* Clip outer group (fixed coords), transform inner group (zoom/pan) */}
                 <g clipPath="url(#scatterClip)">
                 <g transform={`translate(${midX + panOffset.x}, ${midY + panOffset.y}) scale(${zoom}) translate(${-midX}, ${-midY})`}>
-                  {/* Grid lines */}
-                  <line x1={midX} y1={PT} x2={midX} y2={PB} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
-                  <line x1={PL} y1={midY} x2={PR} y2={midY} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
+                  {/* Grid lines at data value 50 */}
+                  <line x1={xCenterPx} y1={PT} x2={xCenterPx} y2={PB} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
+                  <line x1={PL} y1={yCenterPx} x2={PR} y2={yCenterPx} stroke="#E8E2DC" strokeWidth="0.8" strokeDasharray="4 4" />
 
                   {/* Brand dots */}
                   {brandPositions.map((brand) => {
-                    const cx = PL + (brand.x / 100) * PW;
-                    const cy = PB - (brand.y / 100) * PH;
+                    const cx = toX(brand.x);
+                    const cy = toY(brand.y);
               const isMainBrand = brand.name === mainBrand;
               const isHovered = hoveredBrand === brand.name;
               const isDimmed = hoveredBrand !== null && !isHovered;
