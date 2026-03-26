@@ -505,7 +505,7 @@ function WorthItConversations() {
   const yMin = 0;
   const yMax = 100;
   const yStep = 25;
-  const yTicks: number[] = [25, 50, 75, 100];
+  const yTicks: number[] = [0, 25, 50, 75, 100];
 
   const chartHeight = 180;
   const n = months.length;
