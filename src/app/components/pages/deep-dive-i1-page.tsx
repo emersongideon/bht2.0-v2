@@ -753,7 +753,7 @@ function DomainSources() {
       <div className="flex flex-col md:flex-row" style={{ gap: 20, minWidth: 0 }}>
         {/* Left column: Selected brand domain bar chart */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 8 * 22, overflowY: "auto" }}>
             {selectedBrandData.map((item) => (
               <div key={item.domain} className="flex items-center gap-2" style={{ minWidth: 0 }}>
                 <span
