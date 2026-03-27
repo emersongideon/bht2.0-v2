@@ -589,8 +589,10 @@ function SenderReceiverAlignment() {
   const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
   const subScores = useSubmetricScores("N");
   const nData = useNAlignmentLatest();
+  const [activeBrand, setActiveBrand] = useState<string | null>(null);
+  const effectiveActive = activeBrand ?? mainBrand;
 
-  const mainBrandRows = nData[mainBrand] ?? [];
+  const mainBrandRows = nData[effectiveActive] ?? [];
   const axes = mainBrandRows.length > 0
     ? mainBrandRows.map(r => r.n_attribute_name)
     : ["Clean / Ingredients", "Aesthetic / Visual", "Premium / Luxury", "Skin Health", "Simplicity"];
@@ -602,7 +604,7 @@ function SenderReceiverAlignment() {
     ? mainBrandRows.map(r => r.n_receiver_score ?? 0)
     : [88, 85, 74, 52, 68];
 
-  const mainBrandInfo = categoryBrandList.find(b => b.name === mainBrand);
+  const mainBrandInfo = categoryBrandList.find(b => b.name === effectiveActive);
   const senderColor = mainBrandInfo?.color ?? "#B86A54";
 
   // Summary card derived values
@@ -684,20 +686,23 @@ function SenderReceiverAlignment() {
             {selectedBrands.map((brandName) => {
               const brand = categoryBrandList.find(b => b.name === brandName);
               if (!brand) return null;
-              
+
               return (
-                <div
+                <button
                   key={brand.name}
                   className="flex items-center gap-1.5"
+                  onClick={() => setActiveBrand(brand.name === effectiveActive ? null : brand.name)}
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: 10,
                     padding: "4px 10px",
                     borderRadius: "var(--radius-pill)",
-                    backgroundColor: brand.name === mainBrand ? "#4A7CC7" : "transparent",
-                    color: brand.name === mainBrand ? "#FFFFFF" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 700 : 400,
+                    backgroundColor: brand.name === effectiveActive ? "#FFFFFF" : "transparent",
+                    color: brand.name === effectiveActive ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 700 : brand.name === effectiveActive ? 600 : 400,
                     whiteSpace: "nowrap",
+                    border: "none",
+                    cursor: "pointer",
                   }}
                 >
                   <span
@@ -705,11 +710,11 @@ function SenderReceiverAlignment() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                      backgroundColor: getBrandLineColor(brand.name, effectiveActive),
                     }}
                   />
                   {brand.name}
-                </div>
+                </button>
               );
             })}
           </div>

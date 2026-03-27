@@ -432,7 +432,9 @@ function BrandComparison() {
 
 function WorthItConversations() {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [activeBrand, setActiveBrand] = useState<string | null>(null);
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+  const effectiveActive = activeBrand ?? mainBrand;
   const { selectedDate, dateMode } = useDateMode();
   const { brandsByCategory } = useAppData();
 
@@ -583,18 +585,21 @@ function WorthItConversations() {
               minWidth: "max-content",
             }}>
               {chartBrands.map((brand) => (
-                <div
+                <button
                   key={brand.name}
                   className="flex items-center gap-1.5"
+                  onClick={() => setActiveBrand(brand.name === effectiveActive ? null : brand.name)}
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: 10,
                     padding: "4px 10px",
                     borderRadius: "var(--radius-pill)",
-                    backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
-                    color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 700 : 400,
+                    backgroundColor: brand.name === effectiveActive ? "#FFFFFF" : "transparent",
+                    color: brand.name === effectiveActive ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 700 : brand.name === effectiveActive ? 600 : 400,
                     whiteSpace: "nowrap",
+                    border: "none",
+                    cursor: "pointer",
                   }}
                 >
                   <span
@@ -602,11 +607,11 @@ function WorthItConversations() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                      backgroundColor: getBrandLineColor(brand.name, effectiveActive),
                     }}
                   />
                   {brand.name}
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -676,8 +681,8 @@ function WorthItConversations() {
                 key={brand.name}
                 d={buildPath(brand.values)}
                 fill="none"
-                stroke={getBrandLineColor(brand.name, mainBrand)}
-                strokeWidth={2}
+                stroke={getBrandLineColor(brand.name, effectiveActive)}
+                strokeWidth={brand.name === effectiveActive ? "1.5" : "1"}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
@@ -745,7 +750,7 @@ function WorthItConversations() {
                         width: 6,
                         height: 6,
                         borderRadius: "50%",
-                        backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                        backgroundColor: getBrandLineColor(brand.name, effectiveActive),
                       }}
                     />
                     <span
@@ -753,7 +758,7 @@ function WorthItConversations() {
                         fontFamily: "var(--font-body)",
                         fontSize: 10,
                         color: "var(--text-primary)",
-                        fontWeight: brand.name === mainBrand ? 700 : 400,
+                        fontWeight: brand.name === effectiveActive ? 700 : 400,
                       }}
                     >
                       {brand.name}
@@ -764,7 +769,7 @@ function WorthItConversations() {
                       fontFamily: "var(--font-mono)",
                       fontSize: 10,
                       color: "var(--text-secondary)",
-                      fontWeight: brand.name === mainBrand ? 700 : 400,
+                      fontWeight: brand.name === effectiveActive ? 700 : 400,
                     }}
                   >
                     {brand.values[hoverIndex] !== null && brand.values[hoverIndex] !== undefined

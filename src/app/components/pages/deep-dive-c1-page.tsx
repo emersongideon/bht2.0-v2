@@ -1150,6 +1150,8 @@ function HistoricalView() {
   const [interactionsData, setInteractionsData] = useState<BrandSeries[]>([]);
   const [llmRankData, setLlmRankData] = useState<BrandSeries[]>([]);
   const [chartLabels, setChartLabels] = useState<string[]>([]);
+  const [histActiveBrand, setHistActiveBrand] = useState<string | null>(null);
+  const histEffectiveActive = histActiveBrand ?? mainBrand;
 
   useEffect(() => {
     setShareOfSearchData([]);
@@ -1314,7 +1316,7 @@ function HistoricalView() {
               }
               const pathData = pathParts.join(" ");
 
-              const r = brand.name === mainBrand ? 3.5 : 2.5;
+              const r = brand.name === histEffectiveActive ? 3.5 : 2.5;
 
               return (
                 <g key={brand.name}>
@@ -1323,8 +1325,8 @@ function HistoricalView() {
                     <path
                       d={pathData}
                       fill="none"
-                      stroke={getBrandLineColor(brand.name, mainBrand)}
-                      strokeWidth={brand.name === mainBrand ? "1.5" : "1"}
+                      stroke={getBrandLineColor(brand.name, histEffectiveActive)}
+                      strokeWidth={brand.name === histEffectiveActive ? "1.5" : "1"}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
@@ -1421,7 +1423,7 @@ function HistoricalView() {
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                      backgroundColor: getBrandLineColor(brand.name, histEffectiveActive),
                       flexShrink: 0,
                     }}
                   />
@@ -1430,7 +1432,7 @@ function HistoricalView() {
                       fontFamily: "var(--font-body)",
                       fontSize: 10,
                       color: "var(--text-primary)",
-                      fontWeight: brand.name === mainBrand ? 700 : 400,
+                      fontWeight: brand.name === histEffectiveActive ? 700 : 400,
                       flex: 1,
                     }}
                   >
@@ -1517,18 +1519,21 @@ function HistoricalView() {
             display: "inline-flex",
           }}>
             {shareOfSearchData.map((brand) => (
-              <div
+              <button
                 key={brand.name}
                 className="flex items-center gap-1.5"
+                onClick={() => setHistActiveBrand(brand.name === histEffectiveActive ? null : brand.name)}
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 10,
                   padding: "4px 10px",
                   borderRadius: "var(--radius-pill)",
-                  backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
-                  color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                  fontWeight: brand.name === mainBrand ? 700 : 400,
+                  backgroundColor: brand.name === histEffectiveActive ? "#FFFFFF" : "transparent",
+                  color: brand.name === histEffectiveActive ? "var(--text-primary)" : "#7A6F65",
+                  fontWeight: brand.name === mainBrand ? 700 : brand.name === histEffectiveActive ? 600 : 400,
                   whiteSpace: "nowrap",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
                 <span
@@ -1536,11 +1541,11 @@ function HistoricalView() {
                     width: 5,
                     height: 5,
                     borderRadius: "50%",
-                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                    backgroundColor: getBrandLineColor(brand.name, histEffectiveActive),
                   }}
                 />
                 {brand.name}
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -1583,18 +1588,21 @@ function HistoricalView() {
               display: "inline-flex",
             }}>
               {shareOfSearchData.map((brand) => (
-                <div
+                <button
                   key={brand.name}
                   className="flex items-center gap-1.5"
+                  onClick={() => setHistActiveBrand(brand.name === histEffectiveActive ? null : brand.name)}
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: 10,
                     padding: "4px 10px",
                     borderRadius: "var(--radius-pill)",
-                    backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
-                    color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 700 : 400,
+                    backgroundColor: brand.name === histEffectiveActive ? "#FFFFFF" : "transparent",
+                    color: brand.name === histEffectiveActive ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 700 : brand.name === histEffectiveActive ? 600 : 400,
                     whiteSpace: "nowrap",
+                    border: "none",
+                    cursor: "pointer",
                   }}
                 >
                   <span
@@ -1602,11 +1610,11 @@ function HistoricalView() {
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                      backgroundColor: getBrandLineColor(brand.name, histEffectiveActive),
                     }}
                   />
                   {brand.name}
-                </div>
+                </button>
               ))}
             </div>
           </div>

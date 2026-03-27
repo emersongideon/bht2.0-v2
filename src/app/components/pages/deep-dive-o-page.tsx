@@ -451,6 +451,8 @@ function SentimentTrend() {
   const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [activeBrand, setActiveBrand] = useState<string | null>(null);
+  const effectiveActive = activeBrand ?? mainBrand;
 
   type BrandLine = { name: string; color: string; values: (number | null)[] };
   const [brandLines, setBrandLines] = useState<BrandLine[]>([]);
@@ -649,18 +651,21 @@ function SentimentTrend() {
           minWidth: "max-content",
         }}>
           {brandLines.map((brand) => (
-            <div
+            <button
               key={brand.name}
               className="flex items-center gap-1.5"
+              onClick={() => setActiveBrand(brand.name === effectiveActive ? null : brand.name)}
               style={{
                 fontFamily: "var(--font-body)",
                 fontSize: 10,
                 padding: "4px 10px",
                 borderRadius: "var(--radius-pill)",
-                backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
-                color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                fontWeight: brand.name === mainBrand ? 600 : 400,
+                backgroundColor: brand.name === effectiveActive ? "#FFFFFF" : "transparent",
+                color: brand.name === effectiveActive ? "var(--text-primary)" : "#7A6F65",
+                fontWeight: brand.name === mainBrand ? 700 : brand.name === effectiveActive ? 600 : 400,
                 whiteSpace: "nowrap",
+                border: "none",
+                cursor: "pointer",
               }}
             >
               <span
@@ -668,11 +673,11 @@ function SentimentTrend() {
                   width: 5,
                   height: 5,
                   borderRadius: "50%",
-                  backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                  backgroundColor: getBrandLineColor(brand.name, effectiveActive),
                 }}
               />
               {brand.name}
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -758,8 +763,8 @@ function SentimentTrend() {
                 key={brand.name}
                 d={buildPath(brand.values)}
                 fill="none"
-                stroke={getBrandLineColor(brand.name, mainBrand)}
-                strokeWidth={brand.name === mainBrand ? 1.5 : 1}
+                stroke={getBrandLineColor(brand.name, effectiveActive)}
+                strokeWidth={brand.name === effectiveActive ? 1.5 : 1}
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -845,7 +850,7 @@ function SentimentTrend() {
                       width: 6,
                       height: 6,
                       borderRadius: "50%",
-                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                      backgroundColor: getBrandLineColor(brand.name, effectiveActive),
                       flexShrink: 0,
                     }}
                   />
@@ -854,7 +859,7 @@ function SentimentTrend() {
                       fontFamily: "var(--font-body)",
                       fontSize: 10,
                       color: "var(--text-primary)",
-                      fontWeight: brand.name === mainBrand ? 700 : 400,
+                      fontWeight: brand.name === effectiveActive ? 700 : 400,
                       flex: 1,
                     }}
                   >
