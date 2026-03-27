@@ -753,46 +753,71 @@ function DomainSources() {
       <div className="flex flex-col md:flex-row" style={{ gap: 20, minWidth: 0 }}>
         {/* Left column: Selected brand domain bar chart */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 8 * 22, overflowY: "auto" }}>
-            {selectedBrandData.map((item) => (
-              <div key={item.domain} className="flex items-center gap-2" style={{ minWidth: 0 }}>
-                <span
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: 11,
-                    color: "var(--text-secondary)",
-                    width: 110,
-                    textAlign: "left",
-                    flexShrink: 0,
-                  }}
-                >
-                  {item.domain}
-                </span>
-                <div
-                  style={{
-                    flex: 1,
-                    height: 10,
-                    backgroundColor: selectedBrandColor,
-                    borderRadius: 5,
-                    opacity: item.percentage / maxPercentage,
-                    width: `${(item.percentage / maxPercentage) * 100}%`,
-                    minWidth: 20,
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 11,
-                    color: "var(--text-secondary)",
-                    width: 30,
-                    textAlign: "right",
-                    flexShrink: 0,
-                  }}
-                >
-                  {Math.round(item.percentage)}%
-                </span>
-              </div>
-            ))}
+          <div style={{ position: "relative" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 8 * 22, overflowY: "auto" }}>
+              {selectedBrandData.map((item) => (
+                <div key={item.domain} className="flex items-center gap-2" style={{ minWidth: 0 }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: 11,
+                      color: "var(--text-secondary)",
+                      width: 110,
+                      textAlign: "left",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {item.domain}
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 10,
+                      backgroundColor: selectedBrandColor,
+                      borderRadius: 5,
+                      opacity: item.percentage / maxPercentage,
+                      width: `${(item.percentage / maxPercentage) * 100}%`,
+                      minWidth: 20,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "var(--text-secondary)",
+                      width: 30,
+                      textAlign: "right",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {Math.round(item.percentage)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+            {/* Fade gradient + count indicator when list is longer than 8 */}
+            {selectedBrandData.length > 8 && (
+              <>
+                <div style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 40,
+                  background: "linear-gradient(to bottom, transparent, var(--bg-card, #fff))",
+                  pointerEvents: "none",
+                }} />
+                <div style={{
+                  textAlign: "center",
+                  marginTop: 4,
+                  fontFamily: "var(--font-body)",
+                  fontSize: 11,
+                  color: "#B5ADA5",
+                }}>
+                  ↓ {selectedBrandData.length - 8} more — scroll to see
+                </div>
+              </>
+            )}
           </div>
         </div>
 
