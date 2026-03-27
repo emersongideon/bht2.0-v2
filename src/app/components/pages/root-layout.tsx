@@ -39,7 +39,7 @@ export function RootLayout() {
               padding: "10px 16px",
               backgroundColor: "var(--bg-primary)",
               borderBottom: "1px solid var(--border-subtle)",
-              zIndex: 50,
+              zIndex: 60,
             }}
           >
             <CategoryBrandSelector />
