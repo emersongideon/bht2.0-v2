@@ -636,6 +636,8 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [hoveredBrand, setHoveredBrand] = useState<string | null>(null);
+  const [activeBrand, setActiveBrand] = useState<string | null>(null);
+  const effectiveActive = activeBrand ?? mainBrand;
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
@@ -714,18 +716,21 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
             display: "inline-flex",
           }}>
             {brandPositions.map((brand) => (
-              <div
+              <button
                 key={brand.name}
+                onClick={() => setActiveBrand(brand.name === effectiveActive ? null : brand.name)}
                 className="flex items-center gap-1.5"
                 style={{
                   fontFamily: "var(--font-body)",
                   fontSize: 10,
                   padding: "4px 10px",
                   borderRadius: "var(--radius-pill)",
-                  backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
-                  color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                  fontWeight: brand.name === mainBrand ? 700 : 400,
+                  backgroundColor: brand.name === effectiveActive ? "#FFFFFF" : "transparent",
+                  color: brand.name === effectiveActive ? "var(--text-primary)" : "#7A6F65",
+                  fontWeight: brand.name === mainBrand ? 700 : brand.name === effectiveActive ? 600 : 400,
                   whiteSpace: "nowrap",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
                 <span
@@ -733,11 +738,11 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                     width: 5,
                     height: 5,
                     borderRadius: "50%",
-                    backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                    backgroundColor: getBrandLineColor(brand.name, effectiveActive),
                   }}
                 />
                 {brand.name}
-              </div>
+              </button>
             ))}
           </div>
         </div>
@@ -770,18 +775,21 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
               display: "inline-flex",
             }}>
               {brandPositions.map((brand) => (
-                <div
+                <button
                   key={brand.name}
+                  onClick={() => setActiveBrand(brand.name === effectiveActive ? null : brand.name)}
                   className="flex items-center gap-1.5"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: 10,
                     padding: "4px 10px",
                     borderRadius: "var(--radius-pill)",
-                    backgroundColor: brand.name === mainBrand ? "#FFFFFF" : "transparent",
-                    color: brand.name === mainBrand ? "var(--text-primary)" : "#7A6F65",
-                    fontWeight: brand.name === mainBrand ? 700 : 400,
+                    backgroundColor: brand.name === effectiveActive ? "#FFFFFF" : "transparent",
+                    color: brand.name === effectiveActive ? "var(--text-primary)" : "#7A6F65",
+                    fontWeight: brand.name === mainBrand ? 700 : brand.name === effectiveActive ? 600 : 400,
                     whiteSpace: "nowrap",
+                    border: "none",
+                    cursor: "pointer",
                   }}
                 >
                   <span
@@ -789,11 +797,11 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                       width: 5,
                       height: 5,
                       borderRadius: "50%",
-                      backgroundColor: getBrandLineColor(brand.name, mainBrand),
+                      backgroundColor: getBrandLineColor(brand.name, effectiveActive),
                     }}
                   />
                   {brand.name}
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -930,9 +938,11 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                   {brandPositions.map((brand) => {
                     const cx = toX(brand.x);
                     const cy = toY(brand.y);
-              const isMainBrand = brand.name === mainBrand;
+              const isActive = brand.name === effectiveActive;
               const isHovered = hoveredBrand === brand.name;
-              const isDimmed = hoveredBrand !== null && !isHovered;
+              const isDimmed = hoveredBrand !== null
+                ? !isHovered
+                : (activeBrand !== null && !isActive);
 
               // Tooltip positioning: flip if near right or top edge
               const tooltipX = brand.x > 75 ? cx - 110 : cx + 18;
@@ -946,13 +956,13 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
                   style={{ cursor: "default" }}
                   opacity={isDimmed ? 0.15 : 1}
                 >
-                  <circle cx={cx} cy={cy} r={isMainBrand ? 14 : 11} fill={isMainBrand ? "#4A7CC7" : "#C8C2BB"} opacity={0.9} />
+                  <circle cx={cx} cy={cy} r={isActive ? 14 : 11} fill={isActive ? "#4A7CC7" : "#C8C2BB"} opacity={0.9} />
                   <text
-                    x={cx + (isMainBrand ? 18 : 15)}
+                    x={cx + (isActive ? 18 : 15)}
                     y={cy + 4}
                     fontSize="11"
-                    fill={isMainBrand ? "#4A7CC7" : "var(--text-primary)"}
-                    fontWeight={isMainBrand ? 700 : 400}
+                    fill={isActive ? "#4A7CC7" : "var(--text-primary)"}
+                    fontWeight={isActive ? 700 : 400}
                     fontFamily="var(--font-body)"
                   >
                     {brand.name}
