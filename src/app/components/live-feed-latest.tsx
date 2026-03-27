@@ -9,6 +9,7 @@ interface NewsItem {
   headline: string;
   source: string;
   time: string;
+  url: string | null;
 }
 
 const tagColorMap: Record<string, string> = {
@@ -41,7 +42,7 @@ export function LiveFeedLatest() {
     async function load() {
       const { data } = await supabase
         .from("iconic_news_feed")
-        .select("id, news_source_tag, news_headline, news_source_name, news_created_at")
+        .select("id, news_source_tag, news_headline, news_source_name, news_created_at, news_url")
         .eq("brand_name", mainBrand)
         .eq("category_name", selectedCategory)
         .order("news_created_at", { ascending: false })
@@ -56,6 +57,7 @@ export function LiveFeedLatest() {
           headline: row.news_headline,
           source:   row.news_source_name,
           time:     formatRelativeTime(row.news_created_at),
+          url:      row.news_url ?? null,
         }))
       );
     }
@@ -113,18 +115,23 @@ export function LiveFeedLatest() {
           {items.map((item, index) => {
             const tagColor = tagColorMap[item.category] ?? "var(--text-muted)";
             return (
-              <div
+              <a
                 key={item.id}
+                href={item.url ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
                   padding: "12px 0",
                   borderBottom: index < items.length - 1 ? "1px solid var(--border-subtle)" : "none",
-                  cursor: "pointer",
+                  cursor: item.url ? "pointer" : "default",
                   transition: "opacity 0.2s",
+                  textDecoration: "none",
+                  color: "inherit",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.7"; }}
+                onMouseEnter={(e) => { if (item.url) e.currentTarget.style.opacity = "0.7"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
               >
                 {/* Category tag */}
@@ -172,8 +179,8 @@ export function LiveFeedLatest() {
                 </div>
 
                 {/* Arrow */}
-                <ArrowRight size={14} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-              </div>
+                <ArrowRight size={14} color="var(--text-muted)" style={{ flexShrink: 0, opacity: item.url ? 1 : 0.3 }} />
+              </a>
             );
           })}
         </div>
