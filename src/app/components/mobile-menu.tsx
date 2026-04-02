@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router";
 import { useState } from "react";
 import { DateModeSelector } from "./date-mode-selector";
 import { useBrand } from "../contexts/brand-context";
+import { useBasePath } from "../hooks/use-base-path";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const base = useBasePath();
   const [selectedCategory, setSelectedCategory] = useState("Beauty");
   const { selectedBrands, mainBrand, setMainBrand, toggleBrand } = useBrand();
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -34,14 +36,14 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   ];
 
   const navItems = [
-    { icon: Grid3X3, label: "Dashboard", path: "/" },
-    { icon: Layers, label: "Deep Dive", path: "/deep-dive/I1" },
-    { icon: Bell, label: "Alerts", path: "/alerts" },
+    { icon: Grid3X3, label: "Dashboard", path: base },
+    { icon: Layers, label: "Deep Dive", path: `${base}/deep-dive/I1` },
+    { icon: Bell, label: "Alerts", path: `${base}/alerts` },
   ];
 
   const isActive = (item: (typeof navItems)[0]) => {
-    if (item.label === "Dashboard") return location.pathname === "/" || location.pathname === "/empty";
-    if (item.label === "Deep Dive") return location.pathname.startsWith("/deep-dive");
+    if (item.label === "Dashboard") return location.pathname === base || location.pathname === `${base}/empty`;
+    if (item.label === "Deep Dive") return location.pathname.startsWith(`${base}/deep-dive`);
     return location.pathname.startsWith(item.path);
   };
 

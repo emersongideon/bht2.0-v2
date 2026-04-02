@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useBasePath } from "../hooks/use-base-path";
 import { supabase } from "../../lib/supabase";
 import { useBrand } from "../contexts/brand-context";
 
@@ -45,6 +46,7 @@ function formatRelativeTime(iso: string): string {
 export function AlertsPanel() {
   const { mainBrand, selectedCategory } = useBrand();
   const navigate = useNavigate();
+  const base = useBasePath();
   const [alerts, setAlerts] = useState<PanelAlert[]>([]);
 
   useEffect(() => {
@@ -102,7 +104,7 @@ export function AlertsPanel() {
           Alerts
         </span>
         <span
-          onClick={() => navigate("/alerts")}
+          onClick={() => navigate(`${base}/alerts`)}
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 12,
@@ -139,7 +141,7 @@ export function AlertsPanel() {
               borderBottom: i < alerts.length - 1 ? "1px solid var(--border-subtle)" : "none",
               cursor: "pointer",
             }}
-            onClick={() => navigate("/alerts")}
+            onClick={() => navigate(`${base}/alerts`)}
           >
             <div className="flex items-center gap-2">
               <span

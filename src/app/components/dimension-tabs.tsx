@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router";
+import { useBasePath } from "../hooks/use-base-path";
 
 const tabs = [
   { key: "I1", letter: "I", name: "Imprinted in AI", colorVar: "var(--dim-I1)" },
@@ -11,6 +12,7 @@ const tabs = [
 
 export function DimensionTabs({ activeKey }: { activeKey: string }) {
   const navigate = useNavigate();
+  const base = useBasePath();
 
   return (
     <div
@@ -24,7 +26,7 @@ export function DimensionTabs({ activeKey }: { activeKey: string }) {
         return (
           <button
             key={tab.key}
-            onClick={() => navigate(`/deep-dive/${tab.key}`)}
+            onClick={() => navigate(`${base}/deep-dive/${tab.key}`)}
             className="flex items-center gap-2 relative"
             style={{
               padding: "10px 16px",

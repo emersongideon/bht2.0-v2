@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useBasePath } from "../hooks/use-base-path";
 
 const dimensions = [
   { key: "I1", letter: "I", name: "Imprinted in AI", colorVar: "var(--dim-I1)" },
@@ -13,6 +14,7 @@ const dimensions = [
 
 export function MobileDimensionSelector({ activeKey }: { activeKey: string }) {
   const navigate = useNavigate();
+  const base = useBasePath();
   const [isOpen, setIsOpen] = useState(false);
   
   const activeDimension = dimensions.find(d => d.key === activeKey) || dimensions[0];
@@ -100,7 +102,7 @@ export function MobileDimensionSelector({ activeKey }: { activeKey: string }) {
               <button
                 key={dim.key}
                 onClick={() => {
-                  navigate(`/deep-dive/${dim.key}`);
+                  navigate(`${base}/deep-dive/${dim.key}`);
                   setIsOpen(false);
                 }}
                 style={{

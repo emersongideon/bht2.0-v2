@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useOutletContext } from "react-router";
+import { useBasePath } from "../../hooks/use-base-path";
 import { ChevronDown } from "lucide-react";
 import { MobileHeader } from "../mobile-header";
 import { supabase } from "../../../lib/supabase";
@@ -223,6 +224,7 @@ export function AlertsPage() {
 function AlertCard({ alert }: { alert: AlertData }) {
   const borderColor = severityColors[alert.severity];
   const navigate = useNavigate();
+  const base = useBasePath();
 
   return (
     <div
@@ -305,7 +307,7 @@ function AlertCard({ alert }: { alert: AlertData }) {
           {alert.timestamp}
         </span>
         <span
-          onClick={() => navigate(`/deep-dive/${alert.dimensionKey}`)}
+          onClick={() => navigate(`${base}/deep-dive/${alert.dimensionKey}`)}
           style={{
             fontFamily: "var(--font-body)",
             fontSize: 13,

@@ -1,5 +1,13 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { useAppData } from "../data/app-data-context";
+import { useDemo } from "./demo-context";
+
+export const DEMO_BRANDS = [
+  "Anastasia Beverly Hills",
+  "Ardell",
+  "Benefit Cosmetics",
+  "Bobbi Brown",
+];
 
 interface BrandContextType {
   selectedCategory: string;
@@ -15,6 +23,7 @@ const BrandContext = createContext<BrandContextType | undefined>(undefined);
 
 export function BrandProvider({ children }: { children: ReactNode }) {
   const { categories, brandsByCategory } = useAppData();
+  const isDemo = useDemo();
 
   const defaultCategory = categories[0] ?? "Beauty";
   const MAX_BRANDS = 10;
@@ -25,6 +34,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   const [mainBrand, setMainBrand] = useState(defaultBrandNames[0] ?? "");
 
   const setSelectedCategory = (category: string) => {
+    if (isDemo) return;
     setSelectedCategoryRaw(category);
     const newBrandNames = (brandsByCategory[category]?.map(b => b.name) ?? []).slice(0, MAX_BRANDS);
     setSelectedBrands(newBrandNames);
@@ -32,6 +42,7 @@ export function BrandProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleBrand = (brand: string) => {
+    if (isDemo) return;
     setSelectedBrands(prev => {
       if (prev.includes(brand)) {
         if (prev.length === 1) return prev;
@@ -48,8 +59,19 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const effectiveSelectedBrands = isDemo ? DEMO_BRANDS : selectedBrands;
+  const effectiveMainBrand = isDemo ? DEMO_BRANDS[0] : mainBrand;
+
   return (
-    <BrandContext.Provider value={{ selectedCategory, setSelectedCategory, selectedBrands, mainBrand, setSelectedBrands, setMainBrand, toggleBrand }}>
+    <BrandContext.Provider value={{
+      selectedCategory,
+      setSelectedCategory,
+      selectedBrands: effectiveSelectedBrands,
+      mainBrand: effectiveMainBrand,
+      setSelectedBrands: isDemo ? () => {} : setSelectedBrands,
+      setMainBrand: isDemo ? () => {} : setMainBrand,
+      toggleBrand,
+    }}>
       {children}
     </BrandContext.Provider>
   );

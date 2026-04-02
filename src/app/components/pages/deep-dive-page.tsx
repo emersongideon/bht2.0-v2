@@ -1,4 +1,4 @@
-import { useParams, Navigate } from "react-router";
+import { useParams, Navigate, useLocation } from "react-router";
 import { DimensionTabs } from "../dimension-tabs";
 import { SubMetricCard } from "../sub-metric-card";
 import { InsightCard } from "../insight-card";
@@ -12,11 +12,13 @@ import { DeepDiveI2Page } from "./deep-dive-i2-page";
 
 export function DeepDivePage() {
   const { dimensionKey } = useParams();
+  const location = useLocation();
+  const base = location.pathname.startsWith("/demo") ? "/demo" : "/app";
   const key = dimensionKey || "I1";
   const config = getDimensionConfig(key);
 
   if (!config) {
-    return <Navigate to="/deep-dive/I1" replace />;
+    return <Navigate to={`${base}/deep-dive/I1`} replace />;
   }
 
   // Use special pages for specific dimensions

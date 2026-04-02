@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useOutletContext } from "react-router";
+import { useBasePath } from "../../hooks/use-base-path";
 import { ArrowRight } from "lucide-react";
 import { getBrandLineColor } from "../../utils/chart-colors";
 import { useDateMode } from "../../contexts/date-mode-context";
@@ -271,6 +272,7 @@ export function DashboardPage() {
 /** Full-height trend chart that updates based on selected dimension */
 function TrendChartFull({ selectedDim }: { selectedDim: { name: string; color: string; dimKey: string } }) {
   const navigate = useNavigate();
+  const base = useBasePath();
   const [showTooltip, setShowTooltip] = useState(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const { getAxisLabels, dateMode, selectedDate } = useDateMode();
@@ -453,7 +455,7 @@ function TrendChartFull({ selectedDim }: { selectedDim: { name: string; color: s
         {/* Navigation icon to deep dive - hidden on mobile */}
         <div className="hidden md:block" style={{ position: "relative" }}>
           <button
-            onClick={() => navigate(`/deep-dive/${selectedDim.dimKey}`)}
+            onClick={() => navigate(`${base}/deep-dive/${selectedDim.dimKey}`)}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
             style={{
@@ -707,7 +709,7 @@ function TrendChartFull({ selectedDim }: { selectedDim: { name: string; color: s
 
       {/* Mobile "Go to Deep Dive" button */}
       <button
-        onClick={() => navigate(`/deep-dive/${selectedDim.dimKey}`)}
+        onClick={() => navigate(`${base}/deep-dive/${selectedDim.dimKey}`)}
         className="md:hidden flex items-center justify-center gap-2"
         style={{
           marginTop: 12,

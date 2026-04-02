@@ -1,6 +1,7 @@
 import { Menu, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useBasePath } from "../hooks/use-base-path";
 
 interface MobileHeaderProps {
   title: string;
@@ -20,6 +21,7 @@ const dimensions = [
 
 export function MobileHeader({ title, subtitle, onMenuClick, dimensionKey }: MobileHeaderProps) {
   const navigate = useNavigate();
+  const base = useBasePath();
   const [isOpen, setIsOpen] = useState(false);
   
   const activeDimension = dimensionKey ? dimensions.find(d => d.key === dimensionKey) : null;
@@ -140,7 +142,7 @@ export function MobileHeader({ title, subtitle, onMenuClick, dimensionKey }: Mob
                   <button
                     key={dim.key}
                     onClick={() => {
-                      navigate(`/deep-dive/${dim.key}`);
+                      navigate(`${base}/deep-dive/${dim.key}`);
                       setIsOpen(false);
                     }}
                     style={{
