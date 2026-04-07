@@ -885,14 +885,33 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
             const PL = 20, PR = 880, PT = 12, PB = 224;
             const PW = PR - PL, PH = PB - PT;
 
-            // Dynamic data bounds — auto-zoom axes to actual data spread
+            // Dynamic data bounds — shrink axis range until dots are visually separated
             const xVals = brandPositions.map(b => b.x);
             const yVals = brandPositions.map(b => b.y);
-            const pad = 8;
-            const xMin = brandPositions.length ? Math.max(0, Math.min(...xVals) - pad) : 0;
-            const xMax = brandPositions.length ? Math.min(100, Math.max(...xVals) + pad) : 100;
-            const yMin = brandPositions.length ? Math.max(0, Math.min(...yVals) - pad) : 0;
-            const yMax = brandPositions.length ? Math.min(100, Math.max(...yVals) + pad) : 100;
+            const MIN_SEP = 130; // minimum pixel distance between any two dots
+            const xCtr = brandPositions.length ? xVals.reduce((a, b) => a + b, 0) / xVals.length : 50;
+            const yCtr = brandPositions.length ? yVals.reduce((a, b) => a + b, 0) / yVals.length : 50;
+            let xSpread = brandPositions.length ? Math.max(Math.max(...xVals) - Math.min(...xVals) + 20, 20) : 100;
+            let ySpread = brandPositions.length ? Math.max(Math.max(...yVals) - Math.min(...yVals) + 20, 20) : 100;
+            if (brandPositions.length > 1) {
+              for (let _iter = 0; _iter < 200; _iter++) {
+                let minDist = Infinity;
+                for (let a = 0; a < brandPositions.length; a++) {
+                  for (let b = a + 1; b < brandPositions.length; b++) {
+                    const dvx = ((brandPositions[a].x - brandPositions[b].x) / xSpread) * PW;
+                    const dvy = ((brandPositions[a].y - brandPositions[b].y) / ySpread) * PH;
+                    minDist = Math.min(minDist, Math.sqrt(dvx * dvx + dvy * dvy));
+                  }
+                }
+                if (minDist >= MIN_SEP) break;
+                xSpread *= 0.82;
+                ySpread *= 0.82;
+              }
+            }
+            const xMin = xCtr - xSpread / 2;
+            const xMax = xCtr + xSpread / 2;
+            const yMin = yCtr - ySpread / 2;
+            const yMax = yCtr + ySpread / 2;
 
             // Data-to-pixel helpers
             const toX = (v: number) => PL + ((v - xMin) / (xMax - xMin)) * PW;
