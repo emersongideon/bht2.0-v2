@@ -885,33 +885,18 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
             const PL = 20, PR = 880, PT = 12, PB = 224;
             const PW = PR - PL, PH = PB - PT;
 
-            // Dynamic data bounds — shrink axis range until dots are visually separated
+            // Dynamic data bounds — zoom in proportionally to how tightly brands are clustered
             const xVals = brandPositions.map(b => b.x);
             const yVals = brandPositions.map(b => b.y);
-            const MIN_SEP = 130; // minimum pixel distance between any two dots
-            const xCtr = brandPositions.length ? xVals.reduce((a, b) => a + b, 0) / xVals.length : 50;
-            const yCtr = brandPositions.length ? yVals.reduce((a, b) => a + b, 0) / yVals.length : 50;
-            let xSpread = brandPositions.length ? Math.max(Math.max(...xVals) - Math.min(...xVals) + 20, 20) : 100;
-            let ySpread = brandPositions.length ? Math.max(Math.max(...yVals) - Math.min(...yVals) + 20, 20) : 100;
-            if (brandPositions.length > 1) {
-              for (let _iter = 0; _iter < 200; _iter++) {
-                let minDist = Infinity;
-                for (let a = 0; a < brandPositions.length; a++) {
-                  for (let b = a + 1; b < brandPositions.length; b++) {
-                    const dvx = ((brandPositions[a].x - brandPositions[b].x) / xSpread) * PW;
-                    const dvy = ((brandPositions[a].y - brandPositions[b].y) / ySpread) * PH;
-                    minDist = Math.min(minDist, Math.sqrt(dvx * dvx + dvy * dvy));
-                  }
-                }
-                if (minDist >= MIN_SEP) break;
-                xSpread *= 0.82;
-                ySpread *= 0.82;
-              }
-            }
-            const xMin = xCtr - xSpread / 2;
-            const xMax = xCtr + xSpread / 2;
-            const yMin = yCtr - ySpread / 2;
-            const yMax = yCtr + ySpread / 2;
+            const xDataRange = brandPositions.length > 1 ? Math.max(...xVals) - Math.min(...xVals) : 10;
+            const yDataRange = brandPositions.length > 1 ? Math.max(...yVals) - Math.min(...yVals) : 10;
+            // 30% pad of actual data range, minimum 4 units — tight clusters zoom in, wide spreads get breathing room
+            const xPad = Math.max(xDataRange * 0.3, 4);
+            const yPad = Math.max(yDataRange * 0.3, 4);
+            const xMin = brandPositions.length ? Math.min(...xVals) - xPad : 0;
+            const xMax = brandPositions.length ? Math.max(...xVals) + xPad : 100;
+            const yMin = brandPositions.length ? Math.min(...yVals) - yPad : 0;
+            const yMax = brandPositions.length ? Math.max(...yVals) + yPad : 100;
 
             // Data-to-pixel helpers
             const toX = (v: number) => PL + ((v - xMin) / (xMax - xMin)) * PW;
