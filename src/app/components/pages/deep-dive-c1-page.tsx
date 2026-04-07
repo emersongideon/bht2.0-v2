@@ -825,7 +825,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           borderRadius: 10,
           padding: "20px 20px 20px 8px",
           position: "relative",
-          height: 280,
+          height: 420,
         }}
       >
         {/* Zoom buttons — positioned at bottom-right of white plot area */}
@@ -871,7 +871,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         <svg
           width="100%"
           height="100%"
-          viewBox="0 0 900 240"
+          viewBox="0 0 900 380"
           preserveAspectRatio="xMidYMid meet"
           ref={svgRef}
           onMouseDown={handleMouseDown}
@@ -882,7 +882,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         >
           {/* Plot area constants — all chart content lives within this rect */}
           {(() => {
-            const PL = 20, PR = 880, PT = 12, PB = 224;
+            const PL = 20, PR = 880, PT = 12, PB = 364;
             const PW = PR - PL, PH = PB - PT;
 
             // Axis always fits ALL brands in view — pad keeps edge dots from being clipped
