@@ -753,36 +753,41 @@ function DomainSources() {
           <div style={{ position: "relative" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 360, overflowY: "auto" }}>
               {selectedBrandData.map((item) => (
-                <div key={item.domain} className="flex items-center gap-2" style={{ minWidth: 0 }}>
+                <div key={item.domain} className="flex items-center gap-3" style={{ minWidth: 0 }}>
+                  {/* Domain name — fixed width, truncate if too long */}
                   <span
                     style={{
                       fontFamily: "var(--font-body)",
                       fontSize: 11,
                       color: "var(--text-secondary)",
-                      width: 110,
-                      textAlign: "left",
+                      width: 160,
                       flexShrink: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {item.domain}
                   </span>
-                  <div
-                    style={{
-                      flex: 1,
-                      height: 10,
-                      backgroundColor: selectedBrandColor,
-                      borderRadius: 5,
-                      opacity: item.percentage / maxPercentage,
-                      width: `${(item.percentage / maxPercentage) * 100}%`,
-                      minWidth: 20,
-                    }}
-                  />
+                  {/* Bar track */}
+                  <div style={{ flex: 1, height: 8, backgroundColor: "var(--border-subtle)", borderRadius: 4, overflow: "hidden" }}>
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${(item.percentage / maxPercentage) * 100}%`,
+                        backgroundColor: selectedBrandColor,
+                        borderRadius: 4,
+                        opacity: 0.5 + 0.5 * (item.percentage / maxPercentage),
+                      }}
+                    />
+                  </div>
+                  {/* Percentage */}
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
                       fontSize: 11,
                       color: "var(--text-secondary)",
-                      width: 30,
+                      width: 32,
                       textAlign: "right",
                       flexShrink: 0,
                     }}
