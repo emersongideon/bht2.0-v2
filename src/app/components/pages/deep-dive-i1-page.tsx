@@ -624,27 +624,24 @@ function DomainSources() {
   useEffect(() => {
     setDomainsByBrand({});
     async function load() {
+      // Filter by month of selectedDate — data is monthly, any day in the month returns the same
+      const d = selectedDate ?? new Date();
+      const monthStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+      const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+      const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
+
       const { data } = await supabase
         .from("i1_domain_sources")
         .select("brand_name, date, i1_domain, i1_domain_percentage")
         .eq("category_name", selectedCategory)
         .in("brand_name", selectedBrands)
-        .lte("date", toISODateString(selectedDate))
-        .order("date", { ascending: false });
+        .gte("date", monthStart)
+        .lt("date", monthEnd);
 
       if (!data?.length) return;
 
-      // For each brand, keep only the rows from the most recent date
-      const latestDateByBrand: Record<string, string> = {};
-      for (const row of data) {
-        if (!latestDateByBrand[row.brand_name]) {
-          latestDateByBrand[row.brand_name] = row.date;
-        }
-      }
-
       const grouped: Record<string, { domain: string; percentage: number }[]> = {};
       for (const row of data) {
-        if (row.date !== latestDateByBrand[row.brand_name]) continue;
         if (!grouped[row.brand_name]) grouped[row.brand_name] = [];
         grouped[row.brand_name].push({ domain: row.i1_domain, percentage: row.i1_domain_percentage });
       }
@@ -905,24 +902,24 @@ function AudiencePerception() {
   useEffect(() => {
     setAgeDataByBrand({});
     async function load() {
+      // Filter by month of selectedDate — data is monthly
+      const d = selectedDate ?? new Date();
+      const monthStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+      const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+      const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
+
       const { data } = await supabase
         .from("i1_audience_perception")
         .select("brand_name, date, i1_audience_age_group, i1_audience_percentage")
         .eq("category_name", selectedCategory)
         .in("brand_name", selectedBrands)
-        .lte("date", toISODateString(selectedDate))
-        .order("date", { ascending: false });
+        .gte("date", monthStart)
+        .lt("date", monthEnd);
 
       if (!data?.length) return;
 
-      const latestByBrand: Record<string, string> = {};
-      for (const row of data) {
-        if (!latestByBrand[row.brand_name]) latestByBrand[row.brand_name] = row.date;
-      }
-
       const result: Record<string, AgeRow[]> = {};
       for (const row of data) {
-        if (row.date !== latestByBrand[row.brand_name]) continue;
         if (!result[row.brand_name]) result[row.brand_name] = [];
         result[row.brand_name].push({ age: row.i1_audience_age_group, percentage: row.i1_audience_percentage });
       }
