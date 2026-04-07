@@ -637,6 +637,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [hoveredBrand, setHoveredBrand] = useState<string | null>(null);
   const [activeBrand, setActiveBrand] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   const effectiveActive = activeBrand ?? mainBrand;
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
@@ -818,68 +819,60 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         </p>
       </div>
 
-      {/* Scatter Chart */}
+      {/* Scatter Chart — single container, fullscreen when isExpanded */}
       <div
-        style={{
+        style={isExpanded ? {
+          position: "fixed", inset: 0, zIndex: 1000,
+          backgroundColor: "var(--bg-primary)",
+          display: "flex", flexDirection: "column",
+          padding: 16,
+        } : {
           backgroundColor: "#F0EBE6",
           borderRadius: 10,
           padding: "20px 20px 20px 8px",
           position: "relative",
-          height: 420,
         }}
+        className={isExpanded ? "" : "md:h-[420px]"}
       >
-        {/* Zoom buttons — positioned at bottom-right of white plot area */}
-        <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 4, zIndex: 10 }}>
-          <button
-            onClick={() => setZoom(z => Math.min(4, +(z + 0.1).toFixed(2)))}
-            style={{
-              fontSize: 14,
-              width: 24,
-              height: 24,
-              borderRadius: 6,
-              backgroundColor: "white",
-              border: "1px solid #E8E2DC",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              lineHeight: 1,
-            }}
-          >
-            +
-          </button>
-          <button
-            onClick={() => setZoom(z => Math.max(0.5, +(z - 0.1).toFixed(2)))}
-            style={{
-              fontSize: 14,
-              width: 24,
-              height: 24,
-              borderRadius: 6,
-              backgroundColor: "white",
-              border: "1px solid #E8E2DC",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              lineHeight: 1,
-            }}
-          >
-            −
-          </button>
-        </div>
+        {/* Expanded: header row with title + close */}
+        {isExpanded && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexShrink: 0 }}>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Brand Positioning</span>
+            <button onClick={() => setIsExpanded(false)} style={{ fontSize: 16, width: 32, height: 32, borderRadius: 8, backgroundColor: "#F0EBE6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          </div>
+        )}
 
-        <svg
-          width="100%"
-          height="100%"
-          viewBox="0 0 900 380"
-          preserveAspectRatio="xMidYMid meet"
-          ref={svgRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
-          style={{ cursor: isDragging.current ? "grabbing" : "pointer", display: "block" }}
-        >
+        {/* Chart area — fills remaining space when expanded */}
+        <div style={isExpanded ? { flex: 1, backgroundColor: "#F0EBE6", borderRadius: 10, padding: "12px 12px 12px 8px", position: "relative", minHeight: 0 } : { height: "100%", position: "relative" }}>
+          {/* Expand button — mobile, non-expanded only */}
+          {!isExpanded && (
+            <button
+              className="flex md:hidden items-center"
+              onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); setIsExpanded(true); }}
+              style={{ position: "absolute", top: 0, right: 0, zIndex: 10, fontSize: 11, padding: "4px 10px", borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", color: "var(--text-primary)", fontFamily: "var(--font-body)", gap: 4 }}
+            >
+              ⤢ Expand
+            </button>
+          )}
+
+          {/* Zoom buttons — desktop (always) or expanded */}
+          <div className={isExpanded ? "flex" : "hidden md:flex"} style={{ position: "absolute", top: isExpanded ? 8 : 12, right: isExpanded ? 8 : 12, gap: 4, zIndex: 10 }}>
+            <button onClick={() => setZoom(z => Math.min(4, +(z + 0.1).toFixed(2)))} style={{ fontSize: 14, width: 24, height: 24, borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>+</button>
+            <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.1).toFixed(2)))} style={{ fontSize: 14, width: 24, height: 24, borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>−</button>
+          </div>
+
+          <svg
+            width="100%"
+            viewBox="0 0 900 380"
+            preserveAspectRatio="xMidYMid meet"
+            ref={svgRef}
+            onMouseDown={isExpanded ? handleMouseDown : undefined}
+            onMouseMove={isExpanded ? handleMouseMove : undefined}
+            onMouseUp={isExpanded ? handleMouseUp : undefined}
+            onMouseLeave={isExpanded ? handleMouseLeave : undefined}
+            style={{ cursor: isExpanded && isDragging.current ? "grabbing" : "default", display: "block" }}
+            className={isExpanded ? "h-full" : "md:h-full"}
+          >
           {/* Plot area constants — all chart content lives within this rect */}
           {(() => {
             const PL = 20, PR = 880, PT = 12, PB = 364;
@@ -1035,7 +1028,8 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
             );
           })()}
         </svg>
-      </div>
+        </div>{/* end chart area */}
+      </div>{/* end scatter container */}
     </div>
   );
 }
