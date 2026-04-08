@@ -53,7 +53,7 @@ export function DeepDiveOPage() {
         <BrandComparison />
 
         {/* Row 6 — Sentiment Over Time + Sentiment Breakdown - stacks on mobile */}
-        <div className="flex flex-col md:flex-row md:h-[30vh]" style={{ gap: 12, alignItems: "stretch", minWidth: 0 }}>
+        <div className="flex flex-col md:flex-row md:h-[45vh]" style={{ gap: 12, alignItems: "stretch", minWidth: 0 }}>
           <div className="min-h-[50vh] md:min-h-0" style={{ flex: 2, display: "flex", minWidth: 0, maxWidth: "100%" }}>
             <SentimentTrend />
           </div>
