@@ -276,8 +276,13 @@ function ScrollytellingSection({ onFirstRef }: { onFirstRef: (el: HTMLElement | 
       style={{ position: "relative", display: "flex", minHeight: "100vh", backgroundColor: "#1a1310" }}
       className="scrolly-container-root"
     >
-      {/* Left: text panels */}
-      <div style={{ flex: 1, padding: "0 5%", position: "relative", zIndex: 2 }} className="scrolly-text-col">
+      {/* Sticky radar — rendered first in DOM so it's on top on mobile */}
+      <div style={{ flex: 1, position: "sticky", top: 0, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, order: 2 }} className="scrolly-chart-col">
+        <RadarChart activeDimensions={activeDimensions} />
+      </div>
+
+      {/* Text panels — order:1 puts them on the left on desktop */}
+      <div style={{ flex: 1, padding: "0 5%", position: "relative", zIndex: 2, order: 1 }} className="scrolly-text-col">
         {DIMENSIONS.map((dim, i) => {
           const isActive = activePanels.has(i);
           const isKw = kwPanels.has(i);
@@ -338,11 +343,6 @@ function ScrollytellingSection({ onFirstRef }: { onFirstRef: (el: HTMLElement | 
           );
         })}
       </div>
-
-      {/* Right: sticky radar */}
-      <div style={{ flex: 1, position: "sticky", top: 0, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }} className="scrolly-chart-col">
-        <RadarChart activeDimensions={activeDimensions} />
-      </div>
     </section>
   );
 }
@@ -364,7 +364,7 @@ export function LandingPage() {
   };
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 300, background: "#1a1310", color: "#e8ddd4", overflowX: "hidden", WebkitFontSmoothing: "antialiased" }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 300, background: "#1a1310", color: "#e8ddd4", WebkitFontSmoothing: "antialiased" }}>
       {/* Google Fonts */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -391,10 +391,19 @@ export function LandingPage() {
         .landing-fade-5 { opacity: 0; animation: fadeUp 0.8s 1.2s forwards; }
 
         @media (max-width: 900px) {
-          .scrolly-container-root { flex-direction: column !important; }
+          .scrolly-container-root {
+            display: block !important;
+          }
           .scrolly-chart-col {
+            order: 0 !important;
+            position: sticky !important;
+            top: 0 !important;
             height: 45vh !important;
-            flex: none !important;
+            z-index: 3 !important;
+            width: 100% !important;
+          }
+          .scrolly-text-col {
+            order: 1 !important;
           }
           .scrolly-chart-col > div {
             width: min(280px, 65vw) !important;
@@ -402,8 +411,6 @@ export function LandingPage() {
           }
           .scrolly-text-col { padding: 0 24px !important; }
           .scrolly-text-col > div { min-height: 70vh !important; padding: 40px 0 !important; }
-          .score-mobile { bottom: -50px !important; }
-          .score-mobile .score-num { font-size: 32px !important; }
         }
       `}</style>
 
