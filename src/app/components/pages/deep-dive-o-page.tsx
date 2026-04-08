@@ -54,7 +54,7 @@ export function DeepDiveOPage() {
 
         {/* Row 6 — Sentiment Over Time + Sentiment Breakdown - stacks on mobile */}
         <div className="flex flex-col md:flex-row md:h-[75vh]" style={{ gap: 12, alignItems: "stretch", minWidth: 0 }}>
-          <div className="min-h-[50vh] md:min-h-0" style={{ flex: 2, display: "flex", minWidth: 0, maxWidth: "100%", minHeight: 0 }}>
+          <div style={{ flex: 2, display: "flex", minWidth: 0, maxWidth: "100%", minHeight: "50vh" }}>
             <SentimentTrend />
           </div>
           <div style={{ flex: 1, display: "flex", minWidth: 0, maxWidth: "100%", minHeight: 0 }}>
@@ -970,16 +970,17 @@ function SentimentSplit() {
           >
             {/* Dot */}
             <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: getBrandLineColor(item.brand, mainBrand), flexShrink: 0 }} />
-            {/* Brand name — truncated */}
-            <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--text-primary)", fontWeight: item.brand === mainBrand ? 700 : 400, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-              {item.brand}
-            </span>
-            {/* Pct text */}
-            <span style={{ fontFamily: "var(--font-body)", fontSize: 9, color: "#B5ADA5", whiteSpace: "nowrap", flexShrink: 0 }}>
-              {item.positive}% · {item.neutral}% · {item.negative}%
-            </span>
+            {/* Brand name + pct grouped together, pushing bar to right */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--text-primary)", fontWeight: item.brand === mainBrand ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
+                {item.brand}
+              </span>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 9, color: "#B5ADA5", whiteSpace: "nowrap", flexShrink: 0 }}>
+                {item.positive}%·{item.neutral}%·{item.negative}%
+              </span>
+            </div>
             {/* Bar */}
-            <div style={{ width: 80, height: 8, borderRadius: 3, overflow: "hidden", display: "flex", flexShrink: 0, opacity: item.brand === mainBrand ? 1 : 0.45 }}>
+            <div style={{ width: 72, height: 8, borderRadius: 3, overflow: "hidden", display: "flex", flexShrink: 0, opacity: item.brand === mainBrand ? 1 : 0.45 }}>
               <div style={{ width: `${item.positive}%`, backgroundColor: "#4A6644" }} />
               <div style={{ width: `${item.neutral}%`, backgroundColor: "#D8C6A0" }} />
               <div style={{ width: `${item.negative}%`, backgroundColor: "#B86A54" }} />
