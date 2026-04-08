@@ -868,7 +868,11 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
           backgroundColor: "var(--bg-primary)",
           display: "flex",
           flexDirection: "column",
-          padding: 12,
+          // paddingTop/Bottom become left/right edges after rotation — give extra room for safe area
+          paddingTop: 28,
+          paddingBottom: 28,
+          paddingLeft: 12,
+          paddingRight: 12,
         } : {
           backgroundColor: "#F0EBE6",
           borderRadius: 10,
