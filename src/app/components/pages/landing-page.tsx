@@ -235,7 +235,7 @@ function ScrollytellingSection({ onFirstRef }: { onFirstRef: (el: HTMLElement | 
         setActiveDimensions(maxActive);
         return next;
       });
-    }, { threshold: 0.45, rootMargin: "-10% 0px -10% 0px" });
+    }, { threshold: 0.15, rootMargin: "0px 0px -20% 0px" });
 
     const kwObs = new IntersectionObserver((entries) => {
       setKwPanels(prev => {
@@ -277,7 +277,7 @@ function ScrollytellingSection({ onFirstRef }: { onFirstRef: (el: HTMLElement | 
       className="scrolly-container-root"
     >
       {/* Sticky radar — rendered first in DOM so it's on top on mobile */}
-      <div style={{ flex: 1, position: "sticky", top: 0, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, order: 2 }} className="scrolly-chart-col">
+      <div style={{ flex: 1, position: "sticky", top: 0, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, order: 2, paddingBottom: 80 }} className="scrolly-chart-col">
         <RadarChart activeDimensions={activeDimensions} />
       </div>
 
