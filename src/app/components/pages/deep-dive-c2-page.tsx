@@ -843,7 +843,7 @@ function ValueDrivers({ brand }: { brand: string }) {
   const maxShare = drivers.length ? Math.max(...drivers.map((d) => d.share)) : 1;
 
   const getSentimentStyle = (sentiment: string) => {
-    switch (sentiment) {
+    switch (sentiment.toLowerCase()) {
       case "positive":
         return {
           bg: "rgba(74,102,68,0.15)",
