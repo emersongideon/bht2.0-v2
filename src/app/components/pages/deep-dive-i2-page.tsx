@@ -534,167 +534,132 @@ function AttributeComparison() {
         </p>
       </div>
 
-      {/* Heatmap matrix */}
+      {/* Heatmap matrix — real <table> guarantees column alignment on mobile */}
       <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-        <div style={{ minWidth: 600 }}>
-          {/* Table header */}
-          <div className="flex" style={{ gap: 2, marginBottom: 8 }}>
-            <div style={{ width: 140 }} /> {/* Attribute column spacer */}
-            {brandColumns.map((brand, i) => (
-              <div
-                key={brand}
-                style={{
-                  flex: 1,
-                  textAlign: "center",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 4,
-                }}
-              >
-                <span
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    backgroundColor: brandColors[i],
-                  }}
-                />
-                <span
-                  style={{
+        <table style={{ borderCollapse: "collapse", tableLayout: "fixed", width: "100%" }}>
+          <colgroup>
+            <col style={{ width: 110 }} />
+            {brandColumns.map((b) => <col key={b} style={{ width: 56 }} />)}
+            <col style={{ width: 78 }} />
+          </colgroup>
+
+          {/* Header */}
+          <thead>
+            <tr>
+              <th style={{ padding: 0 }} />
+              {brandColumns.map((brand, i) => (
+                <th key={brand} style={{ padding: "0 2px 8px", textAlign: "center", verticalAlign: "bottom" }}>
+                  {/* Dot */}
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 4 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: brandColors[i], flexShrink: 0 }} />
+                  </div>
+                  {/* Brand name — rotated vertically to save space */}
+                  <div style={{
+                    writingMode: "vertical-rl",
+                    transform: "rotate(180deg)",
                     fontFamily: "var(--font-body)",
                     fontSize: 10,
                     textTransform: "uppercase",
                     color: "#7A6F65",
                     fontWeight: brand === mainBrand ? 700 : 400,
-                  }}
-                >
-                  {brand}
+                    whiteSpace: "nowrap",
+                    margin: "0 auto",
+                    maxHeight: 80,
+                    overflow: "hidden",
+                  }}>
+                    {brand}
+                  </div>
+                </th>
+              ))}
+              <th style={{ padding: "0 0 8px", textAlign: "center", verticalAlign: "bottom" }}>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 10, textTransform: "uppercase", color: "#7A6F65" }}>
+                  Territory
                 </span>
-              </div>
-            ))}
-            <div style={{ width: 80, textAlign: "center" }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 10,
-                  textTransform: "uppercase",
-                  color: "#7A6F65",
-                }}
-              >
-                Territory
-              </span>
-            </div>
-          </div>
+              </th>
+            </tr>
+          </thead>
 
-          {/* Loading state */}
+          {/* Loading */}
           {attributes.length === 0 && (
-            <div style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-muted)", paddingTop: 8 }}>
-              Loading…
-            </div>
+            <tbody>
+              <tr>
+                <td colSpan={brandColumns.length + 2} style={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-muted)", paddingTop: 8 }}>
+                  Loading…
+                </td>
+              </tr>
+            </tbody>
           )}
 
-          {/* Attribute rows */}
-          {attributes.map((attr, attrIndex) => {
-            const visibleScores = brandColumns
-              .map((b) => attr.scores[b])
-              .filter((s): s is number => s !== undefined);
-            const maxScore = visibleScores.length ? Math.max(...visibleScores) : 0;
-            const minScore = visibleScores.length ? Math.min(...visibleScores) : 0;
+          {/* Rows */}
+          <tbody>
+            {attributes.map((attr, attrIndex) => {
+              const visibleScores = brandColumns
+                .map((b) => attr.scores[b])
+                .filter((s): s is number => s !== undefined);
+              const maxScore = visibleScores.length ? Math.max(...visibleScores) : 0;
+              const minScore = visibleScores.length ? Math.min(...visibleScores) : 0;
 
-            return (
-              <div key={attr.name}>
-                {attrIndex > 0 && (
-                  <div
-                    style={{
-                      height: 1,
-                      backgroundColor: "#F0EBE6",
-                      marginBottom: 8,
-                    }}
-                  />
-                )}
-                <div className="flex" style={{ gap: 2, marginBottom: 8 }}>
+              return (
+                <tr key={attr.name} style={{ borderTop: attrIndex > 0 ? "1px solid #F0EBE6" : "none" }}>
                   {/* Attribute name */}
-                  <div
-                    style={{
-                      width: 140,
-                      fontFamily: "var(--font-body)",
-                      fontSize: 11,
-                      color: "var(--text-primary)",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
+                  <td style={{ padding: "8px 4px 8px 0", fontFamily: "var(--font-body)", fontSize: 11, color: "var(--text-primary)", verticalAlign: "middle" }}>
                     {attr.name}
-                  </div>
+                  </td>
 
                   {/* Score cells */}
-                  {brandColumns.map((brand, i) => {
+                  {brandColumns.map((brand) => {
                     const score = attr.scores[brand];
                     const isMax = score !== undefined && score === maxScore;
                     const isMin = score !== undefined && score === minScore;
                     const isMainBrand = brand === mainBrand;
-                    const displayScore = score !== undefined ? score.toFixed(1) : null;
 
                     return (
-                      <div
-                        key={brand}
-                        style={{
-                          flex: 1,
+                      <td key={brand} style={{ padding: "4px 2px", textAlign: "center", verticalAlign: "middle" }}>
+                        <div style={{
                           height: 32,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           backgroundColor: score !== undefined
                             ? isMainBrand
-                              ? `${brandColorMap[brand]}${Math.round(getOpacity(score) * 255).toString(16).padStart(2, '0')}`
+                              ? `${brandColorMap[brand]}${Math.round(getOpacity(score) * 255).toString(16).padStart(2, "0")}`
                               : `rgba(213,206,199,${getOpacity(score)})`
                             : "transparent",
                           borderRadius: 4,
-                        }}
-                      >
-                        <span
-                          style={{
+                        }}>
+                          <span style={{
                             fontFamily: "var(--font-mono)",
                             fontSize: 11,
                             fontWeight: isMax ? 700 : 400,
                             color: isMin ? "#B5ADA5" : "var(--text-primary)",
-                          }}
-                        >
-                          {displayScore ?? "—"}
-                        </span>
-                      </div>
+                          }}>
+                            {score !== undefined ? score.toFixed(1) : "—"}
+                          </span>
+                        </div>
+                      </td>
                     );
                   })}
 
-                  {/* Territory badge */}
-                  <div
-                    style={{
-                      width: 80,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontSize: 10,
-                        padding: "3px 8px",
-                        borderRadius: "var(--radius-pill)",
-                        backgroundColor: (territoryConfig[attr.territory as keyof typeof territoryConfig] ?? territoryConfig.Open).bg,
-                        color: (territoryConfig[attr.territory as keyof typeof territoryConfig] ?? territoryConfig.Open).color,
-                        fontWeight: 600,
-                      }}
-                    >
+                  {/* Territory */}
+                  <td style={{ padding: "4px 0 4px 4px", textAlign: "center", verticalAlign: "middle" }}>
+                    <span style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: 10,
+                      padding: "3px 6px",
+                      borderRadius: "var(--radius-pill)",
+                      backgroundColor: (territoryConfig[attr.territory as keyof typeof territoryConfig] ?? territoryConfig.Open).bg,
+                      color: (territoryConfig[attr.territory as keyof typeof territoryConfig] ?? territoryConfig.Open).color,
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                    }}>
                       {attr.territory}
                     </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* Legend */}
