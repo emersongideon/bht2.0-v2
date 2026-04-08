@@ -53,7 +53,7 @@ export function DeepDiveOPage() {
         <BrandComparison />
 
         {/* Row 6 — Sentiment Over Time + Sentiment Breakdown - stacks on mobile */}
-        <div className="flex flex-col md:flex-row md:h-[62vh]" style={{ gap: 12, alignItems: "stretch", minWidth: 0 }}>
+        <div className="flex flex-col md:flex-row md:h-[75vh]" style={{ gap: 12, alignItems: "stretch", minWidth: 0 }}>
           <div style={{ flex: 2, display: "flex", minWidth: 0, maxWidth: "100%", minHeight: 0 }}>
             <SentimentTrend />
           </div>
@@ -954,73 +954,38 @@ function SentimentSplit() {
         
       </div>
 
-      {/* Stacked bars */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, overflowY: "auto", minHeight: 0 }}>
-        {data.map((item) => (
-          <div key={item.brand}>
-            {/* Brand name */}
-            <div className="flex items-center gap-1.5" style={{ marginBottom: 4 }}>
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  backgroundColor: getBrandLineColor(item.brand, mainBrand),
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 10,
-                  color: "var(--text-primary)",
-                  fontWeight: item.brand === mainBrand ? 700 : 400,
-                }}
-              >
-                {item.brand}
-              </span>
-            </div>
-
-            {/* Stacked bar */}
-            <div
-              className="flex"
-              style={{
-                height: 16,
-                borderRadius: 4,
-                overflow: "hidden",
-                opacity: item.brand === mainBrand ? 1 : 0.4,
-              }}
-            >
-              <div
-                style={{
-                  width: `${item.positive}%`,
-                  backgroundColor: "#4A6644",
-                }}
-              />
-              <div
-                style={{
-                  width: `${item.neutral}%`,
-                  backgroundColor: "#D8C6A0",
-                }}
-              />
-              <div
-                style={{
-                  width: `${item.negative}%`,
-                  backgroundColor: "#B86A54",
-                }}
-              />
-            </div>
-
-            {/* Percentages */}
-            <div style={{ marginTop: 4 }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 8,
-                  color: "#B5ADA5",
-                }}
-              >
+      {/* Stacked bars — compact two-column layout */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 0, flex: 1, overflowY: "auto", minHeight: 0 }}>
+        {data.map((item, idx) => (
+          <div
+            key={item.brand}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              paddingTop: 7,
+              paddingBottom: 7,
+              borderTop: idx > 0 ? "1px solid #F5F0EB" : "none",
+            }}
+          >
+            {/* Left: dot + brand name + percentage text */}
+            <div style={{ flex: "0 0 44%", minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: getBrandLineColor(item.brand, mainBrand), flexShrink: 0 }} />
+                <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--text-primary)", fontWeight: item.brand === mainBrand ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {item.brand}
+                </span>
+              </div>
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 9, color: "#B5ADA5", paddingLeft: 11 }}>
                 {item.positive}% pos · {item.neutral}% neu · {item.negative}% neg
               </span>
+            </div>
+
+            {/* Right: stacked bar */}
+            <div style={{ flex: 1, height: 10, borderRadius: 4, overflow: "hidden", display: "flex", opacity: item.brand === mainBrand ? 1 : 0.45 }}>
+              <div style={{ width: `${item.positive}%`, backgroundColor: "#4A6644" }} />
+              <div style={{ width: `${item.neutral}%`, backgroundColor: "#D8C6A0" }} />
+              <div style={{ width: `${item.negative}%`, backgroundColor: "#B86A54" }} />
             </div>
           </div>
         ))}
