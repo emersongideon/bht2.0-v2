@@ -18,6 +18,9 @@ import { toISODateString, computeAxisDates } from "../../utils/date-utils";
 export function DeepDiveC2Page() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
   const subScores = useSubmetricScores("C2");
+  const { mainBrand } = useBrand();
+  const [worthItActiveBrand, setWorthItActiveBrand] = useState<string | null>(null);
+  const effectiveDriverBrand = worthItActiveBrand ?? mainBrand;
 
   return (
     <>
@@ -49,10 +52,10 @@ export function DeepDiveC2Page() {
         <BrandComparison />
 
         {/* Row 6 — Share of "Worth It" Conversations */}
-        <WorthItConversations />
+        <WorthItConversations activeBrand={worthItActiveBrand} onActiveBrandChange={setWorthItActiveBrand} />
 
         {/* Row 7 — What Drives Value Perception */}
-        <ValueDrivers />
+        <ValueDrivers brand={effectiveDriverBrand} />
 
         {/* Row 8 — Value Perception Insight */}
         <ValueInsight />
@@ -430,9 +433,8 @@ function BrandComparison() {
   );
 }
 
-function WorthItConversations() {
+function WorthItConversations({ activeBrand, onActiveBrandChange }: { activeBrand: string | null; onActiveBrandChange: (b: string | null) => void }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const [activeBrand, setActiveBrand] = useState<string | null>(null);
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const effectiveActive = activeBrand ?? mainBrand;
   const { selectedDate, dateMode } = useDateMode();
@@ -588,7 +590,7 @@ function WorthItConversations() {
                 <button
                   key={brand.name}
                   className="flex items-center gap-1.5"
-                  onClick={() => setActiveBrand(brand.name === effectiveActive ? null : brand.name)}
+                  onClick={() => onActiveBrandChange(brand.name === effectiveActive ? null : brand.name)}
                   style={{
                     fontFamily: "var(--font-body)",
                     fontSize: 10,
@@ -802,8 +804,8 @@ function WorthItConversations() {
   );
 }
 
-function ValueDrivers() {
-  const { mainBrand, selectedCategory } = useBrand();
+function ValueDrivers({ brand }: { brand: string }) {
+  const { selectedCategory } = useBrand();
   const { selectedDate } = useDateMode();
 
   type Driver = { rank: number; name: string; sentiment: string; share: number };
@@ -815,7 +817,7 @@ function ValueDrivers() {
       const { data: rows } = await supabase
         .from("c2_value_drivers")
         .select("c2_attribute_name, c2_sentiment, c2_share_pct, date")
-        .eq("brand_name", mainBrand)
+        .eq("brand_name", brand)
         .eq("category_name", selectedCategory)
         .lte("date", toISODateString(selectedDate))
         .order("date", { ascending: false });
@@ -836,7 +838,7 @@ function ValueDrivers() {
       );
     }
     load();
-  }, [mainBrand, selectedCategory, selectedDate]);
+  }, [brand, selectedCategory, selectedDate]);
 
   const maxShare = drivers.length ? Math.max(...drivers.map((d) => d.share)) : 1;
 
@@ -899,7 +901,7 @@ function ValueDrivers() {
             color: "#B5ADA5",
           }}
         >
-          Key themes in consumer conversations about price, quality, and worth
+          Key themes in consumer conversations about price, quality, and worth — {brand}
         </p>
       </div>
 
