@@ -34,7 +34,7 @@ export function Sidebar() {
         position: "fixed",
         top: 0,
         left: 0,
-        zIndex: 70,
+        zIndex: 80,
       }}
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
