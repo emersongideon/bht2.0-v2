@@ -390,7 +390,7 @@ export function LandingPage() {
         .landing-fade-4 { opacity: 0; animation: fadeUp 0.8s 0.9s forwards; }
         .landing-fade-5 { opacity: 0; animation: fadeUp 0.8s 1.2s forwards; }
 
-        @media (max-width: 900px) {
+        @media (max-width: 480px) {
           .scrolly-container-root {
             display: block !important;
           }
