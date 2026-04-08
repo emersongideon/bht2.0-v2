@@ -642,6 +642,7 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const svgRef = useRef<SVGSVGElement>(null);
+  const lastTouchDist = useRef<number | null>(null);
 
   // Use native (non-passive) wheel listener so preventDefault works and
   // No scroll-to-zoom — user uses +/- buttons only
@@ -677,6 +678,40 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
 
   function handleMouseLeave() {
     isDragging.current = false;
+  }
+
+  function handleTouchStart(e: React.TouchEvent<SVGSVGElement>) {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouchDist.current = Math.sqrt(dx * dx + dy * dy);
+      isDragging.current = false;
+    } else if (e.touches.length === 1) {
+      isDragging.current = true;
+      dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, panX: panOffset.x, panY: panOffset.y };
+    }
+  }
+
+  function handleTouchMove(e: React.TouchEvent<SVGSVGElement>) {
+    e.preventDefault();
+    if (e.touches.length === 2 && lastTouchDist.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const scale = dist / lastTouchDist.current;
+      setZoom(z => Math.max(0.5, Math.min(4, +(z * scale).toFixed(2))));
+      lastTouchDist.current = dist;
+    } else if (e.touches.length === 1 && isDragging.current) {
+      // Map touch coords: container is CSS-rotated 90°, so swap axes for natural feel
+      const rawDx = e.touches[0].clientX - dragStart.current.x;
+      const rawDy = e.touches[0].clientY - dragStart.current.y;
+      setPanOffset({ x: dragStart.current.panX + rawDy, y: dragStart.current.panY - rawDx });
+    }
+  }
+
+  function handleTouchEnd() {
+    isDragging.current = false;
+    lastTouchDist.current = null;
   }
 
   return (
@@ -822,10 +857,18 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
       {/* Scatter Chart — single container, fullscreen when isExpanded */}
       <div
         style={isExpanded ? {
-          position: "fixed", inset: 0, zIndex: 1000,
+          // Rotated landscape fullscreen: width=100vh, height=100vw, centered + rotated 90°
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          width: "100vh",
+          height: "100vw",
+          transform: "translate(-50%, -50%) rotate(90deg)",
+          zIndex: 1000,
           backgroundColor: "var(--bg-primary)",
-          display: "flex", flexDirection: "column",
-          padding: 16,
+          display: "flex",
+          flexDirection: "column",
+          padding: 12,
         } : {
           backgroundColor: "#F0EBE6",
           borderRadius: 10,
@@ -834,32 +877,38 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
         }}
         className={isExpanded ? "" : "md:h-[420px]"}
       >
-        {/* Expanded: header row with title + close */}
+        {/* Expanded: header row with title + close/minimise */}
         {isExpanded && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexShrink: 0 }}>
-            <span style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Brand Positioning</span>
-            <button onClick={() => setIsExpanded(false)} style={{ fontSize: 16, width: 32, height: 32, borderRadius: 8, backgroundColor: "#F0EBE6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexShrink: 0 }}>
+            <span style={{ fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>Brand Positioning</span>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <button onClick={() => setZoom(z => Math.min(4, +(z + 0.2).toFixed(2)))} style={{ fontSize: 14, width: 28, height: 28, borderRadius: 6, backgroundColor: "#F0EBE6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+              <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.2).toFixed(2)))} style={{ fontSize: 14, width: 28, height: 28, borderRadius: 6, backgroundColor: "#F0EBE6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>−</button>
+              <button onClick={() => { setIsExpanded(false); setZoom(1); setPanOffset({ x: 0, y: 0 }); }} style={{ fontSize: 13, height: 28, padding: "0 12px", borderRadius: 6, backgroundColor: "#F0EBE6", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-body)", color: "var(--text-primary)" }}>✕ Minimise</button>
+            </div>
           </div>
         )}
 
-        {/* Chart area — fills remaining space when expanded */}
-        <div style={isExpanded ? { flex: 1, backgroundColor: "#F0EBE6", borderRadius: 10, padding: "12px 12px 12px 8px", position: "relative", minHeight: 0 } : { height: "100%", position: "relative" }}>
+        {/* Chart area */}
+        <div style={{ flex: 1, backgroundColor: isExpanded ? "#F0EBE6" : "transparent", borderRadius: isExpanded ? 10 : 0, position: "relative", minHeight: 0, height: isExpanded ? undefined : "100%" }}>
           {/* Expand button — mobile, non-expanded only */}
           {!isExpanded && (
             <button
               className="flex md:hidden items-center"
               onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); setIsExpanded(true); }}
-              style={{ position: "absolute", top: 0, right: 0, zIndex: 10, fontSize: 11, padding: "4px 10px", borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", color: "var(--text-primary)", fontFamily: "var(--font-body)", gap: 4 }}
+              style={{ position: "absolute", top: 0, right: 0, zIndex: 10, fontSize: 11, padding: "4px 10px", borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", color: "var(--text-primary)", fontFamily: "var(--font-body)", gap: 4, display: "flex" }}
             >
               ⤢ Expand
             </button>
           )}
 
-          {/* Zoom buttons — desktop (always) or expanded */}
-          <div className={isExpanded ? "flex" : "hidden md:flex"} style={{ position: "absolute", top: isExpanded ? 8 : 12, right: isExpanded ? 8 : 12, gap: 4, zIndex: 10 }}>
-            <button onClick={() => setZoom(z => Math.min(4, +(z + 0.1).toFixed(2)))} style={{ fontSize: 14, width: 24, height: 24, borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>+</button>
-            <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.1).toFixed(2)))} style={{ fontSize: 14, width: 24, height: 24, borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>−</button>
-          </div>
+          {/* Zoom buttons — desktop non-expanded only */}
+          {!isExpanded && (
+            <div className="hidden md:flex" style={{ position: "absolute", top: 12, right: 12, gap: 4, zIndex: 10 }}>
+              <button onClick={() => setZoom(z => Math.min(4, +(z + 0.1).toFixed(2)))} style={{ fontSize: 14, width: 24, height: 24, borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>+</button>
+              <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.1).toFixed(2)))} style={{ fontSize: 14, width: 24, height: 24, borderRadius: 6, backgroundColor: "white", border: "1px solid #E8E2DC", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>−</button>
+            </div>
+          )}
 
           <svg
             width="100%"
@@ -870,7 +919,10 @@ function BrandPositioningScatter({ latestByBrand }: { latestByBrand: Record<stri
             onMouseMove={isExpanded ? handleMouseMove : undefined}
             onMouseUp={isExpanded ? handleMouseUp : undefined}
             onMouseLeave={isExpanded ? handleMouseLeave : undefined}
-            style={{ cursor: isExpanded && isDragging.current ? "grabbing" : "default", display: "block" }}
+            onTouchStart={isExpanded ? handleTouchStart : undefined}
+            onTouchMove={isExpanded ? handleTouchMove : undefined}
+            onTouchEnd={isExpanded ? handleTouchEnd : undefined}
+            style={{ cursor: isExpanded && isDragging.current ? "grabbing" : "default", display: "block", touchAction: isExpanded ? "none" : "auto" }}
             className={isExpanded ? "h-full" : "md:h-full"}
           >
           {/* Plot area constants — all chart content lives within this rect */}
