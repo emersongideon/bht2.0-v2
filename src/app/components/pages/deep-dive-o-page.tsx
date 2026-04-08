@@ -911,11 +911,14 @@ function SentimentSplit() {
   const { brandsByCategory } = useAppData();
   const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
   const latestByBrand = useOSentimentLatest();
+  type SortKey = "positive" | "neutral" | "negative";
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const colors: Record<string, string> = {};
   for (const b of categoryBrandList) colors[b.name] = b.color;
 
-  const data = selectedBrands
+  const rawData = selectedBrands
     .filter(b => latestByBrand[b])
     .map(b => ({
       brand: b,
@@ -924,6 +927,25 @@ function SentimentSplit() {
       neutral: Math.round(latestByBrand[b].o_neutral_pct ?? 0),
       negative: Math.round(latestByBrand[b].o_negative_pct ?? 0),
     }));
+
+  const data = sortKey
+    ? [...rawData].sort((a, b) => sortDir === "desc" ? b[sortKey] - a[sortKey] : a[sortKey] - b[sortKey])
+    : rawData;
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === "desc" ? "asc" : "desc");
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
+  const SORT_LABELS: { key: SortKey; label: string }[] = [
+    { key: "positive", label: "Pos" },
+    { key: "neutral", label: "Neu" },
+    { key: "negative", label: "Neg" },
+  ];
 
   return (
     <div
@@ -938,20 +960,39 @@ function SentimentSplit() {
         flexDirection: "column",
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: 16 }}>
-        <h3
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: 14,
-            fontWeight: 600,
-            color: "var(--text-primary)",
-            marginBottom: 4,
-          }}
-        >
+      {/* Header with sort controls */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <h3 style={{ fontFamily: "var(--font-body)", fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
           Sentiment Split
         </h3>
-        
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontFamily: "var(--font-body)", fontSize: 9, color: "#B5ADA5", marginRight: 2 }}>Sort:</span>
+          {SORT_LABELS.map(({ key, label }) => {
+            const active = sortKey === key;
+            return (
+              <button
+                key={key}
+                onClick={() => handleSort(key)}
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: 9,
+                  padding: "3px 8px",
+                  borderRadius: 20,
+                  border: `1px solid ${active ? "#4A7CC7" : "#E8E2DC"}`,
+                  backgroundColor: active ? "#EFF4FB" : "transparent",
+                  color: active ? "#4A7CC7" : "#7A6F65",
+                  cursor: "pointer",
+                  fontWeight: active ? 600 : 400,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                {label}{active ? (sortDir === "desc" ? " ↓" : " ↑") : ""}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Stacked bars — single row per brand */}
