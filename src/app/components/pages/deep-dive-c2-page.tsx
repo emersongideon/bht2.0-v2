@@ -846,25 +846,25 @@ function ValueDrivers({ brand }: { brand: string }) {
     switch (sentiment) {
       case "positive":
         return {
-          bg: "rgba(74,102,68,0.08)",
-          text: "#4A6644",
+          bg: "rgba(74,102,68,0.15)",
+          text: "#3A5534",
           barColor: "#4A6644",
         };
       case "mixed":
         return {
-          bg: "rgba(218,197,140,0.15)",
-          text: "#A89056",
+          bg: "rgba(168,144,86,0.18)",
+          text: "#8A7030",
           barColor: "#DAC58C",
         };
       case "negative":
         return {
-          bg: "rgba(184,106,84,0.08)",
-          text: "#B86A54",
+          bg: "rgba(184,106,84,0.18)",
+          text: "#A04830",
           barColor: "#B86A54",
         };
       default:
         return {
-          bg: "#F5F0EB",
+          bg: "rgba(181,173,165,0.2)",
           text: "#7A6F65",
           barColor: "#B5ADA5",
         };
