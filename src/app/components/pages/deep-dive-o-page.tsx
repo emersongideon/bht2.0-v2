@@ -968,19 +968,19 @@ function SentimentSplit() {
               borderTop: idx > 0 ? "1px solid #F5F0EB" : "none",
             }}
           >
-            {/* Dot */}
-            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: getBrandLineColor(item.brand, mainBrand), flexShrink: 0 }} />
-            {/* Brand name + pct grouped together, pushing bar to right */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, minWidth: 0, overflow: "hidden" }}>
-              <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--text-primary)", fontWeight: item.brand === mainBrand ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}>
+            {/* Col 1: dot + brand name — fixed width */}
+            <div style={{ width: 130, display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: getBrandLineColor(item.brand, mainBrand), flexShrink: 0 }} />
+              <span style={{ fontFamily: "var(--font-body)", fontSize: 10, color: "var(--text-primary)", fontWeight: item.brand === mainBrand ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {item.brand}
               </span>
-              <span style={{ fontFamily: "var(--font-body)", fontSize: 9, color: "#B5ADA5", whiteSpace: "nowrap", flexShrink: 0 }}>
-                {item.positive}%·{item.neutral}%·{item.negative}%
-              </span>
             </div>
-            {/* Bar */}
-            <div style={{ width: 72, height: 8, borderRadius: 3, overflow: "hidden", display: "flex", flexShrink: 0, opacity: item.brand === mainBrand ? 1 : 0.45 }}>
+            {/* Col 2: pct text — fixed width, own aligned column */}
+            <span style={{ width: 84, flexShrink: 0, fontFamily: "var(--font-body)", fontSize: 9, color: "#B5ADA5", whiteSpace: "nowrap", textAlign: "right" }}>
+              {item.positive}%·{item.neutral}%·{item.negative}%
+            </span>
+            {/* Col 3: bar — fills all remaining space */}
+            <div style={{ flex: 1, height: 8, borderRadius: 3, overflow: "hidden", display: "flex", opacity: item.brand === mainBrand ? 1 : 0.45 }}>
               <div style={{ width: `${item.positive}%`, backgroundColor: "#4A6644" }} />
               <div style={{ width: `${item.neutral}%`, backgroundColor: "#D8C6A0" }} />
               <div style={{ width: `${item.negative}%`, backgroundColor: "#B86A54" }} />
