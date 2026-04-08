@@ -53,7 +53,7 @@ export function DeepDiveOPage() {
         <BrandComparison />
 
         {/* Row 6 — Sentiment Over Time + Sentiment Breakdown - stacks on mobile */}
-        <div className="flex flex-col md:flex-row" style={{ gap: 12, alignItems: "stretch", minWidth: 0, height: "45vh" }}>
+        <div className="flex flex-col md:flex-row md:h-[62vh]" style={{ gap: 12, alignItems: "stretch", minWidth: 0 }}>
           <div style={{ flex: 2, display: "flex", minWidth: 0, maxWidth: "100%", minHeight: 0 }}>
             <SentimentTrend />
           </div>
@@ -715,7 +715,7 @@ function SentimentTrend() {
         </div>
 
         {/* SVG chart */}
-        <div style={{ position: "relative", flex: 1 }}>
+        <div style={{ position: "relative", flex: 1, overflow: "visible" }}>
           <svg
             width="100%"
             height="100%"
