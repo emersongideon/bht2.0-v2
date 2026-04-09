@@ -481,14 +481,15 @@ function ScaleVelocityPanel() {
     v != null ? `#${Math.round(Number(v))}` : "—";
   const fmtPp = (v: number | null | undefined) => {
     if (v == null) return "—";
-    const fixed = (v * 100).toFixed(1);
+    const fixed = v.toFixed(1);
     const num = parseFloat(fixed);
-    return num === 0 ? `0.0` : `${num > 0 ? "+" : ""}${fixed}`;
+    return num === 0 ? `0.0%` : `${num > 0 ? "+" : ""}${fixed}%`;
   };
   const fmtRankChange = (v: number | null | undefined) => {
     if (v == null) return "—";
-    const rounded = Math.round(Number(v));
-    return rounded === 0 ? "0" : `${rounded > 0 ? "+" : ""}${rounded}`;
+    const fixed = Number(v).toFixed(1);
+    const num = parseFloat(fixed);
+    return num === 0 ? "0.0" : `${num > 0 ? "+" : ""}${fixed}`;
   };
 
   return (
