@@ -5,6 +5,7 @@ import { useBrand } from "../contexts/brand-context";
 
 interface SocialPost {
   id: number;
+  brand: string;
   platform: string;
   handle: string;
   caption: string;
@@ -21,24 +22,26 @@ function getPlatform(post: { social_platform: string; social_post_url: string | 
 }
 
 export function LiveFeedGreatest() {
-  const { mainBrand } = useBrand();
+  const { selectedBrands } = useBrand();
   const [posts, setPosts] = useState<SocialPost[]>([]);
 
   useEffect(() => {
     setPosts([]);
+    if (!selectedBrands.length) return;
     async function load() {
       const { data } = await supabase
         .from("iconic_social_feed")
-        .select("id, social_platform, social_handle, social_caption, social_engagement_rate, social_post_url, social_image_url")
-        .eq("brand_name", mainBrand)
+        .select("id, brand_name, social_platform, social_handle, social_caption, social_engagement_rate, social_post_url, social_image_url")
+        .in("brand_name", selectedBrands)
         .order("social_engagement_rate", { ascending: false })
-        .limit(6);
+        .limit(8);
 
       if (!data?.length) return;
 
       setPosts(
         data.map((row) => ({
           id:             row.id,
+          brand:          row.brand_name,
           platform:       getPlatform(row),
           handle:         row.social_handle,
           caption:        row.social_caption,
@@ -49,7 +52,7 @@ export function LiveFeedGreatest() {
       );
     }
     load();
-  }, [mainBrand]);
+  }, [selectedBrands]);
 
   return (
     <div
@@ -180,7 +183,7 @@ export function LiveFeedGreatest() {
                 </div>
               </div>
 
-              {/* Caption */}
+              {/* Caption + brand */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
@@ -202,9 +205,27 @@ export function LiveFeedGreatest() {
                     fontFamily: "var(--font-body)",
                     fontSize: 10,
                     color: "var(--text-muted)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    flexWrap: "wrap",
                   }}
                 >
-                  {post.platform} · {post.handle}
+                  <span>{post.platform} · {post.handle}</span>
+                  {selectedBrands.length > 1 && (
+                    <span
+                      style={{
+                        padding: "1px 6px",
+                        borderRadius: "var(--radius-pill)",
+                        backgroundColor: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+                        color: "var(--accent-primary)",
+                        fontSize: 10,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {post.brand}
+                    </span>
+                  )}
                 </div>
               </div>
 

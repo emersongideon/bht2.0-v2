@@ -5,6 +5,7 @@ import { useBrand } from "../contexts/brand-context";
 
 interface NewsItem {
   id: number;
+  brand: string;
   category: string;
   headline: string;
   source: string;
@@ -34,25 +35,27 @@ function formatRelativeTime(iso: string): string {
 }
 
 export function LiveFeedLatest() {
-  const { mainBrand, selectedCategory } = useBrand();
+  const { selectedBrands, selectedCategory } = useBrand();
   const [items, setItems] = useState<NewsItem[]>([]);
 
   useEffect(() => {
     setItems([]);
+    if (!selectedBrands.length) return;
     async function load() {
       const { data } = await supabase
         .from("iconic_news_feed")
-        .select("id, news_source_tag, news_headline, news_source_name, news_created_at, news_url")
-        .eq("brand_name", mainBrand)
+        .select("id, brand_name, news_source_tag, news_headline, news_source_name, news_created_at, news_url")
+        .in("brand_name", selectedBrands)
         .eq("category_name", selectedCategory)
         .order("news_created_at", { ascending: false })
-        .limit(6);
+        .limit(8);
 
       if (!data?.length) return;
 
       setItems(
         data.map((row) => ({
           id:       row.id,
+          brand:    row.brand_name,
           category: row.news_source_tag,
           headline: row.news_headline,
           source:   row.news_source_name,
@@ -62,7 +65,7 @@ export function LiveFeedLatest() {
       );
     }
     load();
-  }, [mainBrand, selectedCategory]);
+  }, [selectedBrands, selectedCategory]);
 
   return (
     <div
@@ -146,6 +149,9 @@ export function LiveFeedLatest() {
                     flexShrink: 0,
                     width: 80,
                     textAlign: "center",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {item.category}
@@ -175,6 +181,21 @@ export function LiveFeedLatest() {
                     }}
                   >
                     {item.source} · {item.time}
+                    {selectedBrands.length > 1 && (
+                      <span
+                        style={{
+                          marginLeft: 6,
+                          padding: "1px 6px",
+                          borderRadius: "var(--radius-pill)",
+                          backgroundColor: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+                          color: "var(--accent-primary)",
+                          fontSize: 10,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {item.brand}
+                      </span>
+                    )}
                   </div>
                 </div>
 
