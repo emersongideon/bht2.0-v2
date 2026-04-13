@@ -21,6 +21,17 @@ function getPlatform(post: { social_platform: string; social_post_url: string | 
   return post.social_platform;
 }
 
+function normalizeMediaUrl(url: string | null): string | null {
+  if (!url) return null;
+  // storage.cloud.google.com requires auth; swap to public storage.googleapis.com
+  return url.replace("https://storage.cloud.google.com/", "https://storage.googleapis.com/");
+}
+
+function isVideo(url: string | null): boolean {
+  if (!url) return false;
+  return url.includes(".mp4") || url.includes(".webm") || url.includes(".mov");
+}
+
 export function LiveFeedGreatest() {
   const { selectedBrands } = useBrand();
   const [posts, setPosts] = useState<SocialPost[]>([]);
@@ -47,7 +58,7 @@ export function LiveFeedGreatest() {
           caption:        row.social_caption,
           engagementRate: row.social_engagement_rate,
           postUrl:        row.social_post_url,
-          imageUrl:       row.social_image_url,
+          imageUrl:       normalizeMediaUrl(row.social_image_url),
         }))
       );
     }
@@ -150,12 +161,24 @@ export function LiveFeedGreatest() {
                 }}
               >
                 {post.imageUrl && (
-                  <img
-                    src={post.imageUrl}
-                    alt=""
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  />
+                  isVideo(post.imageUrl) ? (
+                    <video
+                      src={post.imageUrl}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  ) : (
+                    <img
+                      src={post.imageUrl}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )
                 )}
                 {/* Platform icon overlay */}
                 <div
