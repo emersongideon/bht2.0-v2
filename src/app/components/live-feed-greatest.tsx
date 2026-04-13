@@ -21,12 +21,6 @@ function getPlatform(post: { social_platform: string; social_post_url: string | 
   return post.social_platform;
 }
 
-function normalizeMediaUrl(url: string | null): string | null {
-  if (!url) return null;
-  // storage.cloud.google.com requires auth; swap to public storage.googleapis.com
-  return url.replace("https://storage.cloud.google.com/", "https://storage.googleapis.com/");
-}
-
 function isVideo(url: string | null): boolean {
   if (!url) return false;
   return url.includes(".mp4") || url.includes(".webm") || url.includes(".mov");
@@ -58,7 +52,7 @@ export function LiveFeedGreatest() {
           caption:        row.social_caption,
           engagementRate: row.social_engagement_rate,
           postUrl:        row.social_post_url,
-          imageUrl:       normalizeMediaUrl(row.social_image_url),
+          imageUrl:       row.social_image_url ?? null,
         }))
       );
     }
