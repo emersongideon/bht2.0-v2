@@ -30,7 +30,7 @@ export function ReportsPage() {
     if (brandsLoading) return; // wait for real data before rendering
     getTemplate().then((html) => {
       const injection = `<script>window.__REPORT_BRANDS__ = ${JSON.stringify(brands)};<\/script>`;
-      setSrcdoc(html.replace("</body>", injection + "</body>"));
+      setSrcdoc(html.replace("<head>", "<head>" + injection));
     });
   }, [brands, brandsLoading]);
 
