@@ -1,4 +1,4 @@
-import { Grid3X3, Layers, Bell, Settings } from "lucide-react";
+import { Grid3X3, Layers, Bell, FileText, Settings } from "lucide-react";
 import { useTheme, themes } from "./theme-context";
 import { useNavigate, useLocation } from "react-router";
 import { useState } from "react";
@@ -15,6 +15,7 @@ export function Sidebar() {
     { icon: Grid3X3, label: "Dashboard", path: base },
     { icon: Layers, label: "Deep Dive", path: `${base}/deep-dive/I1` },
     { icon: Bell, label: "Alerts", path: `${base}/alerts` },
+    { icon: FileText, label: "Reports", path: `${base}/reports` },
   ];
 
   const isActive = (item: (typeof navItems)[0]) => {
