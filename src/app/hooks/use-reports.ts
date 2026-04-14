@@ -2,31 +2,29 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import { useBrand } from "../contexts/brand-context";
 
-// Shape returned by the iconic_brand_reports table.
-// All complex fields (dimensions, trend, etc.) are stored as JSONB.
-export type ReportRow = {
+// ── Raw row from iconic_reports table ─────────────────────────────────────────
+type ReportRow = {
   brand_name: string;
-  category_name: string;
   week_label: string;
-  market: string;
+  week_start: string;
+  week_end: string;
   iconic_score: number;
-  rank: number;
-  total_brands: number;
-  delta: number;
-  dimensions: { key: string; label: string; score: number; rank: number; delta: number }[];
-  trend: { month: string; score: number }[];
-  radar_data: { attr: string; value: number; full: number }[];
-  dimension_bars: { dim: string; score: number }[];
-  competitor_snapshot: { brand: string; score: number; delta: number; rank: number; self?: boolean }[];
-  narratives: {
-    lead: string[];
-    dims: Record<string, string>;
-    competitive: string;
-    watch: string[];
-  };
+  iconic_rank: number;
+  iconic_delta: number;
+  i1_score: number; i1_rank: number;
+  c1_score: number; c1_rank: number;
+  o_score: number;  o_rank: number;
+  n_score: number;  n_rank: number;
+  i2_score: number; i2_rank: number;
+  c2_score: number; c2_rank: number;
+  lead_1: string; lead_2: string;
+  dim_i1: string; dim_c1: string; dim_o: string;
+  dim_n: string;  dim_i2: string; dim_c2: string;
+  competitive: string;
+  watch_1: string; watch_2: string;
 };
 
-// Shape expected by the HTML template (camelCase, matching the original JS object)
+// ── Shape the HTML template expects ──────────────────────────────────────────
 export type TemplateBrand = {
   name: string;
   category: string;
@@ -36,82 +34,178 @@ export type TemplateBrand = {
   rank: number;
   totalBrands: number;
   delta: number;
-  dimensions: ReportRow["dimensions"];
-  trend: ReportRow["trend"];
-  radarData: ReportRow["radar_data"];
-  dimensionBars: ReportRow["dimension_bars"];
-  competitorSnapshot: ReportRow["competitor_snapshot"];
-  narratives: ReportRow["narratives"];
+  dimensions: { key: string; label: string; score: number; rank: number; delta: number }[];
+  trend: { month: string; score: number }[];
+  radarData: { attr: string; value: number; full: number }[];
+  dimensionBars: { dim: string; score: number }[];
+  competitorSnapshot: { brand: string; score: number; delta: number; rank: number; self?: boolean }[];
+  narratives: {
+    lead: string[];
+    dims: Record<string, string>;
+    competitive: string;
+    watch: string[];
+  };
 };
 
-function toTemplateBrand(row: ReportRow): TemplateBrand {
+const DIM_LABELS: Record<string, string> = {
+  I1: "Imprinted in AI",
+  C1: "Capturing Attention",
+  O:  "Openly Adored",
+  N:  "Never Lost in Translation",
+  I2: "Ingrained in Culture",
+  C2: "Chosen for a Reason",
+};
+const DIM_SHORT: Record<string, string> = {
+  I1: "Imprinted", C1: "Attention", O: "Adored",
+  N: "Translation", I2: "Culture", C2: "Chosen",
+};
+const DIM_ORDER = ["I1", "C1", "O", "N", "I2", "C2"];
+
+function rowScore(row: ReportRow, key: string): number {
+  return (row as Record<string, number>)[`${key.toLowerCase()}_score`] ?? 0;
+}
+function rowRank(row: ReportRow, key: string): number {
+  return (row as Record<string, number>)[`${key.toLowerCase()}_rank`] ?? 0;
+}
+
+function buildTemplateBrand(
+  row: ReportRow,
+  allWeekRows: ReportRow[],   // all brands for this week (competitor snapshot)
+  trendRows: ReportRow[],     // all weeks for this brand (trend)
+  category: string,
+): TemplateBrand {
+  const dimensions = DIM_ORDER.map((key) => ({
+    key,
+    label: DIM_LABELS[key],
+    score: rowScore(row, key),
+    rank:  rowRank(row, key),
+    delta: 0, // not in flat table; week-over-week delta would need prior week
+  }));
+
+  const radarData = DIM_ORDER.map((key) => ({
+    attr:  DIM_SHORT[key],
+    value: rowScore(row, key),
+    full:  100,
+  }));
+
+  const dimensionBars = [...dimensions]
+    .sort((a, b) => b.score - a.score)
+    .map(({ key, score }) => ({ dim: key, score }));
+
+  // Trend: one point per week, sorted by week_label (W1, W2, …)
+  const trend = [...trendRows]
+    .sort((a, b) => a.week_label.localeCompare(b.week_label))
+    .map((r) => ({ month: r.week_label.split("_")[0], score: r.iconic_score }));
+
+  // Competitor snapshot: brands sorted by rank, show window around self
+  const sorted = [...allWeekRows].sort((a, b) => a.iconic_rank - b.iconic_rank);
+  const selfIdx = sorted.findIndex((r) => r.brand_name === row.brand_name);
+  const lo = Math.max(0, selfIdx - 2);
+  const hi = Math.min(sorted.length, selfIdx + 3);
+  const window = sorted.slice(lo, hi);
+  const competitorSnapshot = window.map((r) => ({
+    brand: r.brand_name,
+    score: r.iconic_score,
+    delta: r.iconic_delta,
+    rank:  r.iconic_rank,
+    ...(r.brand_name === row.brand_name ? { self: true } : {}),
+  }));
+
   return {
-    name:              row.brand_name,
-    category:          row.category_name,
-    market:            row.market ?? "",
-    period:            row.week_label,
-    iconicScore:       row.iconic_score,
-    rank:              row.rank,
-    totalBrands:       row.total_brands,
-    delta:             row.delta,
-    dimensions:        row.dimensions ?? [],
-    trend:             row.trend ?? [],
-    radarData:         row.radar_data ?? [],
-    dimensionBars:     row.dimension_bars ?? [],
-    competitorSnapshot: row.competitor_snapshot ?? [],
-    narratives:        row.narratives ?? { lead: [], dims: {}, competitive: "", watch: [] },
+    name:         row.brand_name,
+    category,
+    market:       "United States",
+    period:       row.week_label.replace("_", " · ").replace(/-/g, "–"),
+    iconicScore:  row.iconic_score,
+    rank:         row.iconic_rank,
+    totalBrands:  sorted.length,
+    delta:        row.iconic_delta,
+    dimensions,
+    trend,
+    radarData,
+    dimensionBars,
+    competitorSnapshot,
+    narratives: {
+      lead:        [row.lead_1 ?? "", row.lead_2 ?? ""],
+      dims: {
+        I1: row.dim_i1 ?? "", C1: row.dim_c1 ?? "",
+        O:  row.dim_o  ?? "", N:  row.dim_n  ?? "",
+        I2: row.dim_i2 ?? "", C2: row.dim_c2 ?? "",
+      },
+      competitive: row.competitive ?? "",
+      watch:       [row.watch_1 ?? "", row.watch_2 ?? ""],
+    },
   };
 }
 
-// Returns distinct week labels available for the selected category, newest first
+// ── Hook: distinct week labels for the selected category ──────────────────────
 export function useReportWeeks(): { weeks: string[]; loading: boolean } {
-  const { selectedCategory } = useBrand();
+  const { selectedBrands } = useBrand();
   const [weeks, setWeeks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setWeeks([]);
+    if (!selectedBrands.length) return;
     setLoading(true);
     async function load() {
       const { data } = await supabase
-        .from("iconic_brand_reports")
+        .from("iconic_reports")
         .select("week_label")
-        .eq("category_name", selectedCategory)
-        .order("week_label", { ascending: false });
+        .in("brand_name", selectedBrands);
 
-      const unique = [...new Set((data ?? []).map((r: { week_label: string }) => r.week_label))];
+      const unique = [
+        ...new Set((data ?? []).map((r: { week_label: string }) => r.week_label)),
+      ].sort((a, b) => b.localeCompare(a)); // newest first (W4 > W3 > …)
+
       setWeeks(unique);
       setLoading(false);
     }
     load();
-  }, [selectedCategory]);
+  }, [selectedBrands]);
 
   return { weeks, loading };
 }
 
-// Returns all brands for a given category + week, mapped to template shape
+// ── Hook: all template brands for a given week ────────────────────────────────
 export function useReportBrands(weekLabel: string | null): { brands: TemplateBrand[]; loading: boolean } {
-  const { selectedCategory } = useBrand();
+  const { selectedBrands, selectedCategory } = useBrand();
   const [brands, setBrands] = useState<TemplateBrand[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setBrands([]);
-    if (!weekLabel) return;
+    if (!weekLabel || !selectedBrands.length) return;
     setLoading(true);
-    async function load() {
-      const { data } = await supabase
-        .from("iconic_brand_reports")
-        .select("*")
-        .eq("category_name", selectedCategory)
-        .eq("week_label", weekLabel)
-        .order("rank", { ascending: true });
 
-      setBrands((data ?? []).map((row) => toTemplateBrand(row as ReportRow)));
+    async function load() {
+      // Fetch selected brands × all weeks (for trend)
+      const { data: allWeeksData } = await supabase
+        .from("iconic_reports")
+        .select("brand_name,week_label,iconic_score,iconic_rank,iconic_delta")
+        .in("brand_name", selectedBrands);
+
+      // Fetch full row data for selected brands × this week
+      const { data: weekData } = await supabase
+        .from("iconic_reports")
+        .select("*")
+        .in("brand_name", selectedBrands)
+        .eq("week_label", weekLabel)
+        .order("iconic_rank", { ascending: true });
+
+      const allWeeks = (allWeeksData ?? []) as ReportRow[];
+      const weekRows = (weekData ?? []) as ReportRow[];
+
+      const result = weekRows.map((row) => {
+        const trendRows = allWeeks.filter((r) => r.brand_name === row.brand_name);
+        return buildTemplateBrand(row, weekRows, trendRows, selectedCategory);
+      });
+
+      setBrands(result);
       setLoading(false);
     }
     load();
-  }, [selectedCategory, weekLabel]);
+  }, [selectedBrands, selectedCategory, weekLabel]);
 
   return { brands, loading };
 }
