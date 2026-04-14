@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { useReportWeeks, useReportBrands } from "../../hooks/use-reports";
 
@@ -16,8 +16,7 @@ export function ReportsPage() {
   const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
   const [weekOpen, setWeekOpen] = useState(false);
   const { brands, loading: brandsLoading } = useReportBrands(selectedWeek);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [templateHtml, setTemplateHtml] = useState<string | null>(null);
+  const [srcdoc, setSrcdoc] = useState<string>("");
 
   // Auto-select the most recent week when weeks load
   useEffect(() => {
@@ -26,20 +25,14 @@ export function ReportsPage() {
     }
   }, [weeks, selectedWeek]);
 
-  // Fetch template once
+  // Rebuild srcdoc whenever template or brands change
   useEffect(() => {
-    getTemplate().then(setTemplateHtml);
-  }, []);
-
-  // When both template and brands are ready, inject data into iframe
-  useEffect(() => {
-    if (!templateHtml || !iframeRef.current) return;
-
-    // Build srcdoc: inject brands as window.__REPORT_BRANDS__ before the closing </body>
-    const injection = `<script>window.__REPORT_BRANDS__ = ${JSON.stringify(brands)};<\/script>`;
-    const srcdoc = templateHtml.replace("</body>", injection + "</body>");
-    iframeRef.current.srcdoc = srcdoc;
-  }, [templateHtml, brands]);
+    if (brandsLoading) return; // wait for real data before rendering
+    getTemplate().then((html) => {
+      const injection = `<script>window.__REPORT_BRANDS__ = ${JSON.stringify(brands)};<\/script>`;
+      setSrcdoc(html.replace("</body>", injection + "</body>"));
+    });
+  }, [brands, brandsLoading]);
 
   return (
     <div
@@ -162,55 +155,34 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {/* Loading overlay */}
-      {(brandsLoading || !templateHtml) && selectedWeek && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "var(--bg-surface)",
-            zIndex: 10,
-          }}
-        >
-          <span style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text-muted)" }}>
-            Loading report…
-          </span>
-        </div>
-      )}
-
-      {/* Empty state — no week selected */}
-      {!selectedWeek && !weeksLoading && weeks.length === 0 && (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexDirection: "column",
-            gap: 8,
-          }}
-        >
+      {/* Empty state — no weeks found */}
+      {!weeksLoading && weeks.length === 0 && (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <p style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--text-muted)" }}>
             No reports found for this category yet.
           </p>
         </div>
       )}
 
-      {/* Report iframe — always mounted so it's ready to receive srcdoc */}
-      <iframe
-        ref={iframeRef}
-        title="ICONIC Brand Report"
-        style={{
-          flex: 1,
-          border: "none",
-          width: "100%",
-          display: selectedWeek ? "block" : "none",
-        }}
-        sandbox="allow-scripts allow-same-origin"
-      />
+      {/* Loading state */}
+      {(weeksLoading || (selectedWeek && brandsLoading)) && (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text-muted)" }}>
+            Loading report…
+          </p>
+        </div>
+      )}
+
+      {/* Report iframe — driven entirely by srcdoc state */}
+      {selectedWeek && !brandsLoading && srcdoc && (
+        <iframe
+          key={srcdoc.length} // force remount when content changes
+          title="ICONIC Brand Report"
+          srcDoc={srcdoc}
+          style={{ flex: 1, border: "none", width: "100%" }}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      )}
     </div>
   );
 }
