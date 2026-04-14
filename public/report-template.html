@@ -92,6 +92,16 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .ft{display:flex;justify-content:space-between;align-items:center;padding:2rem 0;border-top:1px solid var(--g200)}
 .ft-iconic{font-size:.75rem;font-weight:500;color:var(--blue);text-transform:uppercase;letter-spacing:.1em}
 .ft-q{font-size:.75rem;color:var(--g400)}
+
+@media print {
+  body{margin:0;padding:0}
+  .sel{display:none!important}
+  .card{box-shadow:none!important;border:1px solid #e5e7eb!important;break-inside:avoid}
+  .chart-wrap{break-inside:avoid}
+  .dim-row{break-inside:avoid}
+  .comp-row{break-inside:avoid}
+  a{text-decoration:none}
+}
 </style>
 </head>
 <body>

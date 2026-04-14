@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ChevronDown, X, ArrowUpRight, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, X, ArrowUpRight, TrendingUp, TrendingDown, Minus, Download } from "lucide-react";
 import { useReportSummaries, useReportBrand } from "../../hooks/use-reports";
 import type { ReportSummary } from "../../hooks/use-reports";
 
@@ -237,6 +237,11 @@ function ReportViewer({
 }) {
   const { brand: templateBrand, loading } = useReportBrand(brand, week);
   const [srcdoc, setSrcdoc] = useState<string>("");
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleDownload = () => {
+    iframeRef.current?.contentWindow?.print();
+  };
 
   useEffect(() => {
     if (loading || !templateBrand) return;
@@ -303,23 +308,49 @@ function ReportViewer({
               {weekDisplay}
             </span>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-muted)",
-              padding: 4,
-              borderRadius: "var(--radius-sm)",
-              display: "flex",
-              alignItems: "center",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
-          >
-            <X size={18} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={handleDownload}
+              disabled={!srcdoc}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-subtle)",
+                backgroundColor: "var(--bg-surface)",
+                color: srcdoc ? "var(--text-primary)" : "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: 12,
+                cursor: srcdoc ? "pointer" : "default",
+                opacity: srcdoc ? 1 : 0.5,
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => { if (srcdoc) e.currentTarget.style.backgroundColor = "var(--card-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+            >
+              <Download size={13} />
+              Download PDF
+            </button>
+            <button
+              onClick={onClose}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-muted)",
+                padding: 4,
+                borderRadius: "var(--radius-sm)",
+                display: "flex",
+                alignItems: "center",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Loading state */}
@@ -334,11 +365,12 @@ function ReportViewer({
         {/* Report iframe */}
         {srcdoc && (
           <iframe
+            ref={iframeRef}
             key={srcdoc.length}
             title={`${brand} ${week}`}
             srcDoc={srcdoc}
             style={{ flex: 1, border: "none", width: "100%" }}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts allow-same-origin allow-modals"
           />
         )}
       </div>
