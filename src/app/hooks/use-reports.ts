@@ -138,58 +138,76 @@ function buildTemplateBrand(
   };
 }
 
-// ── Hook: distinct week labels for the selected category ──────────────────────
+// ── Hook: distinct week labels available in iconic_reports for this category ──
 export function useReportWeeks(): { weeks: string[]; loading: boolean } {
-  const { selectedBrands } = useBrand();
+  const { selectedCategory } = useBrand();
   const [weeks, setWeeks] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setWeeks([]);
-    if (!selectedBrands.length) return;
     setLoading(true);
     async function load() {
+      // Step 1: get all brand names in this category
+      const { data: catBrands } = await supabase
+        .from("ref_category_brands")
+        .select("brand_name")
+        .eq("category_name", selectedCategory);
+
+      const brandNames = (catBrands ?? []).map((r: { brand_name: string }) => r.brand_name);
+      if (!brandNames.length) { setLoading(false); return; }
+
+      // Step 2: get distinct week_labels for those brands
       const { data } = await supabase
         .from("iconic_reports")
         .select("week_label")
-        .in("brand_name", selectedBrands);
+        .in("brand_name", brandNames);
 
       const unique = [
         ...new Set((data ?? []).map((r: { week_label: string }) => r.week_label)),
-      ].sort((a, b) => b.localeCompare(a)); // newest first (W4 > W3 > …)
+      ].sort((a, b) => b.localeCompare(a)); // newest first
 
       setWeeks(unique);
       setLoading(false);
     }
     load();
-  }, [selectedBrands]);
+  }, [selectedCategory]);
 
   return { weeks, loading };
 }
 
-// ── Hook: all template brands for a given week ────────────────────────────────
+// ── Hook: all template brands for a given week (all category brands with data) ─
 export function useReportBrands(weekLabel: string | null): { brands: TemplateBrand[]; loading: boolean } {
-  const { selectedBrands, selectedCategory } = useBrand();
+  const { selectedCategory } = useBrand();
   const [brands, setBrands] = useState<TemplateBrand[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setBrands([]);
-    if (!weekLabel || !selectedBrands.length) return;
+    if (!weekLabel) return;
     setLoading(true);
 
     async function load() {
-      // Fetch selected brands × all weeks (for trend)
+      // Step 1: all brands in this category
+      const { data: catBrands } = await supabase
+        .from("ref_category_brands")
+        .select("brand_name")
+        .eq("category_name", selectedCategory);
+
+      const brandNames = (catBrands ?? []).map((r: { brand_name: string }) => r.brand_name);
+      if (!brandNames.length) { setLoading(false); return; }
+
+      // Step 2: all weeks for trend (slim columns)
       const { data: allWeeksData } = await supabase
         .from("iconic_reports")
         .select("brand_name,week_label,iconic_score,iconic_rank,iconic_delta")
-        .in("brand_name", selectedBrands);
+        .in("brand_name", brandNames);
 
-      // Fetch full row data for selected brands × this week
+      // Step 3: full rows for this week
       const { data: weekData } = await supabase
         .from("iconic_reports")
         .select("*")
-        .in("brand_name", selectedBrands)
+        .in("brand_name", brandNames)
         .eq("week_label", weekLabel)
         .order("iconic_rank", { ascending: true });
 
@@ -205,7 +223,7 @@ export function useReportBrands(weekLabel: string | null): { brands: TemplateBra
       setLoading(false);
     }
     load();
-  }, [selectedBrands, selectedCategory, weekLabel]);
+  }, [selectedCategory, weekLabel]);
 
   return { brands, loading };
 }
