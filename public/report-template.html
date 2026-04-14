@@ -141,7 +141,7 @@ function radarChart(data, size) {
   const ang=(i)=>(i/n)*2*Math.PI - Math.PI/2;
   const px=(i,rad)=> cx+rad*Math.cos(ang(i));
   const py=(i,rad)=> cy+rad*Math.sin(ang(i));
-  let s=`<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">`;
+  let s=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" overflow="visible" xmlns="http://www.w3.org/2000/svg">`;
   [.33,.66,1].forEach(lv=>{
     const pts=data.map((_,i)=>`${px(i,r*lv)},${py(i,r*lv)}`).join(' ');
     s+=`<polygon points="${pts}" fill="none" stroke="#e5e7eb" stroke-width="1"/>`;
@@ -293,7 +293,7 @@ function render() {
         </div>
         <div>
           <p class="chart-sub">Shape</p>
-          <div class="chart-wrap" style="display:flex;align-items:center;justify-content:center">${radarSvg}</div>
+          <div class="chart-wrap" style="display:flex;align-items:center;justify-content:center;overflow:visible;padding:1rem 2.5rem">${radarSvg}</div>
         </div>
       </div>
     </section>

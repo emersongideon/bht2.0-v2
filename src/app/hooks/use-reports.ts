@@ -138,6 +138,118 @@ function buildTemplateBrand(
   };
 }
 
+// ── Summary row (card grid) ───────────────────────────────────────────────────
+export type ReportSummary = {
+  brand: string;
+  week: string;
+  score: number;
+  rank: number;
+  delta: number;
+};
+
+// ── Hook: all report summaries for the current category ───────────────────────
+export function useReportSummaries(): {
+  summaries: ReportSummary[];
+  allBrands: string[];
+  allWeeks: string[];
+  loading: boolean;
+} {
+  const { selectedCategory } = useBrand();
+  const [summaries, setSummaries] = useState<ReportSummary[]>([]);
+  const [allBrands, setAllBrands] = useState<string[]>([]);
+  const [allWeeks, setAllWeeks] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setSummaries([]);
+    setLoading(true);
+    async function load() {
+      const { data: catBrands } = await supabase
+        .from("ref_category_brands")
+        .select("brand_name")
+        .eq("category_name", selectedCategory);
+      const brandNames = (catBrands ?? []).map((r: { brand_name: string }) => r.brand_name);
+      if (!brandNames.length) { setLoading(false); return; }
+
+      const { data } = await supabase
+        .from("iconic_reports")
+        .select("brand_name,week_label,iconic_score,iconic_rank,iconic_delta")
+        .in("brand_name", brandNames);
+
+      const rows = (data ?? []) as Pick<ReportRow, "brand_name" | "week_label" | "iconic_score" | "iconic_rank" | "iconic_delta">[];
+      const uniqueBrands = [...new Set(rows.map((r) => r.brand_name))].sort();
+      const uniqueWeeks = [...new Set(rows.map((r) => r.week_label))].sort((a, b) => b.localeCompare(a));
+
+      setSummaries(
+        rows
+          .sort((a, b) => b.week_label.localeCompare(a.week_label) || a.iconic_rank - b.iconic_rank)
+          .map((r) => ({
+            brand: r.brand_name,
+            week:  r.week_label,
+            score: r.iconic_score,
+            rank:  r.iconic_rank,
+            delta: r.iconic_delta,
+          }))
+      );
+      setAllBrands(uniqueBrands);
+      setAllWeeks(uniqueWeeks);
+      setLoading(false);
+    }
+    load();
+  }, [selectedCategory]);
+
+  return { summaries, allBrands, allWeeks, loading };
+}
+
+// ── Hook: single brand report (for modal viewer) ──────────────────────────────
+export function useReportBrand(
+  brand: string | null,
+  weekLabel: string | null
+): { brand: TemplateBrand | null; loading: boolean } {
+  const { selectedCategory } = useBrand();
+  const [result, setResult] = useState<TemplateBrand | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setResult(null);
+    if (!brand || !weekLabel) return;
+    setLoading(true);
+    async function load() {
+      const { data: catBrands } = await supabase
+        .from("ref_category_brands")
+        .select("brand_name")
+        .eq("category_name", selectedCategory);
+      const brandNames = (catBrands ?? []).map((r: { brand_name: string }) => r.brand_name);
+      if (!brandNames.length) { setLoading(false); return; }
+
+      // Trend rows for this brand across all weeks
+      const { data: trendData } = await supabase
+        .from("iconic_reports")
+        .select("brand_name,week_label,iconic_score,iconic_rank,iconic_delta")
+        .eq("brand_name", brand);
+
+      // Full rows for this week (all category brands, needed for competitor snapshot)
+      const { data: weekData } = await supabase
+        .from("iconic_reports")
+        .select("*")
+        .in("brand_name", brandNames)
+        .eq("week_label", weekLabel)
+        .order("iconic_rank", { ascending: true });
+
+      const trendRows = (trendData ?? []) as ReportRow[];
+      const weekRows  = (weekData  ?? []) as ReportRow[];
+      const selfRow   = weekRows.find((r) => r.brand_name === brand);
+      if (!selfRow) { setLoading(false); return; }
+
+      setResult(buildTemplateBrand(selfRow, weekRows, trendRows, selectedCategory));
+      setLoading(false);
+    }
+    load();
+  }, [brand, weekLabel, selectedCategory]);
+
+  return { brand: result, loading };
+}
+
 // ── Hook: distinct week labels available in iconic_reports for this category ──
 export function useReportWeeks(): { weeks: string[]; loading: boolean } {
   const { selectedCategory } = useBrand();
