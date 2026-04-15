@@ -18,7 +18,11 @@ import { useNAlignmentLatest } from "../../hooks/use-n-alignment";
 
 export function DeepDiveNPage() {
   const { openMobileMenu } = useOutletContext<{ openMobileMenu: () => void }>();
+  const { mainBrand } = useBrand();
   const subScores = useSubmetricScores("N");
+  // Lifted so both SenderReceiverAlignment and AlignmentGapStrip stay in sync
+  const [activeBrand, setActiveBrand] = useState<string | null>(null);
+  const effectiveBrand = activeBrand ?? mainBrand;
 
   return (
     <>
@@ -57,10 +61,10 @@ export function DeepDiveNPage() {
         <BrandComparison />
 
         {/* Row 6 — Sender/Receiver Alignment */}
-        <SenderReceiverAlignment />
+        <SenderReceiverAlignment activeBrand={activeBrand} setActiveBrand={setActiveBrand} effectiveBrand={effectiveBrand} />
 
         {/* Row 6b — Alignment Gap Strip */}
-        <AlignmentGapStrip />
+        <AlignmentGapStrip activeBrand={effectiveBrand} />
 
         {/* Row 7 — Sender vs Receiver Values - stacks on mobile */}
         <div className="flex flex-col md:flex-row" style={{ gap: 12, flexShrink: 0 }}>
@@ -583,13 +587,20 @@ function AlignmentScoreCard({ liveScore, liveDelta, trendValues }: { liveScore?:
   );
 }
 
-function SenderReceiverAlignment() {
-  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
+function SenderReceiverAlignment({
+  activeBrand,
+  setActiveBrand,
+  effectiveBrand,
+}: {
+  activeBrand: string | null;
+  setActiveBrand: (b: string | null) => void;
+  effectiveBrand: string;
+}) {
+  const { selectedBrands, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
   const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
   const nData = useNAlignmentLatest();
-  const [activeBrand, setActiveBrand] = useState<string | null>(null);
-  const effectiveActive = activeBrand ?? mainBrand;
+  const effectiveActive = effectiveBrand;
   // Pass effectiveActive so the score updates when user switches brands via the legend
   const subScores = useSubmetricScores("N", effectiveActive);
 
@@ -1031,10 +1042,9 @@ function SenderReceiverAlignment() {
   );
 }
 
-function AlignmentGapStrip() {
-  const { mainBrand } = useBrand();
+function AlignmentGapStrip({ activeBrand }: { activeBrand: string }) {
   const nData = useNAlignmentLatest();
-  const mainBrandRows = nData[mainBrand] ?? [];
+  const mainBrandRows = nData[activeBrand] ?? [];
 
   // Both TRUE  → aligned; Sender TRUE + Receiver FALSE → sender-only gap; vice versa
   const aligned = mainBrandRows.filter(
