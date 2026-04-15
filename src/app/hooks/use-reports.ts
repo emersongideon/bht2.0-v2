@@ -11,12 +11,12 @@ type ReportRow = {
   iconic_score: number;
   iconic_rank: number;
   iconic_delta: number;
-  i1_score: number; i1_rank: number;
-  c1_score: number; c1_rank: number;
-  o_score: number;  o_rank: number;
-  n_score: number;  n_rank: number;
-  i2_score: number; i2_rank: number;
-  c2_score: number; c2_rank: number;
+  i1_score: number; i1_rank: number; i1_delta: number;
+  c1_score: number; c1_rank: number; c1_delta: number;
+  o_score: number;  o_rank: number;  o_delta: number;
+  n_score: number;  n_rank: number;  n_delta: number;
+  i2_score: number; i2_rank: number; i2_delta: number;
+  c2_score: number; c2_rank: number; c2_delta: number;
   lead_1: string; lead_2: string;
   dim_i1: string; dim_c1: string; dim_o: string;
   dim_n: string;  dim_i2: string; dim_c2: string;
@@ -67,6 +67,9 @@ function rowScore(row: ReportRow, key: string): number {
 function rowRank(row: ReportRow, key: string): number {
   return (row as Record<string, number>)[`${key.toLowerCase()}_rank`] ?? 0;
 }
+function rowDelta(row: ReportRow, key: string): number {
+  return (row as Record<string, number>)[`${key.toLowerCase()}_delta`] ?? 0;
+}
 
 function buildTemplateBrand(
   row: ReportRow,
@@ -79,7 +82,7 @@ function buildTemplateBrand(
     label: DIM_LABELS[key],
     score: rowScore(row, key),
     rank:  rowRank(row, key),
-    delta: 0, // not in flat table; week-over-week delta would need prior week
+    delta: rowDelta(row, key),
   }));
 
   const radarData = DIM_ORDER.map((key) => ({
