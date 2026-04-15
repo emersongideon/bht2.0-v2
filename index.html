@@ -5,6 +5,31 @@
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>BHT 2.0</title>
+      <!--
+        Design token loader — reads CSS variables from public/design.html.
+        To update the app's visual design: replace public/design.html with
+        the designer's modified file and reload. No code changes needed.
+      -->
+      <script>
+        (function () {
+          try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/design.html', false); // synchronous — must load before React renders
+            xhr.send(null);
+            if (xhr.status === 200) {
+              var match = xhr.responseText.match(/<style[^>]*id=["']tokens["'][^>]*>([\s\S]*?)<\/style>/i);
+              if (match) {
+                var s = document.createElement('style');
+                s.id = 'design-tokens-override';
+                s.textContent = match[1];
+                document.head.appendChild(s);
+              }
+            }
+          } catch (e) {
+            // Falls back to src/styles/theme.css if design.html is unavailable
+          }
+        })();
+      </script>
     </head>
 
     <body>

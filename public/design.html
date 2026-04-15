@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BHT 2.0 — Design File</title>
+
+  <!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  BHT 2.0 · DESIGN FILE                                          ║
+  ║                                                                  ║
+  ║  HOW THIS WORKS                                                  ║
+  ║  The live app automatically reads the <style id="tokens">        ║
+  ║  block below every time it loads. To update the app's design:   ║
+  ║    1. Modify colours / fonts / spacing inside that block         ║
+  ║    2. Replace public/design.html with your modified file         ║
+  ║    3. Reload the app — done. No code changes needed.             ║
+  ║                                                                  ║
+  ║  ✅ SAFE TO CHANGE:                                              ║
+  ║     • Any value inside <style id="tokens"> (colours, fonts,     ║
+  ║       border-radius, shadows, spacing)                           ║
+  ║     • Font @import URL (to swap typefaces)                       ║
+  ║     • Gradient values inside body::before                        ║
+  ║                                                                  ║
+  ║  ❌ DO NOT CHANGE:                                               ║
+  ║     • CSS variable NAMES — only their values                     ║
+  ║     • Anything outside <style id="tokens">...</style>            ║
+  ║     • The id="tokens" attribute on that style tag                ║
+  ╚══════════════════════════════════════════════════════════════════╝
+  -->
+
+  <!-- ✅ Change font imports here if swapping typefaces -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet" />
+
+  <!-- ================================================================
+       ✅✅✅  DESIGN TOKENS — MODIFY ONLY INSIDE THIS BLOCK  ✅✅✅
+       ================================================================ -->
+  <style id="tokens">
+    /* FONTS — change values to swap typefaces */
+    :root {
+      --font-display: 'Instrument Serif', serif;
+      --font-body:    'DM Sans', sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+    }
+
+    /* ── DUSK (default theme) ──────────────────────────────────── */
+    :root {
+      --bg-primary:    #FAF7F4;
+      --bg-card:       rgba(255,255,255,0.75);
+      --bg-card-hover: rgba(255,255,255,0.85);
+      --bg-surface:    #F5F0EB;
+      --bg-input:      rgba(0,0,0,0.03);
+
+      --text-primary:   #2D2420;
+      --text-secondary: #7A6F65;
+      --text-muted:     #B5ADA5;
+
+      --border-color:  rgba(63,20,17,0.08);
+      --border-subtle: rgba(63,20,17,0.08);
+
+      --accent-primary:   #B86A54;
+      --accent-secondary: #DAC58C;
+
+      --color-positive: #4A6644;
+      --color-negative: #B86A54;
+      --color-neutral:  #DAC58C;
+
+      --dim-I1: #374762;
+      --dim-C1: #DAC58C;
+      --dim-O:  #B86A54;
+      --dim-N:  #ACBDA7;
+      --dim-I2: #6B241E;
+      --dim-C2: #3F1411;
+
+      --radius-sm:   10px;
+      --radius-md:   14px;
+      --radius-lg:   20px;
+      --radius-pill: 9999px;
+
+      --shadow-card: 0 2px 12px rgba(45,36,32,0.06);
+      --shadow-glow: 0 0 8px;
+
+      --font-size:          16px;
+      --font-weight-medium: 500;
+      --font-weight-normal: 400;
+
+      --blur-glass:  16px;
+      --blur-strong: 30px;
+    }
+
+    /* Page background gradient — Dusk */
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(circle at 20% 20%, #F5F0EB, transparent 50%),
+        radial-gradient(circle at 80% 80%, #F7F2EE, transparent 50%),
+        radial-gradient(circle at 50% 50%, #FBF8F5, transparent 60%),
+        #FAF7F4;
+    }
+
+    /* ── LINEN theme ───────────────────────────────────────────── */
+    [data-theme="linen"] {
+      --bg-primary:    #FDFBF9;
+      --bg-card:       rgba(255,255,255,0.80);
+      --bg-card-hover: rgba(255,255,255,0.90);
+      --bg-surface:    #F7F3EF;
+      --bg-input:      rgba(0,0,0,0.03);
+      --text-primary:   #463027;
+      --text-secondary: #8A7D76;
+      --text-muted:     #C4BBB5;
+      --border-color:  rgba(70,48,39,0.06);
+      --border-subtle: rgba(70,48,39,0.06);
+      --accent-primary:   #DD9F86;
+      --accent-secondary: #A6C2DB;
+      --color-positive: #4A6644;
+      --color-negative: #C66F80;
+      --color-neutral:  #DDBFB3;
+      --dim-I1: #A6C2DB; --dim-C1: #DD9F86; --dim-O: #463027;
+      --dim-N: #CEDEE2; --dim-I2: #DDBFB3; --dim-C2: #E6CDC4;
+      --shadow-card: 0 2px 12px rgba(70,48,39,0.06);
+    }
+    [data-theme="linen"] body::before {
+      background:
+        radial-gradient(circle at 30% 30%, #FBF7F3, transparent 50%),
+        radial-gradient(circle at 70% 70%, #F9F5F2, transparent 50%),
+        radial-gradient(circle at 50% 50%, #FEFCFA, transparent 60%),
+        #FDFBF9;
+    }
+
+    /* ── BLUSH (dark) theme ────────────────────────────────────── */
+    [data-theme="blush"] {
+      --bg-primary:    #0F1116;
+      --bg-card:       rgba(255,255,255,0.05);
+      --bg-card-hover: rgba(255,255,255,0.08);
+      --bg-surface:    rgba(255,255,255,0.03);
+      --bg-input:      rgba(255,255,255,0.06);
+      --text-primary:   #E8E4DF;
+      --text-secondary: #A39B93;
+      --text-muted:     #6B6560;
+      --border-color:  rgba(255,255,255,0.10);
+      --border-subtle: rgba(255,255,255,0.06);
+      --accent-primary:   #D9826A;
+      --accent-secondary: #9BAED6;
+      --color-positive: #7ABD8F;
+      --color-negative: #D97B6A;
+      --color-neutral:  #C9A576;
+      --dim-I1: #9BAED6; --dim-C1: #D9826A; --dim-O: #E0938A;
+      --dim-N: #8BC49D; --dim-I2: #C9A576; --dim-C2: #B5BC7A;
+      --shadow-card: 0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    [data-theme="blush"] body::before {
+      background:
+        radial-gradient(ellipse at 15% 10%, rgba(99,80,160,0.25),   transparent 50%),
+        radial-gradient(ellipse at 85% 20%, rgba(59,100,140,0.2),   transparent 50%),
+        radial-gradient(ellipse at 50% 90%, rgba(224,122,74,0.1),   transparent 50%),
+        radial-gradient(ellipse at 30% 60%, rgba(139,158,232,0.08), transparent 45%),
+        linear-gradient(160deg, #111318 0%, #181B24 35%, #1A1D28 65%, #141720 100%);
+    }
+  </style>
+  <!-- ================================================================
+       ✅✅✅  END DESIGN TOKENS  ✅✅✅
+       ================================================================ -->
+
+  <!-- Preview-only styles — not read by the app -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); font-size: 14px; color: var(--text-primary); background: var(--bg-primary); min-height: 100vh; }
+
+    /* theme bar */
+    .tbar { position:fixed; top:0; left:0; right:0; z-index:999; display:flex; align-items:center; gap:8px; padding:8px 16px; background:var(--bg-card); border-bottom:1px solid var(--border-subtle); backdrop-filter:blur(12px); font-size:11px; }
+    .tbar-label { font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
+    .tbtn { padding:4px 12px; border-radius:var(--radius-pill); border:1px solid var(--border-subtle); background:transparent; color:var(--text-secondary); font-family:var(--font-body); font-size:11px; cursor:pointer; }
+    .tbtn.on, .tbtn:hover { background:var(--accent-primary); color:#fff; border-color:transparent; }
+    .tbar-note { margin-left:auto; font-style:italic; color:var(--text-muted); font-size:10px; }
+
+    /* layout */
+    .shell { display:flex; padding-top:36px; height:100vh; overflow:hidden; }
+
+    /* icon rail */
+    .rail { width:44px; flex-shrink:0; background:var(--bg-card); border-right:1px solid var(--border-subtle); display:flex; flex-direction:column; align-items:center; padding:12px 0; gap:4px; }
+    .rail-logo { width:28px; height:28px; border-radius:var(--radius-sm); background:var(--accent-primary); display:flex; align-items:center; justify-content:center; color:#fff; font-family:var(--font-display); font-size:13px; margin-bottom:12px; }
+    .rail-icon { width:32px; height:32px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer; transition:all .15s; }
+    .rail-icon:hover, .rail-icon.on { background:color-mix(in srgb, var(--accent-primary) 12%, transparent); color:var(--accent-primary); }
+    .rail-divider { width:20px; height:1px; background:var(--border-subtle); margin:6px 0; }
+    .rail-bottom { margin-top:auto; display:flex; flex-direction:column; align-items:center; gap:4px; }
+
+    /* main area */
+    .app-main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+    /* top bar */
+    .topbar { flex-shrink:0; display:flex; align-items:center; gap:8px; padding:10px 16px; border-bottom:1px solid var(--border-subtle); background:var(--bg-card); }
+    .cat-pill { display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:var(--radius-pill); border:1px solid var(--border-subtle); background:var(--bg-surface); font-size:12px; color:var(--text-secondary); cursor:pointer; }
+    .brand-pill { display:flex; align-items:center; gap:6px; padding:6px 14px; border-radius:var(--radius-pill); background:var(--accent-primary); color:#fff; font-size:12px; font-weight:600; cursor:pointer; }
+    .brand-badge { background:rgba(255,255,255,0.25); border-radius:var(--radius-pill); padding:1px 6px; font-size:10px; font-weight:700; }
+    .mode-btns { margin-left:auto; display:flex; gap:4px; align-items:center; }
+    .mode-btn { padding:5px 12px; border-radius:var(--radius-pill); border:1px solid var(--border-subtle); background:transparent; font-family:var(--font-body); font-size:11px; color:var(--text-secondary); cursor:pointer; }
+    .mode-btn.on { background:var(--accent-primary); color:#fff; border-color:transparent; }
+    .date-chip { display:flex; align-items:center; gap:5px; padding:5px 12px; border-radius:var(--radius-pill); border:1px solid var(--border-subtle); font-size:11px; color:var(--text-secondary); }
+
+    /* content */
+    .content { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+
+    /* dashboard top row */
+    .dash-top { display:flex; gap:12px; }
+
+    /* iconic gauge card */
+    .gauge-card { width:160px; flex-shrink:0; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-subtle); box-shadow:var(--shadow-card); padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .gauge-label { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:var(--text-muted); text-align:center; margin-bottom:8px; }
+    .gauge-svg { margin-bottom:4px; }
+    .gauge-score { font-family:var(--font-mono); font-size:28px; font-weight:700; color:var(--text-primary); }
+    .gauge-sub { font-size:9px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; margin-top:2px; }
+    .gauge-delta { margin-top:6px; display:inline-flex; align-items:center; gap:3px; padding:3px 8px; border-radius:var(--radius-pill); font-size:11px; font-weight:600; background:color-mix(in srgb, var(--color-positive) 12%, transparent); color:var(--color-positive); }
+
+    /* dimension cards grid */
+    .dim-grid { flex:1; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(2,1fr); gap:8px; }
+    .dim-card { background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-subtle); box-shadow:var(--shadow-card); padding:14px; display:flex; flex-direction:column; overflow:hidden; }
+    .dim-card.active { border-color:var(--accent-secondary); background:color-mix(in srgb, var(--accent-secondary) 6%, var(--bg-card)); }
+    .dim-card-header { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+    .dim-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .dim-card-name { font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
+    .dim-card-score { font-family:var(--font-mono); font-size:26px; font-weight:700; color:var(--text-primary); line-height:1; display:flex; align-items:baseline; gap:6px; }
+    .dim-delta { font-size:10px; font-weight:600; padding:2px 6px; border-radius:var(--radius-pill); }
+    .dp { background:color-mix(in srgb, var(--color-positive) 12%, transparent); color:var(--color-positive); }
+    .dn { background:color-mix(in srgb, var(--color-negative) 12%, transparent); color:var(--color-negative); }
+    .dim-sparkline { margin-top:auto; padding-top:6px; }
+
+    /* bottom row */
+    .dash-bottom { display:flex; gap:12px; flex:1; min-height:260px; }
+    .chart-panel { flex:1; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-subtle); box-shadow:var(--shadow-card); overflow:hidden; }
+    .chart-panel-header { padding:12px 16px; border-bottom:1px solid var(--border-subtle); }
+    .chart-panel-showing { font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; }
+    .chart-panel-hint { font-size:10px; color:var(--text-muted); margin-top:2px; }
+    .chart-legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+    .chart-legend-item { display:flex; align-items:center; gap:4px; font-size:10px; color:var(--text-secondary); cursor:pointer; }
+    .chart-legend-dot { width:6px; height:6px; border-radius:50%; }
+    .chart-area { padding:8px 16px 16px; position:relative; overflow:hidden; }
+
+    /* alerts panel */
+    .alerts-panel { width:240px; flex-shrink:0; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-subtle); box-shadow:var(--shadow-card); overflow:hidden; }
+    .alerts-header { padding:12px 14px; border-bottom:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:space-between; }
+    .alerts-title { font-size:13px; font-weight:600; color:var(--text-primary); }
+    .alerts-see-all { font-size:11px; color:var(--accent-primary); cursor:pointer; }
+    .alert-item { padding:10px 14px; border-bottom:1px solid var(--border-subtle); }
+    .alert-item:last-child { border-bottom:none; }
+    .alert-name { font-size:12px; font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:5px; margin-bottom:3px; }
+    .alert-desc { font-size:11px; color:var(--text-muted); line-height:1.4; }
+    .alert-date { font-size:10px; color:var(--text-muted); margin-top:3px; }
+
+    /* live feed row */
+    .feed-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .feed-card { background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-subtle); box-shadow:var(--shadow-card); overflow:hidden; }
+    .feed-card-header { padding:12px 16px; border-bottom:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:space-between; }
+    .feed-card-title { font-size:13px; font-weight:600; color:var(--text-primary); }
+    .feed-card-sub { font-size:10px; color:var(--text-muted); }
+    .feed-item { display:flex; align-items:flex-start; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border-subtle); }
+    .feed-item:last-child { border-bottom:none; }
+    .feed-thumb { width:40px; height:40px; border-radius:var(--radius-sm); object-fit:cover; flex-shrink:0; background:var(--bg-surface); }
+    .feed-brand { font-size:10px; font-weight:600; color:var(--accent-primary); text-transform:uppercase; letter-spacing:.06em; }
+    .feed-text { font-size:11px; color:var(--text-secondary); margin-top:2px; line-height:1.4; }
+    .feed-meta { font-size:10px; color:var(--text-muted); margin-top:3px; }
+  </style>
+</head>
+
+<body>
+  <!-- Theme preview bar (not in live app) -->
+  <div class="tbar">
+    <span class="tbar-label">Preview:</span>
+    <button class="tbtn on"  onclick="setTheme('',this)">Dusk</button>
+    <button class="tbtn"     onclick="setTheme('linen',this)">Linen</button>
+    <button class="tbtn"     onclick="setTheme('blush',this)">Blush (dark)</button>
+    <span class="tbar-note">Modify &lt;style id="tokens"&gt; only · replace this file · app updates automatically</span>
+  </div>
+
+  <div class="shell">
+
+    <!-- Icon sidebar rail -->
+    <nav class="rail">
+      <div class="rail-logo">Q</div>
+      <!-- Dashboard -->
+      <div class="rail-icon on">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+      </div>
+      <!-- Deep dives -->
+      <div class="rail-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+      </div>
+      <!-- Alerts -->
+      <div class="rail-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a5 5 0 0 0-5 5v3l-1 2h12l-1-2V7a5 5 0 0 0-5-5zm0 0v1m0 11a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2z"/></svg>
+      </div>
+      <!-- Reports -->
+      <div class="rail-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="1" width="10" height="14" rx="1.5"/><path d="M6 5h4M6 8h4M6 11h2"/></svg>
+      </div>
+      <div class="rail-divider"></div>
+      <div class="rail-bottom">
+        <!-- Settings -->
+        <div class="rail-icon">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7.5" cy="7.5" r="2"/><path d="M7.5 1v2m0 9v2M1 7.5h2m9 0h2m-2.9-3.7-1.4 1.4M4.8 10.2l-1.4 1.4m0-8.5 1.4 1.4m4.1 4.1 1.4 1.4"/></svg>
+        </div>
+        <!-- User avatar -->
+        <div class="rail-icon" style="background:var(--accent-primary); color:#fff; font-size:11px; font-weight:700; border-radius:50%;">U</div>
+      </div>
+    </nav>
+
+    <div class="app-main">
+      <!-- Top bar -->
+      <div class="topbar">
+        <div class="cat-pill">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg>
+          Automobile
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l3 3 3-3"/></svg>
+        </div>
+        <div class="brand-pill">
+          Audi <span class="brand-badge">+8</span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l3 3 3-3"/></svg>
+        </div>
+        <div class="mode-btns">
+          <button class="mode-btn on">Daily</button>
+          <button class="mode-btn">Rolling 30</button>
+          <button class="mode-btn">Monthly</button>
+          <div class="date-chip">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="2" width="9" height="8" rx="1"/><path d="M1 5h9M4 1v2M7 1v2"/></svg>
+            19/Mar/26
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard content -->
+      <div class="content">
+
+        <!-- Top row: gauge + 6 dimension cards -->
+        <div class="dash-top" style="height:260px">
+
+          <!-- Gauge -->
+          <div class="gauge-card">
+            <div class="gauge-label">How iconic is your brand?</div>
+            <div class="gauge-svg">
+              <svg width="100" height="70" viewBox="0 0 100 70">
+                <path d="M15 65 A40 40 0 0 1 85 65" fill="none" stroke="var(--bg-surface)" stroke-width="8" stroke-linecap="round"/>
+                <path d="M15 65 A40 40 0 0 1 85 65" fill="none" stroke="var(--accent-secondary)" stroke-width="8" stroke-linecap="round" stroke-dasharray="126" stroke-dashoffset="32"/>
+                <text x="50" y="58" text-anchor="middle" font-family="var(--font-mono)" font-size="20" font-weight="700" fill="var(--text-primary)">72.7</text>
+              </svg>
+            </div>
+            <div class="gauge-sub">out of 100<br/>ICONIC</div>
+            <div class="gauge-delta">▲ 6.7</div>
+          </div>
+
+          <!-- 6 dim cards -->
+          <div class="dim-grid">
+            <div class="dim-card">
+              <div class="dim-card-header">
+                <span class="dim-dot" style="background:var(--dim-I1)"></span>
+                <span class="dim-card-name">Imprinted in AI</span>
+              </div>
+              <div class="dim-card-score">67.1 <span class="dim-delta dn">▼ 8.2</span></div>
+              <div class="dim-sparkline"><svg viewBox="0 0 120 30" width="100%" height="28" preserveAspectRatio="none"><polyline points="0,20 20,18 40,22 60,15 80,17 100,14 120,12" fill="none" stroke="var(--dim-I1)" stroke-width="1.5" opacity=".5"/></svg></div>
+            </div>
+            <div class="dim-card">
+              <div class="dim-card-header">
+                <span class="dim-dot" style="background:var(--dim-C1)"></span>
+                <span class="dim-card-name">Capturing Attention</span>
+              </div>
+              <div class="dim-card-score">71.3 <span class="dim-delta dp">▲ 4.6</span></div>
+              <div class="dim-sparkline"><svg viewBox="0 0 120 30" width="100%" height="28" preserveAspectRatio="none"><polyline points="0,22 20,20 40,18 60,16 80,15 100,14 120,13" fill="none" stroke="var(--dim-C1)" stroke-width="1.5" opacity=".5"/></svg></div>
+            </div>
+            <div class="dim-card">
+              <div class="dim-card-header">
+                <span class="dim-dot" style="background:var(--dim-O)"></span>
+                <span class="dim-card-name">Openly Adored</span>
+              </div>
+              <div class="dim-card-score">18.2 <span class="dim-delta dn">▼ 38.9</span></div>
+              <div class="dim-sparkline"><svg viewBox="0 0 120 30" width="100%" height="28" preserveAspectRatio="none"><polyline points="0,8 20,12 40,10 60,15 80,18 100,20 120,22" fill="none" stroke="var(--dim-O)" stroke-width="1.5" opacity=".5"/></svg></div>
+            </div>
+            <div class="dim-card active">
+              <div class="dim-card-header">
+                <span class="dim-dot" style="background:var(--dim-N)"></span>
+                <span class="dim-card-name">Never Lost in Translation</span>
+              </div>
+              <div class="dim-card-score">80.5 <span class="dim-delta dp">▲ 4.9</span></div>
+              <div class="dim-sparkline"><svg viewBox="0 0 120 30" width="100%" height="28" preserveAspectRatio="none"><polyline points="0,20 20,18 40,16 60,14 80,13 100,12 120,11" fill="none" stroke="var(--dim-N)" stroke-width="1.5" opacity=".5"/></svg></div>
+            </div>
+            <div class="dim-card">
+              <div class="dim-card-header">
+                <span class="dim-dot" style="background:var(--dim-I2)"></span>
+                <span class="dim-card-name">Ingrained in Culture</span>
+              </div>
+              <div class="dim-card-score">69.6 <span class="dim-delta dp">▲ 5.6</span></div>
+              <div class="dim-sparkline"><svg viewBox="0 0 120 30" width="100%" height="28" preserveAspectRatio="none"><polyline points="0,22 20,20 40,19 60,17 80,16 100,15 120,14" fill="none" stroke="var(--dim-I2)" stroke-width="1.5" opacity=".5"/></svg></div>
+            </div>
+            <div class="dim-card">
+              <div class="dim-card-header">
+                <span class="dim-dot" style="background:var(--dim-C2)"></span>
+                <span class="dim-card-name">Chosen for a Reason</span>
+              </div>
+              <div class="dim-card-score">70 <span class="dim-delta dn">▼ 6.7</span></div>
+              <div class="dim-sparkline"><svg viewBox="0 0 120 30" width="100%" height="28" preserveAspectRatio="none"><polyline points="0,12 20,13 40,15 60,17 80,18 100,20 120,22" fill="none" stroke="var(--dim-C2)" stroke-width="1.5" opacity=".5"/></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom row: trend chart + alerts -->
+        <div class="dash-bottom">
+          <div class="chart-panel">
+            <div class="chart-panel-header">
+              <div class="chart-panel-showing">
+                Showing: <span class="dim-dot" style="background:var(--dim-N)"></span>
+                <strong>Never Lost in Translation</strong>
+              </div>
+              <div class="chart-panel-hint">↑ Click a dimension card above to switch</div>
+              <div class="chart-legend">
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--accent-primary)"></div>Audi</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#aaa"></div>BMW</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#aaa"></div>Chevrolet</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#aaa"></div>Ford</div>
+                <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#aaa"></div>Toyota</div>
+              </div>
+            </div>
+            <div class="chart-area" style="height:180px">
+              <svg viewBox="0 0 600 160" width="100%" height="100%" preserveAspectRatio="none">
+                <!-- grid lines -->
+                <line x1="0" y1="30"  x2="600" y2="30"  stroke="var(--border-subtle)" stroke-width="1"/>
+                <line x1="0" y1="70"  x2="600" y2="70"  stroke="var(--border-subtle)" stroke-width="1"/>
+                <line x1="0" y1="110" x2="600" y2="110" stroke="var(--border-subtle)" stroke-width="1"/>
+                <line x1="0" y1="150" x2="600" y2="150" stroke="var(--border-subtle)" stroke-width="1"/>
+                <!-- y labels -->
+                <text x="0" y="33"  font-size="9" fill="var(--text-muted)" font-family="var(--font-body)">90</text>
+                <text x="0" y="73"  font-size="9" fill="var(--text-muted)" font-family="var(--font-body)">80</text>
+                <text x="0" y="113" font-size="9" fill="var(--text-muted)" font-family="var(--font-body)">70</text>
+                <text x="0" y="153" font-size="9" fill="var(--text-muted)" font-family="var(--font-body)">60</text>
+                <!-- main brand line (Audi) -->
+                <polyline points="20,80 100,72 180,68 260,62 340,60 420,65 500,58 580,55" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" stroke-linejoin="round"/>
+                <!-- other brands (grey) -->
+                <polyline points="20,95 100,90 180,88 260,92 340,88 420,90 500,86 580,88" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linejoin="round" opacity=".6"/>
+                <polyline points="20,105 100,108 180,102 260,106 340,110 420,104 500,108 580,102" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linejoin="round" opacity=".6"/>
+                <polyline points="20,115 100,110 180,118 260,112 340,115 420,120 500,112 580,118" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linejoin="round" opacity=".6"/>
+                <polyline points="20,88 100,86 180,90 260,85 340,82 420,85 500,80 580,83" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linejoin="round" opacity=".6"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Alerts -->
+          <div class="alerts-panel">
+            <div class="alerts-header">
+              <span class="alerts-title">Alerts</span>
+              <span class="alerts-see-all">See all →</span>
+            </div>
+            <div class="alert-item">
+              <div class="alert-name"><span class="dim-dot" style="background:var(--dim-C2)"></span>Chosen for a Reason</div>
+              <div class="alert-desc">Score dropped 6.1 pts (67.5 → 61.4) vs previous day</div>
+              <div class="alert-date">Mar 31</div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-name"><span class="dim-dot" style="background:var(--dim-I2)"></span>Ingrained in Culture</div>
+              <div class="alert-desc">Score dropped 6.5 pts (65.8 → 59.3) vs previous day</div>
+              <div class="alert-date">Mar 31</div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-name"><span class="dim-dot" style="background:var(--dim-O)"></span>Openly Adored</div>
+              <div class="alert-desc">Score dropped 5.3 pts (39.1 → 33.8) vs previous day</div>
+              <div class="alert-date">Mar 31</div>
+            </div>
+            <div class="alert-item">
+              <div class="alert-name"><span class="dim-dot" style="background:var(--dim-C1)"></span>Capturing Attention</div>
+              <div class="alert-desc">Score rose 7.3 pts (76.0 → 83.3) vs previous day</div>
+              <div class="alert-date">Mar 30</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live feed row -->
+        <div class="feed-row">
+          <div class="feed-card">
+            <div class="feed-card-header">
+              <div>
+                <div class="feed-card-title">The Latest</div>
+                <div class="feed-card-sub">Recent news across selected brands</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-thumb"></div>
+              <div>
+                <div class="feed-brand">Audi</div>
+                <div class="feed-text">Audi unveils Q6 e-tron with extended range and new charging architecture</div>
+                <div class="feed-meta">Reuters · 2h ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-thumb"></div>
+              <div>
+                <div class="feed-brand">BMW</div>
+                <div class="feed-text">BMW reports record EV sales in Q1 2026, citing strong demand in Asia Pacific</div>
+                <div class="feed-meta">Bloomberg · 5h ago</div>
+              </div>
+            </div>
+          </div>
+          <div class="feed-card">
+            <div class="feed-card-header">
+              <div>
+                <div class="feed-card-title">The Greatest</div>
+                <div class="feed-card-sub">Top social posts this week</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-thumb" style="background:var(--bg-surface); border-radius:var(--radius-sm); overflow:hidden">
+                <svg viewBox="0 0 40 40" width="40" height="40"><rect width="40" height="40" fill="var(--bg-surface)"/><circle cx="20" cy="16" r="8" fill="var(--text-muted)" opacity=".3"/><ellipse cx="20" cy="32" rx="12" ry="6" fill="var(--text-muted)" opacity=".2"/></svg>
+              </div>
+              <div>
+                <div class="feed-brand">Toyota</div>
+                <div class="feed-text">New GR86 drop — the internet went wild 🔥</div>
+                <div class="feed-meta">Instagram · 12.4k likes</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-thumb" style="background:var(--bg-surface)"></div>
+              <div>
+                <div class="feed-brand">Audi</div>
+                <div class="feed-text">Behind the scenes of the new RS6 campaign shoot</div>
+                <div class="feed-meta">Instagram · 8.1k likes</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </div><!-- /app-main -->
+  </div><!-- /shell -->
+
+  <script>
+    function setTheme(theme, btn) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    }
+  </script>
+</body>
+</html>
