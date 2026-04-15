@@ -12,6 +12,16 @@ async function getTemplate(): Promise<string> {
   return cachedTemplate;
 }
 
+// ── html2canvas cache (fetched once, injected inline into srcdoc) ─────────────
+// Inlining avoids CDN blocks in sandboxed srcdoc iframes.
+let cachedH2C: string | null = null;
+async function getHtml2Canvas(): Promise<string> {
+  if (cachedH2C) return cachedH2C;
+  const res = await fetch("https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js");
+  cachedH2C = await res.text();
+  return cachedH2C;
+}
+
 // ── Filter dropdown ───────────────────────────────────────────────────────────
 function FilterDropdown({
   label,
@@ -258,8 +268,10 @@ function ReportViewer({
 
   useEffect(() => {
     if (loading || !templateBrand) return;
-    getTemplate().then((html) => {
-      const injection = `<script>window.__REPORT_BRANDS__ = ${JSON.stringify([templateBrand])};<\/script>`;
+    Promise.all([getTemplate(), getHtml2Canvas()]).then(([html, h2cScript]) => {
+      const injection =
+        `<script>${h2cScript}<\/script>` +
+        `<script>window.__REPORT_BRANDS__ = ${JSON.stringify([templateBrand])};<\/script>`;
       setSrcdoc(html.replace("<head>", "<head>" + injection));
     });
   }, [templateBrand, loading]);
