@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 /* ── Design token bridge ─────────────────────────────────────────────────── */
 /* Maps REPORT-LAYOUTS.css variables to this template's palette              */
@@ -699,6 +700,38 @@ function render() {
 }
 
 render();
+
+// ── PNG export ────────────────────────────────────────────────────────────────
+window.downloadPNG = async function(filename) {
+  const el = document.getElementById('app');
+  if (!el || typeof html2canvas === 'undefined') return;
+
+  // Briefly scroll to top so html2canvas captures from y=0
+  const prevScroll = window.scrollY;
+  window.scrollTo(0, 0);
+
+  try {
+    const canvas = await html2canvas(el, {
+      scale: 2,                // 2× for high-DPI quality
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth:  el.scrollWidth,
+      windowHeight: el.scrollHeight,
+      width:  el.scrollWidth,
+      height: el.scrollHeight,
+      logging: false,
+    });
+
+    const link = document.createElement('a');
+    link.download = filename || 'brand-report.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } finally {
+    window.scrollTo(0, prevScroll);
+  }
+};
 </script>
 </body>
 </html>

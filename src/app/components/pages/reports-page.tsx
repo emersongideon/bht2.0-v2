@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronDown, X, ArrowUpRight, TrendingUp, TrendingDown, Minus, Download } from "lucide-react";
+import { ChevronDown, X, ArrowUpRight, TrendingUp, TrendingDown, Minus, Download, Image } from "lucide-react";
 import { useReportSummaries, useReportBrand } from "../../hooks/use-reports";
 import type { ReportSummary } from "../../hooks/use-reports";
 
@@ -237,10 +237,23 @@ function ReportViewer({
 }) {
   const { brand: templateBrand, loading } = useReportBrand(brand, week);
   const [srcdoc, setSrcdoc] = useState<string>("");
+  const [pngLoading, setPngLoading] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const handleDownload = () => {
+  const handleDownloadPDF = () => {
     iframeRef.current?.contentWindow?.print();
+  };
+
+  const handleDownloadPNG = async () => {
+    const win = iframeRef.current?.contentWindow as any;
+    if (!win?.downloadPNG) return;
+    setPngLoading(true);
+    try {
+      const filename = `${brand}-${week}-report.png`.replace(/\s+/g, "-").toLowerCase();
+      await win.downloadPNG(filename);
+    } finally {
+      setPngLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -309,8 +322,34 @@ function ReportViewer({
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* PNG button */}
             <button
-              onClick={handleDownload}
+              onClick={handleDownloadPNG}
+              disabled={!srcdoc || pngLoading}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 12px",
+                borderRadius: "var(--radius-md)",
+                border: "1px solid var(--border-subtle)",
+                backgroundColor: "var(--bg-surface)",
+                color: srcdoc ? "var(--text-primary)" : "var(--text-muted)",
+                fontFamily: "var(--font-body)",
+                fontSize: 12,
+                cursor: srcdoc && !pngLoading ? "pointer" : "default",
+                opacity: srcdoc && !pngLoading ? 1 : 0.5,
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => { if (srcdoc && !pngLoading) e.currentTarget.style.backgroundColor = "var(--card-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--bg-surface)"; }}
+            >
+              <Image size={13} />
+              {pngLoading ? "Generating…" : "Download PNG"}
+            </button>
+            {/* PDF button */}
+            <button
+              onClick={handleDownloadPDF}
               disabled={!srcdoc}
               style={{
                 display: "flex",
