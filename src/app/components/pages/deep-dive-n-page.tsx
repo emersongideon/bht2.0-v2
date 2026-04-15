@@ -1036,8 +1036,9 @@ function AlignmentGapStrip() {
   const nData = useNAlignmentLatest();
   const mainBrandRows = nData[mainBrand] ?? [];
 
+  // Both TRUE  → aligned; Sender TRUE + Receiver FALSE → sender-only gap; vice versa
   const aligned = mainBrandRows.filter(
-    r => r.n_sender_alignment_status === false && r.n_receiver_alignment_status === false
+    r => r.n_sender_alignment_status === true && r.n_receiver_alignment_status === true
   );
   const senderOnly = mainBrandRows.filter(
     r => r.n_sender_alignment_status === true && r.n_receiver_alignment_status === false
@@ -1083,7 +1084,7 @@ function AlignmentGapStrip() {
             ? <span style={{ ...pillStyle("rgba(74,102,68,0.08)", "#4A6644"), opacity: 0.4 }}>—</span>
             : aligned.map(r => (
               <span key={r.n_attribute_name} style={pillStyle("rgba(74,102,68,0.08)", "#4A6644")}>
-                ✓ {r.n_attribute_name}
+                {r.n_attribute_name}
               </span>
             ))
           }
@@ -1098,7 +1099,7 @@ function AlignmentGapStrip() {
             ? <span style={{ ...pillStyle("rgba(184,106,84,0.08)", "#B86A54"), opacity: 0.4 }}>—</span>
             : senderOnly.map(r => (
               <span key={r.n_attribute_name} style={pillStyle("rgba(184,106,84,0.08)", "#B86A54")}>
-                → {r.n_attribute_name}
+                {r.n_attribute_name}
               </span>
             ))
           }
@@ -1113,7 +1114,7 @@ function AlignmentGapStrip() {
             ? <span style={{ ...pillStyle("rgba(55,71,98,0.08)", "#374762"), opacity: 0.4 }}>—</span>
             : receiverOnly.map(r => (
               <span key={r.n_attribute_name} style={pillStyle("rgba(55,71,98,0.08)", "#374762")}>
-                ← {r.n_attribute_name}
+                {r.n_attribute_name}
               </span>
             ))
           }
