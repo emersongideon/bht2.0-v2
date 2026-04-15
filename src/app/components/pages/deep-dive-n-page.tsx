@@ -596,7 +596,7 @@ function SenderReceiverAlignment({
   setActiveBrand: (b: string | null) => void;
   effectiveBrand: string;
 }) {
-  const { selectedBrands, selectedCategory } = useBrand();
+  const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
   const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
   const nData = useNAlignmentLatest();
