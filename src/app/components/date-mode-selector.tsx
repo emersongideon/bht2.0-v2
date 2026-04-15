@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useDateMode } from "../contexts/date-mode-context";
 import { formatDisplayDate, toISODateString, parseISODateString } from "../utils/date-utils";
 import { CustomDatePicker } from "./custom-date-picker";
+import { useAvailableDates } from "../hooks/use-available-dates";
 
 const modes = ["Daily", "Rolling 30", "Monthly"] as const;
 
@@ -10,6 +11,7 @@ export function DateModeSelector() {
   const { dateMode, setDateMode, selectedDate, setSelectedDate } = useDateMode();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const availableDates = useAvailableDates();
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -88,6 +90,7 @@ export function DateModeSelector() {
           onDateChange={handleDateChange}
           isOpen={isPickerOpen}
           onClose={() => setIsPickerOpen(false)}
+          availableDates={availableDates}
         />
       </div>
     </div>

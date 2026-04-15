@@ -6,9 +6,11 @@ interface CustomDatePickerProps {
   onDateChange: (date: Date) => void;
   isOpen: boolean;
   onClose: () => void;
+  /** ISO date strings (YYYY-MM-DD) that have data. Dates outside this set are greyed out. */
+  availableDates?: Set<string>;
 }
 
-export function CustomDatePicker({ selectedDate, onDateChange, isOpen, onClose }: CustomDatePickerProps) {
+export function CustomDatePicker({ selectedDate, onDateChange, isOpen, onClose, availableDates }: CustomDatePickerProps) {
   const [viewDate, setViewDate] = useState(new Date(selectedDate));
   const pickerRef = useRef<HTMLDivElement>(null);
 
@@ -57,6 +59,12 @@ export function CustomDatePicker({ selectedDate, onDateChange, isOpen, onClose }
     return selectedDate.getDate() === day && selectedDate.getMonth() === month && selectedDate.getFullYear() === year;
   };
 
+  const hasData = (day: number) => {
+    if (!availableDates || availableDates.size === 0) return true; // still loading → treat all as available
+    const iso = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    return availableDates.has(iso);
+  };
+
   const days = [];
   // Empty cells for days before the first day of the month
   for (let i = 0; i < firstDayOfMonth; i++) {
@@ -64,30 +72,35 @@ export function CustomDatePicker({ selectedDate, onDateChange, isOpen, onClose }
   }
   // Actual days
   for (let day = 1; day <= daysInMonth; day++) {
+    const active = hasData(day);
+    const selected = isSelected(day);
+    const today = isToday(day);
     days.push(
       <button
         key={day}
-        onClick={() => selectDate(day)}
+        onClick={() => active ? selectDate(day) : undefined}
+        disabled={!active}
         style={{
           padding: "10px",
           border: "none",
           borderRadius: "var(--radius-sm)",
-          cursor: "pointer",
+          cursor: active ? "pointer" : "default",
           fontFamily: "var(--font-mono)",
           fontSize: 13,
-          backgroundColor: isSelected(day) ? "var(--accent-primary)" : isToday(day) ? "var(--bg-surface)" : "transparent",
-          color: isSelected(day) ? "#FFFFFF" : "var(--text-primary)",
-          fontWeight: isSelected(day) || isToday(day) ? 600 : 400,
+          backgroundColor: selected ? "var(--accent-primary)" : today ? "var(--bg-surface)" : "transparent",
+          color: selected ? "#FFFFFF" : active ? "var(--text-primary)" : "var(--text-muted)",
+          fontWeight: selected || today ? 600 : 400,
+          opacity: active ? 1 : 0.35,
           transition: "all 0.15s",
         }}
         onMouseEnter={(e) => {
-          if (!isSelected(day)) {
+          if (active && !selected) {
             e.currentTarget.style.backgroundColor = "var(--bg-surface)";
           }
         }}
         onMouseLeave={(e) => {
-          if (!isSelected(day)) {
-            e.currentTarget.style.backgroundColor = isToday(day) ? "var(--bg-surface)" : "transparent";
+          if (!selected) {
+            e.currentTarget.style.backgroundColor = today ? "var(--bg-surface)" : "transparent";
           }
         }}
       >
