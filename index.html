@@ -17,11 +17,33 @@
             xhr.open('GET', '/design.html', false); // synchronous — must load before React renders
             xhr.send(null);
             if (xhr.status === 200) {
-              var match = xhr.responseText.match(/<style[^>]*id=["']tokens["'][^>]*>([\s\S]*?)<\/style>/i);
-              if (match) {
+              var html = xhr.responseText;
+
+              // 1. Inject font <link> tags so custom typefaces actually load.
+              //    Matches any <link> tag whose href contains fonts.googleapis.com
+              var linkRe = /<link\b([^>]*)>/gi;
+              var linkMatch;
+              while ((linkMatch = linkRe.exec(html)) !== null) {
+                var attrs = linkMatch[1];
+                if (attrs.indexOf('googleapis.com') !== -1 || attrs.indexOf('gstatic.com') !== -1) {
+                  var el = document.createElement('link');
+                  // parse rel, href, crossorigin attributes
+                  var rel  = attrs.match(/rel=["']([^"']+)["']/);
+                  var href = attrs.match(/href=["']([^"']+)["']/);
+                  var co   = /crossorigin/i.test(attrs);
+                  if (rel)  el.rel  = rel[1];
+                  if (href) el.href = href[1];
+                  if (co)   el.crossOrigin = '';
+                  document.head.appendChild(el);
+                }
+              }
+
+              // 2. Inject the design tokens <style id="tokens"> block
+              var tokenMatch = html.match(/<style[^>]*id=["']tokens["'][^>]*>([\s\S]*?)<\/style>/i);
+              if (tokenMatch) {
                 var s = document.createElement('style');
                 s.id = 'design-tokens-override';
-                s.textContent = match[1];
+                s.textContent = tokenMatch[1];
                 document.head.appendChild(s);
               }
             }
