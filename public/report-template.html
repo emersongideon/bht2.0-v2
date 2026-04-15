@@ -6,105 +6,426 @@
 <title>ICONIC Brand Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
+/* ── Design token bridge ─────────────────────────────────────────────────── */
+/* Maps REPORT-LAYOUTS.css variables to this template's palette              */
+:root {
+  /* colour palette */
   --blue:#2563eb;--blue50:#eff6ff;--blue100:#dbeafe;--blue900:#1e3a8a;
   --g900:#111827;--g800:#1f2937;--g700:#374151;--g600:#4b5563;
   --g500:#6b7280;--g400:#9ca3af;--g300:#d1d5db;--g200:#e5e7eb;
   --g100:#f3f4f6;--g50:#f9fafb;
   --green:#059669;--red:#dc2626;--amber:#d97706;
+
+  /* REPORT-LAYOUTS token aliases */
+  --color-ink:         var(--g900);
+  --color-secondary:   var(--g600);
+  --color-tertiary:    var(--g500);
+  --color-ghost:       var(--g400);
+  --color-border:      var(--g200);
+  --color-surface:     var(--g50);
+  --color-raised:      var(--g100);
+  --color-bg:          #fff;
+  --color-accent:      var(--blue);
+  --color-voice-warm:  var(--blue);
+  --color-voice-cool:  var(--blue);
+  --color-sig1:        var(--red);
+  --color-sig2:        var(--green);
+  --color-sig3:        var(--amber);
+
+  /* typography */
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:    'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  --text-2xs:  0.6875rem;
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.25rem;
+  --text-xl:   1.75rem;
+  --text-2xl:  2.25rem;
+
+  --tracking-caps:  0.08em;
+  --tracking-tight: -0.02em;
+
+  --leading-tight:   1.15;
+  --leading-snug:    1.3;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.75;
+
+  /* spacing */
+  --space-2xs: 0.25rem;
+  --space-xs:  0.375rem;
+  --space-sm:  0.625rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2.5rem;
+  --space-2xl: 3.5rem;
+  --space-3xl: 5rem;
+
+  /* radius */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 9999px;
+
+  /* measure */
+  --measure-body: 68ch;
+
+  /* motion */
+  --dur-fast:   120ms;
+  --dur-reveal: 420ms;
+  --stagger:    60ms;
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
 }
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:var(--g900);-webkit-font-smoothing:antialiased}
-.wrap{max-width:48rem;margin:0 auto;padding:4rem 2rem}
 
-/* selector */
-.sel{display:none}
-.sel-btn{padding:.375rem 1rem;border-radius:9999px;font-size:.75rem;font-weight:500;border:none;cursor:pointer;background:var(--g100);color:var(--g500);font-family:inherit;transition:background .15s}
-.sel-btn:hover{background:var(--g200)}
-.sel-btn.on{background:var(--blue);color:#fff}
+/* ── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* header */
-.hd-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:3rem}
-.hd-left{display:flex;align-items:center;gap:.5rem}
-.lbl{font-size:.75rem;font-weight:500;color:var(--blue);text-transform:uppercase;letter-spacing:.1em}
-.sep{font-size:.75rem;color:var(--g300)}
-.per{font-size:.75rem;color:var(--g400)}
-.cat{font-size:.75rem;color:var(--g400)}
-.brand-name{font-size:3rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.75rem;line-height:1.1}
-.brand-sub{font-size:1.125rem;color:var(--g500);font-weight:300}
-.stats{display:flex;align-items:flex-end;margin-top:2.5rem;border-bottom:1px solid var(--g200);padding-bottom:2rem}
-.sc{text-align:center;padding:1rem 1.5rem}
-.sc-val{font-size:2.25rem;font-weight:600;margin-bottom:.25rem}
-.sc-lbl{font-size:.75rem;font-weight:500;color:var(--g400);text-transform:uppercase;letter-spacing:.1em}
-.sc-sub{font-size:.75rem;color:var(--g400);margin-top:.25rem}
-.sdiv{width:1px;height:3rem;background:var(--g100);align-self:center}
+body {
+  font-family: var(--font-body);
+  background: #fff;
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
 
-/* sections */
-.sec{margin-bottom:3.5rem}
-.sec-title{font-size:.75rem;font-weight:500;color:var(--g400);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1.5rem}
-.lead-p1{font-size:1.125rem;color:var(--g700);line-height:1.75;margin-bottom:1.25rem}
-.lead-p2{font-size:1rem;color:var(--g500);line-height:1.75}
+/* ── REPORT-LAYOUTS.css — embedded structural layer ─────────────────────── */
 
-/* charts */
-.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
-.chart-wrap{background:var(--g50);border-radius:.5rem;padding:1rem;height:11rem}
-.chart-sub{font-size:.75rem;font-weight:500;color:var(--g400);text-transform:uppercase;letter-spacing:.1em;margin-bottom:1rem}
-.bar-wrap{background:var(--g50);border-radius:.5rem;padding:1.5rem;margin-bottom:2rem}
+.report {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: var(--space-xl) var(--space-lg) var(--space-3xl);
+}
 
-/* dims */
-.dim-row{display:flex;gap:1.5rem;margin-bottom:2rem}
-.dim-left{flex-shrink:0;width:4rem;padding-top:.25rem}
-.dim-num{font-size:1.5rem;font-weight:700;color:var(--g900)}
-.dim-d{font-size:.75rem;font-weight:500}
-.dim-d.p{color:var(--green)}.dim-d.n{color:var(--red)}
-.dim-right{flex:1;border-left:1px solid var(--g200);padding-left:1.5rem}
-.dim-hd{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.25rem}
-.dim-key{font-size:.75rem;font-weight:500;color:var(--blue)}
-.dim-label{font-size:.875rem;font-weight:600;color:var(--g800)}
-.dim-rank{font-size:.75rem;color:var(--g400);margin-left:auto}
-.dim-txt{font-size:.875rem;color:var(--g500);line-height:1.625}
+/* Hero zone */
+.report__hero { margin-bottom: var(--space-xl); }
 
-/* comp */
-.comp-row{display:flex;align-items:center;gap:1rem;padding:.75rem 1rem;border-radius:.5rem;margin-bottom:.5rem;background:var(--g50)}
-.comp-row.self{background:var(--blue50);border:1px solid var(--blue100)}
-.comp-rk{font-size:.75rem;font-weight:500;color:var(--g400);width:1.5rem}
-.comp-br{font-size:.875rem;flex:1;color:var(--g700)}
-.comp-br.self{font-weight:600;color:var(--blue900)}
-.comp-sc{font-size:.875rem;font-weight:600;color:var(--g800);width:3rem;text-align:right}
-.comp-dl{font-size:.75rem;font-weight:500;width:2.5rem;text-align:right}
-.comp-dl.p{color:var(--green)}.comp-dl.n{color:var(--red)}
-.comp-track{width:7rem;height:.375rem;background:var(--g200);border-radius:9999px;overflow:hidden}
-.comp-fill{height:100%;border-radius:9999px}
-.comp-txt{font-size:.875rem;color:var(--g500);line-height:1.625;margin-top:1.5rem}
+.report__hero-overline {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-voice-warm);
+  margin-bottom: var(--space-xs);
+}
 
-/* watch */
-.watch-box{background:var(--g50);border-radius:.5rem;padding:2rem}
-.watch-title{font-size:.875rem;font-weight:600;color:var(--g800);margin-bottom:.75rem}
-.watch-p{font-size:.875rem;color:var(--g600);line-height:1.625;margin-bottom:1rem}
-.watch-p:last-child{margin-bottom:0}
+.report__hero-title {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 900;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+  color: var(--color-ink);
+  max-width: 48ch;
+  margin-bottom: var(--space-sm);
+}
 
-/* empty */
-.empty{display:flex;align-items:center;justify-content:center;height:60vh;font-size:1rem;color:var(--g400);font-family:'Inter',sans-serif}
+.report__hero-summary {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-secondary);
+  max-width: var(--measure-body);
+}
 
-/* footer */
-.ft{display:flex;justify-content:space-between;align-items:center;padding:2rem 0;border-top:1px solid var(--g200)}
-.ft-iconic{font-size:.75rem;font-weight:500;color:var(--blue);text-transform:uppercase;letter-spacing:.1em}
-.ft-q{font-size:.75rem;color:var(--g400)}
+/* Metric strip */
+.report__strip {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-xl);
+}
+.report__strip--3 { grid-template-columns: repeat(3, 1fr); }
+.report__strip--4 { grid-template-columns: repeat(4, 1fr); }
+.report__strip--5 { grid-template-columns: repeat(5, 1fr); }
+
+.report__strip-item { text-align: center; }
+
+.report__strip-value {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  color: var(--color-ink);
+  line-height: 1;
+}
+
+.report__strip-label {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  color: var(--color-tertiary);
+  margin-top: var(--space-2xs);
+}
+
+/* Visual anchor */
+.report__anchor { margin-bottom: var(--space-xl); }
+.report__anchor svg, .report__anchor canvas { display: block; width: 100%; }
+
+/* Sections */
+.report__section {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.report__section-label {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-tertiary);
+  margin-bottom: var(--space-md);
+}
+
+/* Pull quote — sparse break */
+.report__pullquote {
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  margin: var(--space-xl) 0;
+}
+
+.report__pullquote-text {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-style: italic;
+  color: var(--color-secondary);
+  line-height: var(--leading-snug);
+  max-width: 50ch;
+}
+
+.report__pullquote-source {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-ghost);
+  margin-top: var(--space-xs);
+  display: block;
+}
+
+/* Data nugget — sparse break */
+.report__nugget {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  margin: var(--space-lg) 0;
+  display: inline-block;
+}
+
+.report__nugget-value {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 900;
+  color: var(--color-voice-warm);
+  letter-spacing: var(--tracking-tight);
+}
+
+.report__nugget-label {
+  font-size: var(--text-2xs);
+  color: var(--color-tertiary);
+  margin-top: var(--space-2xs);
+}
+
+/* Action zone */
+.report__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-xl);
+}
+
+/* Staggered entrance animation */
+.report__hero          { --i: 0; }
+.report__strip         { --i: 1; }
+.report__anchor        { --i: 2; }
+.report__section:nth-child(3)  { --i: 3; }
+.report__section:nth-child(4)  { --i: 4; }
+.report__section:nth-child(5)  { --i: 5; }
+.report__section:nth-child(6)  { --i: 6; }
+.report__actions       { --i: 8; }
+
+.report.animate-in > * {
+  animation: enter-up var(--dur-reveal) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+@keyframes enter-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Template-specific component styles ─────────────────────────────────── */
+
+/* Charts (inside .report__anchor) */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.chart-wrap {
+  background: var(--g50);
+  border-radius: .5rem;
+  padding: 1rem;
+  height: 11rem;
+}
+
+.chart-sub {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  color: var(--color-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+  margin-bottom: .75rem;
+}
+
+/* Lead narrative */
+.lead-p1 {
+  font-size: 1.0625rem;
+  color: var(--g700);
+  line-height: var(--leading-relaxed);
+  margin-bottom: 1.125rem;
+}
+
+.lead-p2 {
+  font-size: var(--text-base);
+  color: var(--color-tertiary);
+  line-height: var(--leading-relaxed);
+}
+
+/* Dim overview bar chart */
+.bar-wrap {
+  background: var(--g50);
+  border-radius: .5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Dimension rows */
+.dim-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.dim-left {
+  flex-shrink: 0;
+  width: 4rem;
+  padding-top: .25rem;
+}
+
+.dim-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.dim-d { font-size: var(--text-2xs); font-weight: 500; }
+.dim-d.p { color: var(--green); }
+.dim-d.n { color: var(--red); }
+
+.dim-right {
+  flex: 1;
+  border-left: 1px solid var(--color-border);
+  padding-left: 1.5rem;
+}
+
+.dim-hd {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  margin-bottom: .25rem;
+}
+
+.dim-key   { font-size: var(--text-2xs); font-weight: 500; color: var(--blue); }
+.dim-label { font-size: var(--text-sm);  font-weight: 600; color: var(--g800); }
+.dim-rank  { font-size: var(--text-2xs); color: var(--color-ghost); margin-left: auto; }
+.dim-txt   { font-size: var(--text-sm);  color: var(--color-tertiary); line-height: 1.625; }
+
+/* Competitive set */
+.comp-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .75rem 1rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: .5rem;
+  background: var(--g50);
+}
+
+.comp-row.self {
+  background: var(--blue50);
+  border: 1px solid var(--blue100);
+}
+
+.comp-rk  { font-size: var(--text-2xs); font-weight: 500; color: var(--color-ghost); width: 1.5rem; }
+.comp-br  { font-size: var(--text-sm);  flex: 1; color: var(--g700); }
+.comp-br.self { font-weight: 600; color: var(--blue900); }
+.comp-sc  { font-size: var(--text-sm);  font-weight: 600; color: var(--g800); width: 3rem; text-align: right; }
+.comp-dl  { font-size: var(--text-2xs); font-weight: 500; width: 2.5rem; text-align: right; }
+.comp-dl.p { color: var(--green); }
+.comp-dl.n { color: var(--red); }
+.comp-track { width: 7rem; height: .375rem; background: var(--g200); border-radius: 9999px; overflow: hidden; }
+.comp-fill  { height: 100%; border-radius: 9999px; }
+.comp-txt { font-size: var(--text-sm); color: var(--color-tertiary); line-height: 1.625; margin-top: 1.5rem; }
+
+/* What to Watch */
+.watch-p {
+  font-size: var(--text-sm);
+  color: var(--g600);
+  line-height: 1.625;
+  margin-bottom: 1rem;
+}
+.watch-p:last-child { margin-bottom: 0; }
+
+/* Empty state */
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  font-size: var(--text-base);
+  color: var(--color-ghost);
+}
+
+/* Footer text inside actions */
+.ft-iconic {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-caps);
+}
+
+.ft-q {
+  font-size: var(--text-2xs);
+  color: var(--color-ghost);
+}
+
+/* Hidden brand selector (kept for legacy compat, never shown) */
+.sel { display: none; }
 
 @media print {
-  body{margin:0;padding:0}
-.card{box-shadow:none!important;border:1px solid #e5e7eb!important;break-inside:avoid}
-  .chart-wrap{break-inside:avoid}
-  .dim-row{break-inside:avoid}
-  .comp-row{break-inside:avoid}
-  a{text-decoration:none}
+  body { margin: 0; padding: 0; }
+  .report { padding: 2rem 1.5rem; }
+  .report.animate-in > * { animation: none; opacity: 1; transform: none; }
+  .chart-wrap { break-inside: avoid; }
+  .dim-row    { break-inside: avoid; }
+  .comp-row   { break-inside: avoid; }
+  .report__section { break-inside: avoid; }
+  a { text-decoration: none; }
 }
 </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
+<div id="app"></div>
 <script>
 // ── Data is injected by the host React page via window.__REPORT_BRANDS__ ──────
 // To test standalone, replace the line below with your own brands array.
@@ -212,29 +533,66 @@ function render() {
 
   const d = brands[selected];
 
-  // Brand selector
+  // Hidden brand selector (legacy, never shown)
   const selHtml = `<div class="sel">${brands.map((b,i)=>
     `<button class="sel-btn${i===selected?' on':''}" data-i="${i}">${escHtml(b.name)}</button>`
   ).join('')}</div>`;
 
-  // Stats
-  const deltaColor = d.delta>=0 ? '#059669' : '#dc2626';
-  const statsHtml = `
-    <div class="stats">
-      <div class="sc"><div class="sc-val">${fmt(d.iconicScore)}</div><div class="sc-lbl">ICONIC Score</div></div>
-      <div class="sdiv"></div>
-      <div class="sc"><div class="sc-val">#${d.rank}</div><div class="sc-lbl">Rank</div><div class="sc-sub">of ${d.totalBrands}</div></div>
-      <div class="sdiv"></div>
-      <div class="sc"><div class="sc-val" style="color:${deltaColor}">${fmtDelta(d.delta)}</div><div class="sc-lbl">vs. Prior Fortnight</div></div>
+  // ── Strip values ──────────────────────────────────────────────────────────
+  const deltaColor = d.delta >= 0 ? '#059669' : '#dc2626';
+
+  const stripHtml = `
+    <div class="report__strip report__strip--3">
+      <div class="report__strip-item">
+        <div class="report__strip-value">${fmt(d.iconicScore)}</div>
+        <div class="report__strip-label">ICONIC Score</div>
+      </div>
+      <div class="report__strip-item">
+        <div class="report__strip-value">#${d.rank}</div>
+        <div class="report__strip-label">Rank · of ${d.totalBrands}</div>
+      </div>
+      <div class="report__strip-item">
+        <div class="report__strip-value" style="color:${deltaColor}">${fmtDelta(d.delta)}</div>
+        <div class="report__strip-label">vs. Prior Fortnight</div>
+      </div>
     </div>`;
 
-  // Charts
-  const chartW = 280, chartH = 144;
+  // ── Visual anchor: trend chart + radar ────────────────────────────────────
+  const chartW = 260, chartH = 144;
   const trendSvg = areaChart(d.trend, chartW, chartH);
-  const radarSvg = radarChart(d.radarData, chartH+20);
-  const barSvg   = barChart(d.dimensionBars, chartW*2+32, chartH-10);
+  const radarSvg = radarChart(d.radarData, chartH + 20);
+  const barSvg   = barChart(d.dimensionBars, 560, chartH - 10);
 
-  // Dimension rows
+  const anchorHtml = `
+    <div class="report__anchor">
+      <div class="charts-grid">
+        <div>
+          <p class="chart-sub">Weekly Trajectory</p>
+          <div class="chart-wrap">${trendSvg}</div>
+        </div>
+        <div>
+          <p class="chart-sub">Dimension Shape</p>
+          <div class="chart-wrap" style="display:flex;align-items:center;justify-content:center;overflow:visible;padding:1rem 2.5rem">${radarSvg}</div>
+        </div>
+      </div>
+    </div>`;
+
+  // ── Lead narrative section ────────────────────────────────────────────────
+  const leadHtml = `
+    <div class="report__section">
+      <div class="report__section-label">Executive Summary</div>
+      <p class="lead-p1">${escHtml((d.narratives.lead || [])[0] || '')}</p>
+      <p class="lead-p2">${escHtml((d.narratives.lead || [])[1] || '')}</p>
+    </div>`;
+
+  // ── Sparse break: rank nugget ─────────────────────────────────────────────
+  const nuggetHtml = `
+    <div class="report__nugget">
+      <div class="report__nugget-value">#${d.rank} of ${d.totalBrands}</div>
+      <div class="report__nugget-label">overall category rank this period</div>
+    </div>`;
+
+  // ── Dimensions section ────────────────────────────────────────────────────
   const dimsHtml = d.dimensions.map(dim => {
     const dp = dim.delta >= 0;
     return `
@@ -251,9 +609,25 @@ function render() {
         </div>
         <p class="dim-txt">${escHtml(d.narratives.dims[dim.key] || '')}</p>
       </div>
-    </div>`; }).join('');
+    </div>`;
+  }).join('');
 
-  // Competitor rows
+  const dimensionsHtml = `
+    <div class="report__section">
+      <div class="report__section-label">Dimensions</div>
+      <div class="bar-wrap">${barSvg}</div>
+      ${dimsHtml}
+    </div>`;
+
+  // ── Sparse break: pull quote from top watch item ──────────────────────────
+  const watchItems = d.narratives.watch || [];
+  const pullquoteHtml = watchItems.length > 0 ? `
+    <div class="report__pullquote">
+      <p class="report__pullquote-text">${escHtml(watchItems[0])}</p>
+      <span class="report__pullquote-source">What to Watch</span>
+    </div>` : '';
+
+  // ── Competitive set section ───────────────────────────────────────────────
   const compHtml = d.competitorSnapshot.map(c => {
     const dp = c.delta >= 0;
     return `
@@ -265,75 +639,56 @@ function render() {
       <div class="comp-track">
         <div class="comp-fill" style="width:${c.score}%;background:${c.self?'#2563eb':'#d1d5db'}"></div>
       </div>
-    </div>`; }).join('');
+    </div>`;
+  }).join('');
 
-  // Watch items (support any number)
-  const watchHtml = (d.narratives.watch || []).map(w =>
-    `<p class="watch-p">${escHtml(w)}</p>`
-  ).join('');
-
-  const html = `
-    ${selHtml}
-
-    <header class="sec" style="margin-bottom:4rem">
-      <div class="hd-meta">
-        <div class="hd-left">
-          <span class="lbl">ICONIC Report</span>
-          <span class="sep">/</span>
-          <span class="per">${escHtml(d.period)}</span>
-        </div>
-        <span class="cat">${escHtml(d.category)} &middot; ${escHtml(d.market)}</span>
-      </div>
-      <h1 class="brand-name">${escHtml(d.name)}</h1>
-      <p class="brand-sub">Brand health performance overview</p>
-      ${statsHtml}
-    </header>
-
-    <section class="sec">
-      <p class="lead-p1">${escHtml((d.narratives.lead || [])[0] || '')}</p>
-      <p class="lead-p2">${escHtml((d.narratives.lead || [])[1] || '')}</p>
-    </section>
-
-    <section class="sec">
-      <div class="charts-grid">
-        <div>
-          <p class="chart-sub">Weekly Trajectory</p>
-          <div class="chart-wrap">${trendSvg}</div>
-        </div>
-        <div>
-          <p class="chart-sub">Shape</p>
-          <div class="chart-wrap" style="display:flex;align-items:center;justify-content:center;overflow:visible;padding:1rem 2.5rem">${radarSvg}</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="sec">
-      <h2 class="sec-title">Dimensions</h2>
-      <div class="bar-wrap">${barSvg}</div>
-      ${dimsHtml}
-    </section>
-
-    <section class="sec">
-      <h2 class="sec-title">Competitive Set</h2>
+  const competitiveHtml = `
+    <div class="report__section">
+      <div class="report__section-label">Competitive Set</div>
       ${compHtml}
       <p class="comp-txt">${escHtml(d.narratives.competitive || '')}</p>
-    </section>
+    </div>`;
 
-    <section class="sec">
-      <div class="watch-box">
-        <h2 class="watch-title">What to Watch</h2>
-        ${watchHtml}
-      </div>
-    </section>
+  // ── What to Watch section (remaining items after pullquote) ──────────────
+  const remainingWatch = watchItems.slice(1);
+  const watchHtml = remainingWatch.length > 0 ? `
+    <div class="report__section">
+      <div class="report__section-label">What to Watch</div>
+      ${remainingWatch.map(w => `<p class="watch-p">${escHtml(w)}</p>`).join('')}
+    </div>` : '';
 
-    <footer class="ft">
+  // ── Actions zone (footer) ─────────────────────────────────────────────────
+  const actionsHtml = `
+    <div class="report__actions">
       <span class="ft-iconic">ICONIC</span>
-      <span class="ft-q">Quilt.AI</span>
-    </footer>`;
+      <span class="ft-q">Quilt.AI · ${escHtml(d.period)}</span>
+    </div>`;
+
+  // ── Assemble — rhythm: Hero → Strip → Anchor → Lead → Nugget → Dims → Pullquote → Competitive → Watch → Actions
+  const html = `
+    <div class="report animate-in" data-layout="scorecard" data-agent="bht">
+      ${selHtml}
+
+      <div class="report__hero">
+        <div class="report__hero-overline">ICONIC Report · ${escHtml(d.period)}</div>
+        <h1 class="report__hero-title">${escHtml(d.name)}</h1>
+        <p class="report__hero-summary">Brand health performance overview · ${escHtml(d.category)} · ${escHtml(d.market)}</p>
+      </div>
+
+      ${stripHtml}
+      ${anchorHtml}
+      ${leadHtml}
+      ${nuggetHtml}
+      ${dimensionsHtml}
+      ${pullquoteHtml}
+      ${competitiveHtml}
+      ${watchHtml}
+      ${actionsHtml}
+    </div>`;
 
   document.getElementById('app').innerHTML = html;
 
-  // Re-attach button listeners
+  // Re-attach button listeners (hidden selector, kept for compat)
   document.querySelectorAll('.sel-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       selected = parseInt(btn.dataset.i);
