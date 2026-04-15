@@ -587,10 +587,11 @@ function SenderReceiverAlignment() {
   const { selectedBrands, mainBrand, selectedCategory } = useBrand();
   const { brandsByCategory } = useAppData();
   const categoryBrandList = brandsByCategory[selectedCategory] ?? [];
-  const subScores = useSubmetricScores("N");
   const nData = useNAlignmentLatest();
   const [activeBrand, setActiveBrand] = useState<string | null>(null);
   const effectiveActive = activeBrand ?? mainBrand;
+  // Pass effectiveActive so the score updates when user switches brands via the legend
+  const subScores = useSubmetricScores("N", effectiveActive);
 
   const mainBrandRows = nData[effectiveActive] ?? [];
   const axes = mainBrandRows.length > 0

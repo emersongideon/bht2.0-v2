@@ -25,10 +25,12 @@ function r1(n: number) {
   return Math.round(n * 10) / 10;
 }
 
-export function useSubmetricScores(pageKey: string): SubmetricScores {
+export function useSubmetricScores(pageKey: string, brandOverride?: string): SubmetricScores {
   const { mainBrand, selectedCategory } = useBrand();
   const { dateMode, selectedDate } = useDateMode();
   const [scores, setScores] = useState<SubmetricScores>({});
+
+  const brand = brandOverride ?? mainBrand;
 
   useEffect(() => {
     setScores({});
@@ -60,7 +62,7 @@ export function useSubmetricScores(pageKey: string): SubmetricScores {
       const { data } = await supabase
         .from("iconic_sub_metric_scores")
         .select("date, submetric_name, submetric_score")
-        .eq("brand_name", mainBrand)
+        .eq("brand_name", brand)
         .eq("category_name", selectedCategory)
         .eq("page_key", pageKey)
         .gte("date", actualFetchFrom)
@@ -119,7 +121,7 @@ export function useSubmetricScores(pageKey: string): SubmetricScores {
       setScores(result);
     }
     load();
-  }, [mainBrand, selectedCategory, dateMode, selectedDate, pageKey]);
+  }, [brand, selectedCategory, dateMode, selectedDate, pageKey]);
 
   return scores;
 }
