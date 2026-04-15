@@ -56,9 +56,6 @@ export function DeepDiveC2Page() {
 
         {/* Row 7 — What Drives Value Perception */}
         <ValueDrivers brand={effectiveDriverBrand} />
-
-        {/* Row 8 — Value Perception Insight */}
-        <ValueInsight />
       </div>
     </>
   );

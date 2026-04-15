@@ -61,9 +61,6 @@ export function DeepDiveC1Page() {
 
         {/* Row 9 — Brand Comparison Trend */}
         <BrandComparisonTrend />
-
-        {/* Row 10 — Insight Card */}
-        <InsightCardC1 />
       </div>
     </>
   );

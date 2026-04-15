@@ -74,9 +74,6 @@ export function DeepDiveNPage() {
 
         {/* Row 8 — Top Aligned Posts */}
         <TopAlignedPosts />
-
-        {/* Row 9 — Communication Guidelines */}
-        <CommunicationGuidelines />
       </div>
     </>
   );

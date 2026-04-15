@@ -1,4 +1,4 @@
-import { useParams, Navigate, useLocation } from "react-router";
+import { useParams, Navigate } from "react-router";
 import { DimensionTabs } from "../dimension-tabs";
 import { SubMetricCard } from "../sub-metric-card";
 import { InsightCard } from "../insight-card";
@@ -12,13 +12,11 @@ import { DeepDiveI2Page } from "./deep-dive-i2-page";
 
 export function DeepDivePage() {
   const { dimensionKey } = useParams();
-  const location = useLocation();
-  const base = location.pathname.startsWith("/demo") ? "/demo" : "/app";
   const key = dimensionKey || "I1";
   const config = getDimensionConfig(key);
 
   if (!config) {
-    return <Navigate to={`${base}/deep-dive/I1`} replace />;
+    return <Navigate to="/deep-dive/I1" replace />;
   }
 
   // Use special pages for specific dimensions
@@ -174,21 +172,12 @@ function DeepDiveContent({ config }: { config: DimensionConfig }) {
         <DimensionTrendChart lines={config.trendLines} dimensionName={config.name} dimensionColor={config.color} />
       </div>
 
-      {/* Row 6 — Bottom row: Radar + Insight */}
-      <div className="flex gap-3" style={{ flex: 1, minHeight: 0 }}>
-        <div style={{ flex: 3, minWidth: 0 }}>
-          <CompetitorRadar
+      {/* Row 6 — Competitor Radar */}
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <CompetitorRadar
             axes={config.radarAxes}
             brands={config.radarBrands}
-          />
-        </div>
-        <div style={{ flex: 2, minWidth: 0 }}>
-          <InsightCard
-            body={config.insight.body}
-            layer={config.insight.layer}
-            fillHeight
-          />
-        </div>
+        />
       </div>
     </div>
   );

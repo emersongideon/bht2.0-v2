@@ -68,9 +68,6 @@ export function DeepDiveI1Page() {
 
         {/* Row 8 — Audience Perception */}
         <AudiencePerception />
-
-        {/* Row 9 — Insight Card */}
-        <InsightCardI1 />
       </div>
     </>
   );

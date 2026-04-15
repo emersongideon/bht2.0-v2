@@ -71,9 +71,6 @@ export function DeepDiveOPage() {
             <RecommendationList />
           </div>
         </div>
-
-        {/* Row 8 — Insight */}
-        <InsightCard />
       </div>
     </>
   );

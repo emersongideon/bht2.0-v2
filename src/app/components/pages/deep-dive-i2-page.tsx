@@ -48,9 +48,6 @@ export function DeepDiveI2Page() {
 
         {/* Row 7 — Attribute Comparison (Heatmap Matrix) */}
         <AttributeComparison />
-
-        {/* Row 8 — Insight Card */}
-        <InsightCard />
       </div>
     </>
   );
